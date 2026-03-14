@@ -1,0 +1,9 @@
+FROM python:3.15.0a7-alpine3.22 AS base
+WORKDIR /app
+COPY requirements.txt /app
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+
+FROM base AS development
+ENV FLASK_ENV=development
+CMD ["python3", "server.py"]

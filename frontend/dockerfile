@@ -1,0 +1,6 @@
+# Development stage
+FROM node:24-alpine AS development
+WORKDIR /app
+COPY . /app
+RUN rm -rf /app/node_modules
+CMD sh -c "npm install && npm run dev"

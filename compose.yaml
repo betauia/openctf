@@ -1,0 +1,28 @@
+services:
+  frontend:
+    build:
+      context: ./frontend/
+      dockerfile: dockerfile
+      target: development
+    restart: on-failure
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./frontend:/app
+    depends_on:
+      - backend
+  backend:
+    build:
+      context: ./backend/
+      dockerfile: dockerfile
+      target: development
+    ports:
+      - "8000:8000"
+    networks:
+      - backend_network
+    volumes:
+      - ./backend:/app
+
+networks:
+  backend_network:
+    driver: bridge
