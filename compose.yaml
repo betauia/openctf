@@ -1,3 +1,7 @@
+##################################################################################
+# This compose file deploys the backend and frontend independently.              #
+##################################################################################
+
 services:
   frontend:
     build:
@@ -22,6 +26,8 @@ services:
       - backend_network
     volumes:
       - ./backend:/app
+    env_file:
+      - .env.dev
 
 networks:
   backend_network:

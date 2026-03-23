@@ -1,3 +1,6 @@
-flask
-gunicorn
+fastapi
+uvicorn
 requests
+sqlalchemy
+fastapi-discord
+contextlib2
