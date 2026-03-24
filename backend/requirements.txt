@@ -4,3 +4,4 @@ requests
 sqlalchemy
 fastapi-discord
 contextlib2
+pydantic-settings
