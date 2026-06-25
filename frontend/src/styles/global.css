@@ -1,13 +1,18 @@
 :root {
   --primary-color: #303030;
-  --secondary-color: #474747;
+  --secondary-color: #232323;
   --accent-color: #2979FF;
 }
 
 .baselayout-container {
-  background: var(--primary-color);
+  background: var(--secondary-color);
   color: white;
   padding-top: 64px;
   display: flex;
   justify-content: center;
+}
+.baselayout-content {
+  max-width: 75rem;
+  width: 100%;
+  padding: 0 1.5rem;
 }

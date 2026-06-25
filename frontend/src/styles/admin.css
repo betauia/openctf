@@ -1,0 +1,24 @@
+.instance-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    max-width: 75rem;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+.instance-status table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.instance-status th,
+.instance-status td {
+    border-top: 1px solid;
+    border-bottom: 1px solid;
+    padding: 0.5rem;
+    text-align: left;
+}
+.instance-status th {
+    background-color: var(--primary-color);
+}
+

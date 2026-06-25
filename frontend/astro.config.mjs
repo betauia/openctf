@@ -10,6 +10,8 @@ export default defineConfig({
                 "@components": "/src/components",
                 "@assets": "/src/assets",
                 "@pages": "/src/pages",
+                "@layouts": "/src/layouts",
+                "@styles": "/src/styles",
             },
         },
     },

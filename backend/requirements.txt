@@ -5,3 +5,6 @@ sqlalchemy
 fastapi-discord
 contextlib2
 pydantic-settings
+docker
+pathlib
+PyYAML
