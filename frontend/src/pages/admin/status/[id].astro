@@ -1,0 +1,11 @@
+---
+import AdminLayout from '@layouts/AdminLayout.astro';
+export const prerender = false;
+
+const { id } = Astro.params;
+---
+
+
+<AdminLayout pageTitle={`Container: ${id}`}>
+
+</AdminLayout>

@@ -1,0 +1,51 @@
+---
+import AdminLayout from '@layouts/AdminLayout.astro';
+import "@styles/admin.css"
+import "@styles/button.css"
+const pageTitle = "Admin: Status";
+
+const response = await fetch("http://backend:8000/instances/status");
+const instances = await response.json();
+---
+<AdminLayout pageTitle={pageTitle}>
+  <div class="instance-status">
+    <div class="header-row">
+      <span class="header-icon">▣</span>
+      <h1>challenge containers</h1>
+    </div>
+    <table>
+      	<thead>
+        	<tr>
+          		<th>ID</th>
+          		<th>NAME</th>
+          		<th>IMAGE</th>
+          		<th>STATUS</th>
+          		<th>CREATED</th>
+        	</tr>
+      	</thead>
+      <tbody>
+        {instances.map(instance => (
+          <tr key={instance.id}>
+            <td>
+  				<a href={`/admin/status/${instance.id}`} class="id-link">
+    				{instance.id}
+  				</a>
+			</td>
+            <td>{instance.name}</td>
+            <td>{instance.image}</td>
+            <td>{instance.status}</td>
+            <td>{new Date(instance.created_at * 1000).toLocaleString()}</td>
+          </tr>
+        ))}
+		
+      </tbody>
+    </table>
+
+  </div>
+</AdminLayout>
+
+
+
+
+
+<!-- id, name, image, status, created_at -->

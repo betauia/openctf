@@ -12,7 +12,7 @@
   justify-content: center;
 }
 .baselayout-content {
-  max-width: 75rem;
-  width: 100%;
-  padding: 0 1.5rem;
+  max-width: 75rem;   
+  width: 100%;        
+  padding: 0 3rem;    
 }
