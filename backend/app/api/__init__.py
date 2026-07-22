@@ -1,7 +1,6 @@
-from app.routers.base import base_router
-from app.routers.auth import auth_router
-from app.routers.instances import instance_router
-
+from app.api.base import base_router
+from app.api.auth import auth_router
+from app.api.instances import instance_router
 
 def include_routers(app):
     app.include_router(base_router)

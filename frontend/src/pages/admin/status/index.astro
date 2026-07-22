@@ -2,18 +2,21 @@
 import AdminLayout from '@layouts/AdminLayout.astro';
 import "@styles/admin.css"
 import "@styles/button.css"
-const pageTitle = "Admin: Status";
 
-const response = await fetch("http://backend:8000/instances/status");
+const pageTitle = "Admin: Status";
+const response = await fetch("http://backend:8000/api/instances/status");
 const instances = await response.json();
 ---
 <AdminLayout pageTitle={pageTitle}>
   <div class="instance-status">
     <div class="header-row">
-      <span class="header-icon">▣</span>
-      <h1>challenge containers</h1>
+      <div class="header-left">
+        <span class="header-icon">▣</span>
+        <h1>challenge containers</h1>
+      </div>
+      <input type="text" id="searchInput" onkeyup="searchContainer()" placeholder="Filter searches...">
     </div>
-    <table>
+    <table id="statusTable">
       	<thead>
         	<tr>
           		<th>ID</th>
@@ -34,7 +37,7 @@ const instances = await response.json();
             <td>{instance.name}</td>
             <td>{instance.image}</td>
             <td>{instance.status}</td>
-            <td>{new Date(instance.created_at * 1000).toLocaleString()}</td>
+            <td>{new Date(instance.created_at).toLocaleString()}</td>
           </tr>
         ))}
 		
@@ -43,6 +46,40 @@ const instances = await response.json();
 
   </div>
 </AdminLayout>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    window.searchContainer = function () {
+      const input = document.getElementById("searchInput");
+      const filter = input.value.toUpperCase();
+      const table = document.getElementById("statusTable");
+      const rows = table.getElementsByTagName("tr");
+
+      for (let i = 0; i < rows.length; i++) {
+        const cells = rows[i].getElementsByTagName("td");
+
+        // Skip header row (no <td> cells)
+        if (cells.length === 0) {
+          rows[i].style.display = "";
+          continue;
+        }
+
+        let match = false;
+
+        // Check every column in the row
+        for (let j = 0; j < cells.length; j++) {
+          const text = cells[j].textContent || cells[j].innerText;
+          if (text.toUpperCase().includes(filter)) {
+            match = true;
+            break;
+          }
+        }
+
+        rows[i].style.display = match ? "" : "none";
+      }
+    };
+  });
+</script>
+
 
 
 

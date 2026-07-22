@@ -1,12 +1,6 @@
-#######################################################################################
-# This file contains shared dependencies and data models                              #
-#######################################################################################
-from pydantic_settings import BaseSettings
+from app.providers import get_provider
+from app.services.instance_services import InstanceService
 
-# Base settings class used to load environment variables and provide default values
-class Settings(BaseSettings):
-    DATABASE_URL: str = "sqlite:///./openctf.db"
-    SECRET_KEY: str
-
-settings = Settings()
-
+def get_instance_service():
+    provider = get_provider()
+    return InstanceService(provider)

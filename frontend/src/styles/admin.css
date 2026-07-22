@@ -34,17 +34,40 @@
     th {
         background-color: var(--primary-color);
     }
+
+    #searchInput {
+      width: 40%;
+      max-width: 20rem;
+      background-image: url('/css/searchicon.png');
+      background-repeat: no-repeat;
+      background-size: 16px;
+      background-position: 10px center;
+      background-color: var(--primary-color);
+      color: gray;
+      border: 0.5px solid #444;
+      border-radius: 5px;
+      padding-left: 2rem;
+    }
+    #statusTable {
+      table-layout: fixed;
+      width: 100%;
+    }
 }
 
 .header-row {
   margin-top: 1rem;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  margin-bottom: 4px;
+  margin-bottom: -10px;
   width: 100%;
 }
-
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .header-icon {
   font-size: 18px;
   color: #58a6ff;

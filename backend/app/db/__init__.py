@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from app.dependencies import settings
+from app.core.settings import settings
 import os
 
 # If DATABASE_URL is set to sqlite, we need to add check_same_thread=False to the connection arguments
