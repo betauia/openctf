@@ -50,3 +50,39 @@ nav {
 .nav-links a:hover {
   opacity: 0.7;
 }
+
+.nav-user {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-username {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.nav-login {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  color: white;
+  text-decoration: none;
+  background: var(--accent-color, #D1002C);
+  padding: 5px 14px;
+  transition: background 0.15s;
+}
+.nav-login:hover { background: var(--accent-dark); }
+
+.nav-logout {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  letter-spacing: 0.06em;
+}
+.nav-logout:hover { color: rgba(255, 255, 255, 0.7); }

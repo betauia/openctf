@@ -9,10 +9,20 @@ import "@styles/challenges.css";
 import "@styles/challenges-table.css";
 import "@styles/challenges-modal.css";
 
+const cookie = Astro.request.headers.get("cookie") ?? "";
+
 let challenges: any[] = [];
+let solvedIds: number[] = [];
+let userScore: number | null = null;
 try {
-  const res = await fetch("http://backend:8000/api/challenges");
-  if (res.ok) challenges = await res.json();
+  const [chRes, solveRes, meRes] = await Promise.all([
+    fetch("http://backend:8000/api/challenges"),
+    fetch("http://backend:8000/api/auth/solves", { headers: { cookie } }),
+    fetch("http://backend:8000/api/auth/me", { headers: { cookie } }),
+  ]);
+  if (chRes.ok) challenges = await chRes.json();
+  if (solveRes.ok) solvedIds = await solveRes.json();
+  if (meRes.ok) userScore = (await meRes.json()).score;
 } catch {}
 
 const categories = [...new Set(challenges.map((c) => c.category))].sort() as string[];
@@ -24,18 +34,18 @@ const totalPoints = challenges.reduce((s, c) => s + (c.points ?? 0), 0);
   <div class="ch-layout">
     <Sidebar {categories} {challenges} />
     <main class="ch-main">
-      <StatsBar count={challenges.length} {totalSolves} {totalPoints} />
+      <StatsBar count={challenges.length} {totalSolves} {totalPoints} {userScore} />
       <ActionBar />
       <ChallengeTable {challenges} />
     </main>
   </div>
 
-  <script id="ch-data" type="application/json" set:html={JSON.stringify(challenges)} />
+  <script id="ch-data" type="application/json" set:html={JSON.stringify({ challenges, solvedIds })} />
   <ChallengeModal />
 </ChallengesLayout>
 
 <script>
-  const challenges: any[] = JSON.parse(document.getElementById("ch-data")!.textContent!);
+  const { challenges, solvedIds: serverSolvedIds } = JSON.parse(document.getElementById("ch-data")!.textContent!);
 
   const css = getComputedStyle(document.documentElement);
   const CAT_COLORS: Record<string, string> = Object.fromEntries(
@@ -45,9 +55,8 @@ const totalPoints = challenges.reduce((s, c) => s + (c.points ?? 0), 0);
     ["easy","medium","hard","insane"].map((d) => [d, css.getPropertyValue(`--diff-${d}`).trim()])
   );
 
-  // solved
-  const SOLVED_KEY = "openctf_solved";
-  const solvedIds = new Set<number>(JSON.parse(localStorage.getItem(SOLVED_KEY) ?? "[]"));
+  // solved — server is source of truth
+  const solvedIds = new Set<number>(serverSolvedIds);
   let solvedCollapsed = localStorage.getItem("openctf_solved_collapsed") === "true";
 
   const tbody = document.querySelector<HTMLTableSectionElement>("#ch-table tbody")!;
@@ -73,7 +82,6 @@ const totalPoints = challenges.reduce((s, c) => s + (c.points ?? 0), 0);
   function markChallengeSolved(id: number) {
     if (solvedIds.has(id)) return;
     solvedIds.add(id);
-    localStorage.setItem(SOLVED_KEY, JSON.stringify([...solvedIds]));
     const row = tbody.querySelector<HTMLTableRowElement>(`.ch-row[data-id="${id}"]`);
     if (row) {
       row.classList.add("ch-solved");
@@ -141,6 +149,7 @@ const totalPoints = challenges.reduce((s, c) => s + (c.points ?? 0), 0);
     input: HTMLInputElement,
     msg?: HTMLElement,
     onCorrect?: (title: string) => void,
+    expectedTitle?: string,
   ) {
     btn.disabled = true;
     btn.textContent = "...";
@@ -154,11 +163,17 @@ const totalPoints = challenges.reduce((s, c) => s + (c.points ?? 0), 0);
       });
       const data = await res.json();
 
-      if (data.correct) {
+      if (data.correct && (!expectedTitle || data.challenge === expectedTitle)) {
         btn.textContent = `+${data.points}!`;
         btn.classList.add("correct");
         input.value = "";
         if (msg) { msg.textContent = `Correct! +${data.points} points`; msg.classList.add("correct"); }
+        const scoreEl = document.getElementById("ch-score-val");
+        if (scoreEl) {
+          const cur = parseInt(scoreEl.textContent ?? "0") || 0;
+          scoreEl.textContent = String(cur + data.points);
+          scoreEl.classList.remove("ch-stat-dim");
+        }
         onCorrect?.(data.challenge);
       } else {
         btn.textContent = "Wrong";
@@ -274,9 +289,11 @@ const totalPoints = challenges.reduce((s, c) => s + (c.points ?? 0), 0);
   mFlagForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const flag = mFlagInput.value.trim();
-    if (flag) submitFlag(flag, mFlagBtn, mFlagInput, mFlagMsg, () => {
-      if (currentModalId) markChallengeSolved(currentModalId);
-    });
+    const openTitle = challenges.find((c: any) => c.id === currentModalId)?.title;
+    if (flag) submitFlag(flag, mFlagBtn, mFlagInput, mFlagMsg, (title) => {
+      const id = challenges.find((c: any) => c.title === title)?.id;
+      if (id) markChallengeSolved(id);
+    }, openTitle);
   });
 
   initSolvedRows();

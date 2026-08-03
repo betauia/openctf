@@ -118,14 +118,14 @@
 .ch-modal-download {
   display: block;
   text-align: center;
-  color: var(--accent-color, #2979ff);
+  color: var(--accent-color, #D1002C);
   font-size: 11px;
   text-decoration: none;
-  border: 1px solid rgba(41, 121, 255, 0.3);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
   padding: 6px;
   transition: background 0.1s;
 }
-.ch-modal-download:hover { background: rgba(41, 121, 255, 0.08); }
+.ch-modal-download:hover { background: rgba(var(--accent-rgb), 0.08); }
 
 .ch-modal-flag-form { display: flex; margin: 0; }
 
@@ -141,10 +141,10 @@
   font-size: 11px;
   outline: none;
 }
-.ch-modal-flag-form input:focus { border-color: rgba(41, 121, 255, 0.4); }
+.ch-modal-flag-form input:focus { border-color: rgba(var(--accent-rgb), 0.4); }
 
 .ch-modal-flag-form button {
-  background: var(--accent-color, #2979ff);
+  background: var(--accent-color, #D1002C);
   border: none;
   color: white;
   padding: 6px 12px;
@@ -157,7 +157,7 @@
   transition: background 0.15s;
   white-space: nowrap;
 }
-.ch-modal-flag-form button:hover:not(:disabled) { background: #1565c0; }
+.ch-modal-flag-form button:hover:not(:disabled) { background: var(--accent-dark); }
 .ch-modal-flag-form button:disabled  { cursor: default; }
 .ch-modal-flag-form button.correct   { background: #388e3c; }
 .ch-modal-flag-form button.wrong     { background: #c62828; }

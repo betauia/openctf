@@ -1,9 +1,12 @@
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from app.db.models.challenge import Challenge
+from app.db.models.solve import Solve
+from app.db.models.user import User
+from app.api.auth import get_current_user
 from app.dependencies import get_db
 
 challenge_router = APIRouter(prefix="/api/challenges")
@@ -11,17 +14,32 @@ challenge_router = APIRouter(prefix="/api/challenges")
 UPLOAD_DIR = Path("/app/uploads")
 
 
-@challenge_router.get("")
+class ChallengeOut(BaseModel):
+    id: int
+    title: str
+    description: str | None
+    author: str | None
+    points: int
+    category: str
+    difficulty: str
+    solves: int
+    connection_info: str | None
+    file_path: str | None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+@challenge_router.get("", response_model=list[ChallengeOut])
 def list_challenges(db: Session = Depends(get_db)):
-    return db.query(Challenge).filter(Challenge.is_visible == True).all()
+    return [ChallengeOut.model_validate(c) for c in db.query(Challenge).filter(Challenge.is_visible == True).all()]
 
 
-@challenge_router.get("/{id}")
+@challenge_router.get("/{id}", response_model=ChallengeOut)
 def get_challenge(id: int, db: Session = Depends(get_db)):
     c = db.query(Challenge).filter(Challenge.id == id, Challenge.is_visible == True).first()
     if not c:
         raise HTTPException(status_code=404, detail="Challenge not found")
-    return c
+    return ChallengeOut.model_validate(c)
 
 
 @challenge_router.get("/{id}/file")
@@ -40,13 +58,23 @@ class FlagSubmit(BaseModel):
 
 
 @challenge_router.post("/submit")
-def submit_flag(body: FlagSubmit, db: Session = Depends(get_db)):
-    c = db.query(Challenge).filter(
-        Challenge.flag == body.flag,
-        Challenge.is_visible == True,
-    ).first()
+def submit_flag(
+    body: FlagSubmit,
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user),
+):
+    c = db.query(Challenge).filter(Challenge.flag == body.flag, Challenge.is_visible == True).first()
     if not c:
         return {"correct": False}
-    c.solves += 1
+
+    if user:
+        already = db.query(Solve).filter(Solve.user_id == user.id, Solve.challenge_id == c.id).first()
+        if not already:
+            db.add(Solve(user_id=user.id, challenge_id=c.id))
+            user.score += c.points
+            c.solves += 1
+    else:
+        c.solves += 1
+
     db.commit()
     return {"correct": True, "challenge": c.title, "points": c.points}

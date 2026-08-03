@@ -55,9 +55,9 @@ body {
 }
 
 .ch-cat.active {
-  color: var(--accent-color, #2979ff);
-  background: rgba(41, 121, 255, 0.08);
-  border-left-color: var(--accent-color, #2979ff);
+  color: var(--accent-color, #D1002C);
+  background: rgba(var(--accent-rgb), 0.08);
+  border-left-color: var(--accent-color, #D1002C);
 }
 
 .ch-cat span {
@@ -102,7 +102,7 @@ body {
 .ch-stat-value {
   font-size: 18px;
   font-weight: 700;
-  color: var(--accent-color, #2979ff);
+  color: var(--accent-color, #D1002C);
 }
 
 .ch-stat-dim { color: rgba(255, 255, 255, 0.2); }
@@ -129,7 +129,7 @@ body {
   width: 220px;
 }
 
-.ch-search-wrap input:focus { border-color: var(--accent-color, #2979ff); }
+.ch-search-wrap input:focus { border-color: var(--accent-color, #D1002C); }
 
 .ch-flag-wrap { display: flex; margin: 0; }
 
@@ -145,10 +145,10 @@ body {
   width: 260px;
 }
 
-.ch-flag-wrap input:focus { border-color: rgba(41, 121, 255, 0.4); }
+.ch-flag-wrap input:focus { border-color: rgba(var(--accent-rgb), 0.4); }
 
 .ch-flag-wrap button {
-  background: var(--accent-color, #2979ff);
+  background: var(--accent-color, #D1002C);
   border: none;
   color: white;
   padding: 6px 16px;
@@ -160,7 +160,7 @@ body {
   transition: background 0.15s;
 }
 
-.ch-flag-wrap button:hover:not(:disabled) { background: #1565c0; }
+.ch-flag-wrap button:hover:not(:disabled) { background: var(--accent-dark); }
 .ch-flag-wrap button:disabled { cursor: default; }
 .ch-flag-wrap button.correct { background: #388e3c; }
 .ch-flag-wrap button.wrong   { background: #c62828; }

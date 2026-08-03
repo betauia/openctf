@@ -1,0 +1,55 @@
+---
+import BaseLayout from "@layouts/BaseLayout.astro";
+import "@styles/auth.css";
+---
+
+<BaseLayout pageTitle="Login — OpenCTF">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <h1 class="auth-title">Sign in</h1>
+
+      <form id="auth-form">
+        <div class="auth-field">
+          <label for="username">Username</label>
+          <input id="username" name="username" type="text" autocomplete="username" required />
+        </div>
+        <div class="auth-field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required />
+        </div>
+        <div id="auth-error" class="auth-error"></div>
+        <button type="submit" id="auth-btn">Sign in</button>
+      </form>
+
+      <p class="auth-switch">No account? <a href="/register">Register</a></p>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  const form = document.getElementById("auth-form") as HTMLFormElement;
+  const btn  = document.getElementById("auth-btn") as HTMLButtonElement;
+  const err  = document.getElementById("auth-error")!;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    btn.disabled = true;
+    btn.textContent = "...";
+    err.textContent = "";
+
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(Object.fromEntries(new FormData(form))),
+    });
+
+    if (res.ok) {
+      window.location.href = "/challenges";
+    } else {
+      const body = await res.json().catch(() => ({}));
+      err.textContent = body.detail ?? "Login failed";
+      btn.disabled = false;
+      btn.textContent = "Sign in";
+    }
+  });
+</script>

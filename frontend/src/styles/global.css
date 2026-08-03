@@ -1,7 +1,11 @@
 :root {
-  --primary-color: #282B2D;
-  --secondary-color: #232323;
-  --accent-color: #2979FF;
+  --primary-color: #262626;
+  --secondary-color: #1a1a1a;
+  --accent-color: #D1002C;
+  --accent-rgb: 209, 0, 44;
+  --accent-dark: #9a001f;
+  --nav-text: rgba(255, 255, 255, 0.87);
+  --error-color: var(--accent-color);
 
   /* background levels — keep these three in sync pls */
   --bg-base:    #232323;  /* page body, sidebar*/
