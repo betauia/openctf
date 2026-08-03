@@ -1,11 +1,38 @@
 :root {
-  --primary-color: #303030;
+  --primary-color: #282B2D;
   --secondary-color: #232323;
   --accent-color: #2979FF;
+
+  /* background levels — keep these three in sync pls */
+  --bg-base:    #232323;  /* page body, sidebar*/
+  --bg-panel:   #2b2b2b;  /* mid-level: modal body, table area */
+  --bg-card:    #303030;  /* cards, action bar */
+
+  /* category colors */
+  --cat-web:      #2979ff;
+  --cat-pwn:      #ef5350;
+  --cat-crypto:   #ab47bc;
+  --cat-rev:      #ffa726;
+  --cat-hardware: #ff7043;
+  --cat-misc:     #66bb6a;
+
+  /* difficulty colors */
+  --diff-easy:   #66bb6a;
+  --diff-medium: #ffa726;
+  --diff-hard:   #ff7043;
+  --diff-insane: #ef5350;
+
+  /* points */
+  --pts-color: #ffd54f;
+}
+
+html, body {
+  margin: 0;
+  background: var(--bg-base);
 }
 
 .baselayout-container {
-  background: var(--secondary-color);
+  background: var(--bg-base);
   color: white;
   padding-top: 64px;
   display: flex;

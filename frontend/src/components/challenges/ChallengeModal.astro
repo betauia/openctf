@@ -1,0 +1,49 @@
+---
+---
+
+<div id="ch-overlay" class="ch-overlay">
+  <div id="ch-modal" class="ch-modal">
+
+    <div class="ch-modal-head">
+      <div>
+        <div class="ch-modal-title" id="m-title"></div>
+        <div class="ch-modal-badges" id="m-badges"></div>
+      </div>
+      <button id="ch-modal-close" class="ch-modal-close">✕</button>
+    </div>
+
+    <div class="ch-modal-body">
+
+      <div class="ch-modal-main">
+        <div class="ch-modal-section-label">Description</div>
+        <p id="m-desc" class="ch-modal-desc"></p>
+      </div>
+
+      <div class="ch-modal-side">
+
+        <div class="ch-modal-meta" id="m-meta"></div>
+
+        <div id="m-conn-block" class="ch-modal-block" style="display:none">
+          <div class="ch-modal-section-label">Connect</div>
+          <pre id="m-conn" class="ch-modal-conn"></pre>
+        </div>
+
+        <div id="m-file-block" class="ch-modal-block" style="display:none">
+          <div class="ch-modal-section-label">Files</div>
+          <a id="m-file-link" class="ch-modal-download" download>↓ </a>
+        </div>
+
+        <div class="ch-modal-block">
+          <div class="ch-modal-section-label">Submit Flag</div>
+          <form id="m-flag-form" class="ch-modal-flag-form">
+            <input id="m-flag" type="text" placeholder="CTF{...}" autocomplete="off" />
+            <button type="submit" id="m-flag-btn">Submit</button>
+          </form>
+          <div id="m-flag-msg" class="ch-modal-flag-msg"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>

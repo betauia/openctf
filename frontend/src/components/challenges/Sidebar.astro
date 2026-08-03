@@ -1,0 +1,37 @@
+---
+import { Hash, Globe, Terminal, Lock, Cpu, Zap, Code2 } from "lucide-astro";
+
+const { categories, challenges } = Astro.props;
+const KEEP_LOWER = new Set(["pwn", "rev"]);
+const fmt = (s: string) => { const l = s.toLowerCase(); return KEEP_LOWER.has(l) ? l : l[0].toUpperCase() + l.slice(1); };
+
+const CAT_ICONS: Record<string, any> = {
+  all: Hash, 
+  web: Globe, 
+  pwn: Terminal,
+  crypto: Lock, 
+  rev: Cpu, 
+  hardware: Zap, 
+  misc: Code2,
+};
+---
+
+<aside class="ch-sidebar">
+  <div class="ch-sidebar-label">Category</div>
+  
+  <button class="ch-cat active" data-cat="all">
+    <Hash size={13} />
+    All <span>{challenges.length}</span>
+  </button>
+
+  {categories.map((cat: string) => {
+    const Icon = CAT_ICONS[cat] ?? Hash;
+    return (
+      <button class="ch-cat" data-cat={cat}>
+        <Icon size={13} />
+        {fmt(cat)}
+        <span>{challenges.filter((c: any) => c.category === cat).length}</span>
+      </button>
+    );
+  })}
+</aside>
