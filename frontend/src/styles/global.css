@@ -1,12 +1,11 @@
 :root {
   --background-color: #1a1a1a;              /** Main page background **/
   --raised-color: #262626;                  /** Raised elements background **/
+  --elevated-color: #2e2e2e;                /** Further raised elements **/
   --text-color: #ffffff;                    /** General text color **/
   --muted-text: rgba(255, 255, 255, 0.87);  /** Text color with transparency **/
   --accent-color: #D1002C;                  /** Links, active states, buttons, etc **/
   --accent-dark: #9a001f;                   /** Darker shade of accent color **/
-
-  --elevated-color: #2e2e2e;                /** Further raised elements above --raised-color **/
   --border-subtle: rgba(255, 255, 255, 0.07); /** Subtle border color **/
 
   --cat-web:      #2979ff;                  /** Web category color **/

@@ -20,10 +20,13 @@ try {
     fetch("http://backend:8000/api/auth/solves", { headers: { cookie } }),
     fetch("http://backend:8000/api/auth/me", { headers: { cookie } }),
   ]);
+  if (!meRes.ok) return Astro.redirect("/login");
   if (chRes.ok) challenges = await chRes.json();
   if (solveRes.ok) solvedIds = await solveRes.json();
-  if (meRes.ok) userScore = (await meRes.json()).score;
-} catch {}
+  userScore = (await meRes.json()).score;
+} catch {
+  return Astro.redirect("/login");
+}
 
 const categories = [...new Set(challenges.map((c) => c.category))].sort() as string[];
 const totalSolves = challenges.reduce((s, c) => s + (c.solves ?? 0), 0);
@@ -32,7 +35,7 @@ const totalPoints = challenges.reduce((s, c) => s + (c.points ?? 0), 0);
 
 <ChallengesLayout pageTitle="Challenges - OpenCTF">
   <div class="ch-layout">
-    <Sidebar {categories} {challenges} />
+    <Sidebar {categories} {challenges} {solvedIds} />
     <main class="ch-main">
       <StatsBar count={challenges.length} {totalSolves} {totalPoints} {userScore} />
       <ActionBar />
