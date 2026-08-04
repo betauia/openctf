@@ -1,0 +1,27 @@
+---
+import AdminLayout from '@layouts/AdminLayout.astro';
+import "@styles/admin.css"
+
+export const prerender = false;
+
+const { id } = Astro.params;
+
+const response = await fetch(`http://backend:8000/api/instances/${id}`);
+const instance = await response.json();
+---
+
+<AdminLayout pageTitle={`Container: ${id}`}>
+  <div class="container-page">
+    <div class="container-details">
+        <div class="info-section">
+          <h3>Basic Info</h3>
+          <p><strong>ID:</strong> {instance.id}</p>
+          <p><strong>Name:</strong> {instance.name}</p>
+          <p><strong>Image:</strong> {instance.image}</p>
+          <p><strong>Status:</strong> {instance.status}</p>
+          <p><strong>Created:</strong> {new Date(instance.created_at).toLocaleString()}</p>
+          <p><strong>Provider:</strong> {instance.provider}</p>
+        </div>
+  </div>
+</AdminLayout>
+

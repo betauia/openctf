@@ -1,0 +1,23 @@
+---
+import "../styles/navbar.css"
+const links = [
+    { name: "Status", href: "/admin/status" },
+    { name: "Config", href: "/admin/config" },
+];
+
+import logo from '@assets/logo.png';
+---
+
+<nav class="w-full">
+    <div class="navbar-container nav-inner">
+        <a href="/" class="logo">
+          <img src={logo.src} alt="Logo" class="logo-img" />
+        </a>
+
+        <ul class="nav-links">
+            {links.map(link => (
+                <li><a href={link.href}>{link.name}</a></li>
+            ))}
+        </ul>
+    </div>
+</nav>

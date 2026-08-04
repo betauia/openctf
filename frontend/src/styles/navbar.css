@@ -6,7 +6,7 @@ html, body {
 
 /* Container styles */
 .navbar-container {
-  max-width: 1200px;
+  max-width: 1000rem;
   margin: 0 auto;
   padding: 0 1.5rem;
 }
@@ -18,9 +18,9 @@ html, body {
 
 /* Navbar styles */
 nav {
-  background: var(--primary-color);
-  border-bottom: 1px solid var(--secondary-color);
-  color: white;
+  background: var(--raised-color);
+  border-bottom: 1px solid var(--background-color);
+  color: var(--nav-text);
   position: fixed;
   top: 0;
   left: 0;
@@ -28,8 +28,7 @@ nav {
 }
 .navbar {
   width: 100%;
-  background: var(--primary-color);
-  color: white;
+  color: var(--nav-text);
   font-size: 1rem;
 }
 .nav-inner {
@@ -47,12 +46,12 @@ nav {
   padding: 0;
 }
 .nav-links a {
-  color: var(--nav-text);
+  color: var(--muted-text);
   text-decoration: none;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 1rem;
   font-weight: 500;
 }
 .nav-links a:hover {
-  opacity: 0.7;
+  color: var(--accent-color);
 }
