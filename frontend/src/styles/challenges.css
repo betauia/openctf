@@ -210,3 +210,6 @@ body {
 .ch-flag-wrap button:disabled { cursor: default; }
 .ch-flag-wrap button.correct { background: var(--color-correct-dark); }
 .ch-flag-wrap button.wrong   { background: var(--color-wrong-dark); }
+
+#ch-solved-arrow { display: inline-flex; transition: transform 0.15s; }
+#ch-solved-arrow.collapsed { transform: rotate(-90deg); }

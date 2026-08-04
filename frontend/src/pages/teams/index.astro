@@ -1,0 +1,213 @@
+---
+import ChallengesLayout from "@layouts/ChallengesLayout.astro";
+import { Copy, Check, ArrowLeft } from "lucide-astro";
+import { timeAgo } from "@scripts/utils";
+import "@styles/challenges.css";
+import "@styles/challenges-table.css";
+import "@styles/teams.css";
+
+const cookie = Astro.request.headers.get("cookie") ?? "";
+
+let myTeam: any = null;
+let teams: any[] = [];
+let me: any = null;
+let activity: any[] = [];
+
+try {
+  const [meRes, myTeamRes, teamsRes] = await Promise.all([
+    fetch("http://backend:8000/api/auth/me", { headers: { cookie } }),
+    fetch("http://backend:8000/api/teams/my", { headers: { cookie } }),
+    fetch("http://backend:8000/api/teams"),
+  ]);
+  if (!meRes.ok) return Astro.redirect("/login");
+  me = await meRes.json();
+  if (myTeamRes.ok) myTeam = await myTeamRes.json();
+  if (teamsRes.ok) teams = await teamsRes.json();
+  if (myTeam) {
+    const actRes = await fetch("http://backend:8000/api/teams/activity", { headers: { cookie } });
+    if (actRes.ok) activity = await actRes.json();
+  }
+} catch {
+  return Astro.redirect("/login");
+}
+
+const myRank = myTeam ? teams.findIndex((t: any) => t.id === myTeam.id) + 1 : null;
+const sortedMembers = myTeam ? [...myTeam.members].sort((a: any, b: any) => b.score - a.score) : [];
+const inspectMemberId = Number(Astro.url.searchParams.get("member") ?? 0);
+
+
+---
+
+<ChallengesLayout pageTitle="Teams - OpenCTF">
+  <div class="tm-page">
+
+    <div class="tm-tabbar">
+      <button class="tm-tab active" data-tab="team">My Team</button>
+      <button class="tm-tab" data-tab="leaderboard">Leaderboard</button>
+    </div>
+
+    <!-- My Team tab -->
+    <div class="tm-content" id="tab-team">
+      {myTeam ? (
+        <div class="tm-workspace" id="tm-workspace">
+          <div class="tm-header">
+            <div class="tm-header-left">
+              <div class="tm-header-name">{myTeam.name}</div>
+              <div class="tm-header-meta">
+                <span class="tm-header-score">{myTeam.score} pts</span>
+                {myRank && <span class="tm-header-rank">Rank #{myRank}</span>}
+              </div>
+            </div>
+            <div class="tm-header-right">
+              <div class="tm-invite-row">
+                <span id="tm-invite-code" class="tm-invite-code">{myTeam.invite_code}</span>
+                <button id="tm-copy-btn" class="tm-copy-btn" title="Copy invite code">
+                  <Copy size={14} class="tm-copy-icon" />
+                  <Check size={14} class="tm-check-icon" />
+                </button>
+              </div>
+              <button id="tm-leave-btn" class="tm-leave-btn">Leave Team</button>
+            </div>
+          </div>
+
+          <div class="ch-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  {["#", "Member", "Score", "Solves", "Contribution"].map((h) => <th>{h}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {sortedMembers.map((m: any, i: number) => {
+                  const pct = myTeam.score > 0 ? Math.round((m.score / myTeam.score) * 100) : 0;
+                  return (
+                    <tr class="tm-member-row" data-id={m.id}>
+                      <td class="ch-num">{String(i + 1).padStart(2, "0")}</td>
+                      <td>
+                        <div class="tm-member-cell">
+                          <div class="tm-avatar">{m.username[0].toUpperCase()}</div>
+                          <span class="ch-name">{m.username}</span>
+                          {m.id === me.id && <span class="tm-you">you</span>}
+                        </div>
+                      </td>
+                      <td class="ch-pts">{m.score}</td>
+                      <td class="ch-mono">{m.solves}</td>
+                      <td>
+                        <div class="tm-share-cell">
+                          <div class="tm-share-bar">
+                            <div class="tm-share-fill" style={`width: ${pct}%`}></div>
+                          </div>
+                          <span class="tm-share-pct">{pct}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div id="tm-error" class="tm-error" style="padding: 0 16px 8px"></div>
+
+          <div class="tm-activity-section">
+            <div class="tm-activity-label">Recent Activity</div>
+            <div class="tm-activity-scroll">
+              {activity.length === 0 ? (
+                <div class="ch-empty">No activity yet</div>
+              ) : activity.map((e: any) => (
+                <div class="tm-feed-entry">
+                  <div class="tm-avatar tm-avatar-sm">{e.username[0].toUpperCase()}</div>
+                  <div class="tm-feed-body">
+                    <div class="tm-feed-line">
+                      <span class="tm-feed-user">{e.username}</span>
+                      <span class="tm-feed-verb">solved</span>
+                      <span class={`tm-feed-chall cat-${e.category}`}>{e.challenge}</span>
+                      <span class="tm-feed-pts">+{e.points}</span>
+                    </div>
+                    <div class="tm-feed-time">{timeAgo(e.solved_at)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div class="tm-no-team-wrap">
+          <div class="tm-form-card">
+            <div class="tm-form-title">Create a Team</div>
+            <form id="tm-create-form" class="tm-form">
+              <input name="name" type="text" placeholder="Team name" class="tm-input" autocomplete="off" />
+              <button type="submit" class="tm-btn">Create</button>
+              <div id="tm-create-error" class="tm-error"></div>
+            </form>
+          </div>
+          <div class="tm-form-divider"></div>
+          <div class="tm-form-card">
+            <div class="tm-form-title">Join a Team</div>
+            <form id="tm-join-form" class="tm-form">
+              <input name="invite_code" type="text" placeholder="Invite code" class="tm-input" autocomplete="off" />
+              <button type="submit" class="tm-btn">Join</button>
+              <div id="tm-join-error" class="tm-error"></div>
+            </form>
+          </div>
+        </div>
+      )}
+      <div id="tm-member-detail" style="display:none"></div>
+    </div>
+
+    <!-- Leaderboard tab -->
+    <div class="tm-content" id="tab-leaderboard" style="display:none">
+      <div class="ch-table-wrap">
+        {teams.length === 0 ? (
+          <div class="ch-empty">No teams yet</div>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                {["#", "Team", "Members", "Score"].map((h) => <th>{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {teams.map((t: any, i: number) => (
+                <tr class={`tm-row${t.id === myTeam?.id ? " tm-mine" : ""}`}
+                    data-team={JSON.stringify(t)} data-rank={String(i + 1)}
+                    style="cursor:pointer">
+                  <td class="ch-num">{String(i + 1).padStart(2, "0")}</td>
+                  <td class="ch-name">{t.name}</td>
+                  <td class="ch-mono">{t.members.length}</td>
+                  <td class="ch-pts">{t.score}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+
+  </div>
+
+<div id="tm-icon-cache" style="display:none">
+  <span data-icon="arrow-left"><ArrowLeft size={14} /></span>
+</div>
+</ChallengesLayout>
+
+<script define:vars={{ inspectMemberId, teamsJson: JSON.stringify(teams) }}>
+  window.__inspectMemberId = inspectMemberId;
+  window.__teamsData = JSON.parse(teamsJson);
+</script>
+
+<script>
+  import "@scripts/teams";
+
+  const TABS = ["team", "leaderboard"];
+  document.querySelectorAll<HTMLButtonElement>(".tm-tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tm-tab").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const tab = btn.dataset.tab!;
+      TABS.forEach((t) => {
+        const el = document.getElementById(`tab-${t}`);
+        if (el) el.style.display = t === tab ? "" : "none";
+      });
+    });
+  });
+</script>

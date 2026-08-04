@@ -3,7 +3,7 @@ const solvedSep   = document.getElementById("ch-solved-sep")!;
 const solvedArrow = document.getElementById("ch-solved-arrow")!;
 const solvedCount = document.getElementById("ch-solved-count")!;
 
-export const solvedIds = new Set<number>(
+const solvedIds = new Set<number>(
   JSON.parse(document.getElementById("ch-data")!.textContent!).solvedIds
 );
 
@@ -14,13 +14,13 @@ const rowById = (id: number) =>
 
 function updateSolvedUI() {
   solvedCount.textContent = solvedIds.size > 0 ? `(${solvedIds.size})` : "";
-  solvedArrow.textContent = solvedCollapsed ? "▶" : "▼";
+  solvedArrow.classList.toggle("collapsed", solvedCollapsed);
 }
 
 let activeCat   = "all";
 let searchQuery = "";
 
-export function filterRows() {
+function filterRows() {
   let visibleSolved = 0;
   document.querySelectorAll<HTMLTableRowElement>("#ch-table tbody .ch-row").forEach((row) => {
     const isSolved = row.classList.contains("ch-solved");

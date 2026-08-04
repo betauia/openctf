@@ -52,3 +52,8 @@ html, body {
   display: flex;
   flex-direction: column;
 }
+
+@keyframes icon-pop {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}

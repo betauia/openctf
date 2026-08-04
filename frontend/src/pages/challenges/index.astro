@@ -28,6 +28,12 @@ try {
   return Astro.redirect("/login");
 }
 
+const DIFF_ORDER: Record<string, number> = { easy: 0, medium: 1, hard: 2 };
+challenges.sort((a: any, b: any) =>
+  a.category.localeCompare(b.category) ||
+  (DIFF_ORDER[a.difficulty?.toLowerCase()] ?? 9) - (DIFF_ORDER[b.difficulty?.toLowerCase()] ?? 9)
+);
+
 const categories = [...new Set(challenges.map((c) => c.category))].sort() as string[];
 const totalSolves = challenges.reduce((s, c) => s + (c.solves ?? 0), 0);
 const totalPoints = challenges.reduce((s, c) => s + (c.points ?? 0), 0);

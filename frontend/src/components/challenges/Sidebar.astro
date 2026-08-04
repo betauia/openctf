@@ -1,10 +1,9 @@
 ---
 import { Hash, Globe, Terminal, Lock, Cpu, Zap, Code2 } from "lucide-astro";
+import { fmt } from "@lib/utils";
 
 const { categories, challenges, solvedIds } = Astro.props;
 const ids = new Set(solvedIds as number[]);
-const KEEP_LOWER = new Set(["pwn", "rev"]);
-const fmt = (s: string) => { const l = s.toLowerCase(); return KEEP_LOWER.has(l) ? l : l[0].toUpperCase() + l.slice(1); };
 
 const CAT_ICONS: Record<string, any> = {
   all: Hash,

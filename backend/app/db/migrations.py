@@ -15,6 +15,17 @@ def migrate():
                 conn.commit()
             except Exception:
                 pass
-        conn.execute(text("UPDATE challenges SET flags = json_array(flag) WHERE flag IS NOT NULL AND flags IS NULL"))
-        conn.execute(text("UPDATE challenges SET files = json_array(file_path) WHERE file_path IS NOT NULL AND files IS NULL"))
-        conn.commit()
+        try:
+            conn.execute(text("ALTER TABLE users ADD COLUMN team_id INTEGER"))
+            conn.commit()
+        except Exception:
+            pass
+        for stmt in [
+            "UPDATE challenges SET flags = json_array(flag) WHERE flag IS NOT NULL AND flags IS NULL",
+            "UPDATE challenges SET files = json_array(file_path) WHERE file_path IS NOT NULL AND files IS NULL",
+        ]:
+            try:
+                conn.execute(text(stmt))
+                conn.commit()
+            except Exception:
+                pass

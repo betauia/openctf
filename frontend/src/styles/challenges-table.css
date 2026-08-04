@@ -27,8 +27,12 @@ td { padding: 10px 12px; font-size: 13px; }
 
 .ch-num  { font-size: 11px; color: rgba(255, 255, 255, 0.18); width: 36px; }
 .ch-name { color: var(--muted-text); font-weight: 500; }
-.ch-mono { font-size: 12px; color: rgba(255, 255, 255, 0.45); }
-.ch-pts  { font-weight: 700; color: var(--pts-color); }
+.ch-mono { font-size: 12px; color: rgba(255, 255, 255, 0.45); text-align: center; }
+.ch-pts  { font-weight: 700; color: var(--pts-color); text-align: center; }
+
+#ch-table th:nth-child(n+3) { text-align: center; }
+#ch-table td:nth-child(3),
+#ch-table td:nth-child(6) { text-align: center; }
 
 /** badges **/
 .ch-badge {

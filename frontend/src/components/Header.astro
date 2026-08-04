@@ -10,6 +10,7 @@ const links = [
 ];
 
 const cookie = Astro.request.headers.get("cookie") ?? "";
+const path = Astro.url.pathname;
 let user: { username: string } | null = null;
 try {
   const r = await fetch("http://backend:8000/api/auth/me", { headers: { cookie } });
@@ -17,15 +18,19 @@ try {
 } catch {}
 ---
 
-<nav class="w-full">
-  <div class="navbar-container nav-inner">
-    <a href="/" class="logo">
-      <img src={logo.src} alt="Logo" class="logo-img" />
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">
+      <img src={logo.src} alt="Logo" class="nav-logo-img" />
     </a>
 
     <ul class="nav-links">
       {links.map((link) => (
-        <li><a href={link.href}>{link.name}</a></li>
+        <li>
+          <a href={link.href} class={path.startsWith(link.href) ? "active" : ""}>
+            {link.name}
+          </a>
+        </li>
       ))}
     </ul>
 

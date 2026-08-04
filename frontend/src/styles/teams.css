@@ -1,0 +1,415 @@
+/** page **/
+.tm-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 64px);
+  margin-top: 64px;
+  background: var(--raised-color);
+}
+
+/** tab bar **/
+.tm-tabbar {
+  display: flex;
+  align-items: center;
+  background: var(--background-color);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  padding: 0 20px;
+}
+
+.tm-tab {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: rgba(255, 255, 255, 0.35);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: color 0.1s;
+  margin-bottom: -1px;
+}
+
+.tm-tab:hover { color: var(--muted-text); }
+
+.tm-tab.active {
+  color: var(--accent-color);
+  border-bottom-color: var(--accent-color);
+}
+
+/** tab content **/
+.tm-content {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/** workspace (has team) **/
+.tm-workspace {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+/** team header **/
+.tm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  background: var(--elevated-color);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.tm-header-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-color);
+  margin-bottom: 4px;
+}
+
+.tm-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.tm-header-score {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pts-color);
+}
+
+.tm-header-rank {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  letter-spacing: 0.06em;
+}
+
+.tm-header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.tm-invite-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--background-color);
+  border: 1px solid var(--border-subtle);
+  padding: 6px 12px;
+}
+
+.tm-invite-code {
+  font-family: monospace;
+  font-size: 13px;
+  color: var(--muted-text);
+  letter-spacing: 0.06em;
+}
+
+.tm-copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.1s;
+  flex-shrink: 0;
+}
+
+.tm-copy-btn:hover { color: var(--muted-text); }
+
+.tm-check-icon { display: none; }
+
+.tm-copy-btn.copied .tm-copy-icon { display: none; }
+.tm-copy-btn.copied .tm-check-icon {
+  display: block;
+  color: var(--color-correct);
+  animation: icon-pop 0.15s ease-out;
+}
+
+
+.tm-leave-btn {
+  background: var(--accent-color);
+  border: none;
+  color: var(--text-color);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.tm-leave-btn:hover { background: var(--accent-dark); }
+
+
+/** cap members table so activity stays visible **/
+.tm-workspace .ch-table-wrap {
+  max-height: 280px;
+  flex: none;
+}
+
+.tm-workspace th:nth-child(3),
+.tm-workspace th:nth-child(4) { text-align: center; }
+
+#tab-leaderboard th:nth-child(n+3),
+#tm-member-detail th:nth-child(n+3) { text-align: center; }
+
+#tab-leaderboard td:nth-child(3):not([class]),
+#tm-member-detail td:nth-child(3):not([class]) { text-align: center; }
+
+/** member table rows **/
+.tm-member-row { background: var(--elevated-color); }
+.tm-member-row:hover { background: color-mix(in srgb, var(--elevated-color) 85%, white); }
+
+.tm-member-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tm-avatar {
+  width: 28px;
+  height: 28px;
+  background: color-mix(in srgb, var(--accent-color) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-color) 30%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-color);
+  flex-shrink: 0;
+}
+
+.tm-you {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-color) 28%, transparent);
+  padding: 1px 6px;
+}
+
+.tm-share-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 140px;
+}
+
+.tm-share-bar {
+  flex: 1;
+  height: 2px;
+  background: var(--background-color);
+  overflow: hidden;
+}
+
+.tm-share-fill {
+  height: 100%;
+  background: var(--accent-color);
+}
+
+.tm-share-pct {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.25);
+  min-width: 28px;
+  text-align: right;
+}
+
+/** no team: create / join **/
+.tm-no-team-wrap {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 64px 24px;
+}
+
+.tm-form-card {
+  width: 280px;
+  padding: 24px;
+  background: var(--elevated-color);
+  border: 1px solid var(--border-subtle);
+}
+
+.tm-form-title {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 16px;
+}
+
+.tm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tm-input {
+  background: var(--background-color);
+  border: 1px solid var(--border-subtle);
+  color: var(--muted-text);
+  padding: 8px 12px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tm-input:focus {
+  border-color: color-mix(in srgb, var(--accent-color) 50%, transparent);
+}
+
+.tm-btn {
+  background: var(--accent-color);
+  border: none;
+  color: var(--text-color);
+  padding: 8px 0;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.15s;
+}
+
+.tm-btn:hover { background: var(--accent-dark); }
+.tm-btn:disabled { opacity: 0.6; cursor: default; }
+
+.tm-form-divider {
+  width: 1px;
+  background: var(--border-subtle);
+  margin: 0 32px;
+  align-self: stretch;
+}
+
+.tm-error {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--color-wrong);
+  min-height: 16px;
+}
+
+/** activity feed **/
+.tm-activity-section {
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+}
+
+.tm-activity-label {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.25);
+  padding: 10px 24px 6px;
+  flex-shrink: 0;
+}
+
+.tm-activity-scroll {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.tm-feed-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tm-feed-entry:last-child { border-bottom: none; }
+
+.tm-avatar-sm {
+  width: 24px;
+  height: 24px;
+  font-size: 10px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.tm-feed-body { display: flex; flex-direction: column; gap: 3px; }
+
+.tm-feed-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+}
+
+.tm-feed-user { color: var(--muted-text); font-weight: 600; }
+.tm-feed-verb { color: rgba(255, 255, 255, 0.3); }
+.tm-feed-chall { font-size: 11px; padding: 1px 7px; }
+.tm-feed-pts { font-size: 11px; font-weight: 700; color: var(--pts-color); }
+.tm-feed-time { font-size: 10px; color: rgba(255, 255, 255, 0.2); letter-spacing: 0.04em; }
+
+/** member detail **/
+.tm-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 24px;
+  background: var(--elevated-color);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.tm-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.3);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  padding: 0;
+  margin-right: 6px;
+  transition: color 0.1s;
+}
+
+.tm-back-btn:hover { color: var(--muted-text); }
+
+.tm-avatar-lg {
+  width: 40px;
+  height: 40px;
+  font-size: 16px;
+}
+
+.tm-detail-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.tm-detail-meta {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  margin-top: 3px;
+}
+
+/** leaderboard **/
+.tm-row { background: var(--elevated-color); }
+.tm-row:hover { background: color-mix(in srgb, var(--elevated-color) 85%, white); }
+
+.tm-row.tm-mine .ch-num,
+.tm-row.tm-mine .ch-name { color: var(--accent-color); }

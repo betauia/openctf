@@ -1,5 +1,6 @@
 import { fmt, esc } from "@lib/utils";
 import { markChallengeSolved } from "./filter";
+import { timeAgo } from "./utils";
 
 const css = getComputedStyle(document.documentElement);
 
@@ -185,6 +186,7 @@ export function initModal(challenges: any[]) {
       const tab = btn.dataset.tab;
       document.getElementById("ch-tab-overview")!.style.display = tab === "overview" ? "" : "none";
       document.getElementById("ch-tab-solves")!.style.display   = tab === "solves"   ? "" : "none";
+      if (tab === "solves") loadSolves();
     });
   });
 
@@ -251,6 +253,9 @@ export function initModal(challenges: any[]) {
       ? `nc ${mConnHost.textContent} ${mConnPort.textContent}`
       : (c.connection_info ?? "");
     navigator.clipboard.writeText(text);
+    const btn = document.getElementById("m-conn-copy")!;
+    btn.classList.add("copied");
+    setTimeout(() => btn.classList.remove("copied"), 1500);
   });
 
   mFlagForm.addEventListener("submit", (e) => {
@@ -259,4 +264,35 @@ export function initModal(challenges: any[]) {
     const openTitle = challenges.find((c: any) => c.id === currentModalId)?.title;
     if (flag) submitFlag(flag, mFlagBtn, mFlagInput, mFlagMsg, markSolvedByTitle, openTitle);
   });
+
+  type SolveEntry = { uid: number; username: string; team: string | null; solved_at: string | null };
+  const solvesCache = new Map<number, SolveEntry[]>();
+
+  function renderSolves(panel: HTMLElement, data: SolveEntry[]) {
+    if (data.length === 0) { panel.innerHTML = '<div class="ch-modal-placeholder">No solves yet.</div>'; return; }
+    panel.innerHTML = `<div class="ch-solves-list">${data.map((s, i) => `
+      <div class="ch-solve-row">
+        <span class="ch-solve-rank">${String(i + 1).padStart(2, "0")}</span>
+        <div class="ch-solve-user">
+          <span class="ch-solve-name ch-solve-name-link" data-uid="${s.uid}">${s.username}</span>
+          ${s.team ? `<span class="ch-solve-team">${s.team}</span>` : ""}
+        </div>
+        <span class="ch-solve-time">${timeAgo(s.solved_at)}</span>
+      </div>`).join("")}
+    </div>`;
+    panel.querySelectorAll<HTMLElement>(".ch-solve-name-link").forEach((el) => {
+      el.addEventListener("click", () => { window.location.href = `/teams?member=${el.dataset.uid}`; });
+    });
+  }
+
+  async function loadSolves() {
+    const panel = document.getElementById("ch-tab-solves")!;
+    if (solvesCache.has(currentModalId)) { renderSolves(panel, solvesCache.get(currentModalId)!); return; }
+    panel.innerHTML = '<div class="ch-modal-placeholder">Loading...</div>';
+    const res = await fetch(`/api/challenges/${currentModalId}/solves`);
+    if (!res.ok) { panel.innerHTML = '<div class="ch-modal-placeholder">Failed to load.</div>'; return; }
+    const data: SolveEntry[] = await res.json();
+    solvesCache.set(currentModalId, data);
+    renderSolves(panel, data);
+  }
 }

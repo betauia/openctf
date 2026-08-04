@@ -245,7 +245,15 @@
 }
 .ch-modal-icon-btn:hover { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.8); }
 
-.ch-modal-file-actions { display: flex; gap: 6px; }
+
+.ch-modal-icon-btn .tm-check-icon { display: none; }
+.ch-modal-icon-btn.copied .tm-copy-icon { display: none; }
+.ch-modal-icon-btn.copied .tm-check-icon {
+  display: block;
+  color: var(--color-correct);
+  animation: icon-pop 0.15s ease-out;
+}
+
 
 .ch-file-list {
   display: flex;
@@ -372,14 +380,6 @@
   color: var(--color-correct);
 }
 
-.ch-conn-type {
-  font-family: monospace;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: rgba(var(--color-correct-rgb), 0.6);
-  text-transform: uppercase;
-}
 
 .ch-conn-actions {
   display: flex;
@@ -447,4 +447,65 @@
   padding: 48px 0;
   color: rgba(255, 255, 255, 0.22);
   font-size: 13px;
+}
+
+/* solves list */
+.ch-solves-list {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.ch-solve-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.ch-solve-row:last-child { border-bottom: none; }
+
+.ch-solve-rank {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.2);
+  font-family: monospace;
+  min-width: 20px;
+}
+
+.ch-solve-user {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ch-solve-name {
+  font-size: 13px;
+  color: var(--muted-text);
+  font-weight: 600;
+}
+
+.ch-solve-name-link {
+  cursor: pointer;
+  transition: color 0.1s;
+}
+
+.ch-solve-name-link:hover { color: var(--accent-color); }
+
+
+.ch-solve-team {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+  background: var(--elevated-color);
+  border: 1px solid var(--border-subtle);
+  padding: 1px 6px;
+  letter-spacing: 0.04em;
+}
+
+.ch-solve-time {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.25);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }

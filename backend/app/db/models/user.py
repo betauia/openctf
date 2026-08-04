@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
 from app.db import Base
 
 class User(Base):
@@ -9,3 +9,4 @@ class User(Base):
     password_hash = Column(String)
     score = Column(Integer, default=0)
     is_admin = Column(Boolean, default=False)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)

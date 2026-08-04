@@ -1,8 +1,7 @@
 ---
-import { Globe, Terminal, Lock, Cpu, Zap, Code2, Hash } from "lucide-astro";
+import { Globe, Terminal, Lock, Cpu, Zap, Code2, Hash, ChevronDown } from "lucide-astro";
+import { fmt } from "@lib/utils";
 const { challenges } = Astro.props;
-const KEEP_LOWER = new Set(["pwn", "rev"]);
-const fmt = (s: string) => { const l = s.toLowerCase(); return KEEP_LOWER.has(l) ? l : l[0].toUpperCase() + l.slice(1); };
 const CAT_ICONS: Record<string, any> = { web: Globe, pwn: Terminal, crypto: Lock, rev: Cpu, hardware: Zap, misc: Code2 };
 ---
 
@@ -44,7 +43,7 @@ const CAT_ICONS: Record<string, any> = { web: Globe, pwn: Terminal, crypto: Lock
         <tr id="ch-solved-sep" style="display:none">
           <td colspan="6" class="ch-solved-sep-cell">
             <button id="ch-solved-toggle">
-              <span id="ch-solved-arrow">▼</span>
+              <span id="ch-solved-arrow"><ChevronDown size={13} /></span>
               Solved
               <span id="ch-solved-count"></span>
             </button>

@@ -1,5 +1,5 @@
 ---
-import { Globe, Terminal, Lock, Cpu, Zap, Code2, X, ArrowRight, Play, Copy, Square, ChevronDown, ChevronUp, Download, File } from "lucide-astro";
+import { Globe, Terminal, Lock, Cpu, Zap, Code2, X, ArrowRight, Play, Copy, Check, Square, ChevronDown, ChevronUp, Download, File } from "lucide-astro";
 ---
 
 <div id="m-cat-icons" style="display:none">
@@ -78,7 +78,10 @@ import { Globe, Terminal, Lock, Cpu, Zap, Code2, X, ArrowRight, Play, Copy, Squa
               <div class="ch-create-info-key">PORT</div>
             </div>
             <div class="ch-conn-actions">
-              <button class="ch-modal-icon-btn" id="m-conn-copy" title="Copy"><Copy size={14} /></button>
+              <button class="ch-modal-icon-btn" id="m-conn-copy" title="Copy">
+                  <Copy size={14} class="tm-copy-icon" />
+                  <Check size={14} class="tm-check-icon" />
+                </button>
               <button class="ch-conn-stop" id="m-conn-stop" title="Stop"><Square size={14} /></button>
             </div>
           </div>

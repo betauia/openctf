@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.settings import settings
 from app.db.models.user import User
 from app.db.models.solve import Solve
+from app.db.queries import team_member_ids
 from app.dependencies import get_db
 
 auth_router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -112,5 +113,8 @@ def me(user: User | None = Depends(get_current_user)):
 def solves(user: User | None = Depends(get_current_user), db: Session = Depends(get_db)):
     if not user:
         return []
-    rows = db.query(Solve.challenge_id).filter(Solve.user_id == user.id).all()
+    if user.team_id:
+        rows = db.query(Solve.challenge_id).filter(Solve.user_id.in_(team_member_ids(db, user.team_id))).distinct().all()
+    else:
+        rows = db.query(Solve.challenge_id).filter(Solve.user_id == user.id).all()
     return [r.challenge_id for r in rows]
