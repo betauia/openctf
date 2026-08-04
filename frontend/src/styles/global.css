@@ -1,49 +1,55 @@
 :root {
-  --primary-color: #262626;
-  --secondary-color: #1a1a1a;
-  --accent-color: #D1002C;
-  --accent-rgb: 209, 0, 44;
-  --accent-dark: #9a001f;
-  --nav-text: rgba(255, 255, 255, 0.87);
-  --error-color: var(--accent-color);
+  --background-color: #1a1a1a;              /** Main page background **/
+  --raised-color: #262626;                  /** Raised elements background **/
+  --text-color: #ffffff;                    /** General text color **/
+  --muted-text: rgba(255, 255, 255, 0.87);  /** Text color with transparency **/
+  --accent-color: #D1002C;                  /** Links, active states, buttons, etc **/
+  --accent-dark: #9a001f;                   /** Darker shade of accent color **/
 
-  /* background levels — keep these three in sync pls */
-  --bg-base:    #232323;  /* page body, sidebar*/
-  --bg-panel:   #2b2b2b;  /* mid-level: modal body, table area */
-  --bg-card:    #303030;  /* cards, action bar */
+  --elevated-color: #2e2e2e;                /** Further raised elements above --raised-color **/
+  --border-subtle: rgba(255, 255, 255, 0.07); /** Subtle border color **/
 
-  /* category colors */
-  --cat-web:      #2979ff;
-  --cat-pwn:      #ef5350;
-  --cat-crypto:   #ab47bc;
-  --cat-rev:      #ffa726;
-  --cat-hardware: #ff7043;
-  --cat-misc:     #66bb6a;
+  --cat-web:      #2979ff;                  /** Web category color **/
+  --cat-pwn:      #ef5350;                  /** Pwn category color **/
+  --cat-crypto:   #ab47bc;                  /** Crypto category color **/
+  --cat-rev:      #ffa726;                  /** Reversing category color **/
+  --cat-hardware: #ff7043;                  /** Hardware category color **/
+  --cat-misc:     #66bb6a;                  /** Misc category color **/
 
-  /* difficulty colors */
-  --diff-easy:   #66bb6a;
-  --diff-medium: #ffa726;
-  --diff-hard:   #ff7043;
-  --diff-insane: #ef5350;
+  --diff-easy:   #66bb6a;                   /** Easy difficulty color **/
+  --diff-medium: #ffa726;                   /** Medium difficulty color **/
+  --diff-hard:   #ff7043;                   /** Hard difficulty color **/
+  --diff-insane: #ef5350;                   /** Insane difficulty color **/
 
-  /* points */
-  --pts-color: #ffd54f;
+  --pts-color: #ffd54f;                     /** Points value color **/
+
+  --color-correct:      #66bb6a;            /** Correct flag feedback **/
+  --color-correct-rgb:  102, 187, 106;        /** Correct color as RGB for rgba() use **/
+  --color-correct-dark: #388e3c;            /** Darker shade of correct color **/
+  --color-wrong:        #ef5350;            /** Wrong flag feedback **/
+  --color-wrong-dark:   #c62828;            /** Darker shade of wrong color **/
 }
 
 html, body {
   margin: 0;
-  background: var(--bg-base);
+  background: var(--background-color);
 }
 
 .baselayout-container {
-  background: var(--bg-base);
-  color: white;
+  background: var(--background-color);
+  color: var(--text-color);
   padding-top: 64px;
+  min-height: 100vh;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
 }
 .baselayout-content {
-  max-width: 75rem;   
-  width: 100%;        
-  padding: 0 3rem;    
+  max-width: 75rem;
+  width: 100%;
+  padding: 0 3rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }

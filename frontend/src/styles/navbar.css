@@ -1,4 +1,4 @@
-/* Container styles */
+/** Container styles **/
 .navbar-container {
   max-width: 1000rem;
   margin: 0 auto;
@@ -10,10 +10,10 @@
   display: block;
 }
 
-/* Navbar styles */
+/** Navbar styles **/
 nav {
-  background: var(--primary-color);
-  border-bottom: 1px solid var(--secondary-color);
+  background: var(--raised-color);
+  border-bottom: 1px solid var(--background-color);
   color: white;
   position: fixed;
   top: 0;
@@ -22,7 +22,7 @@ nav {
 }
 .navbar {
   width: 100%;
-  background: var(--primary-color);
+  background: var(--raised-color);
   color: white;
   font-size: 1rem;
 }
@@ -41,7 +41,7 @@ nav {
   padding: 0;
 }
 .nav-links a {
-  color: var(--nav-text);
+  color: var(--muted-text);
   text-decoration: none;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 1rem;
@@ -69,7 +69,7 @@ nav {
   font-size: 12px;
   color: white;
   text-decoration: none;
-  background: var(--accent-color, #D1002C);
+  background: var(--accent-color);
   padding: 5px 14px;
   transition: background 0.15s;
 }
@@ -79,7 +79,7 @@ nav {
   font-family: Arial, Helvetica, sans-serif;
   font-size: 11px;
   color: white;
-  background: var(--accent-color, #D1002C);
+  background: var(--accent-color);
   border: none;
   cursor: pointer;
   padding: 5px 14px;

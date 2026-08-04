@@ -1,4 +1,4 @@
-/* From Uiverse.io by hannahyockel */ 
+/** From Uiverse.io by hannahyockel **/
 button {
  display: flex;
  flex-direction: column;
@@ -6,7 +6,7 @@ button {
  align-items: center;
  padding: 1em;
  border: 0px solid transparent;
- background-color: rgba(100,77,237,0.08);
+ background-color: rgba(255, 255, 255, 0.05);
  border-radius: 1.25em;
  transition: all 0.2s linear;
 }
@@ -27,8 +27,8 @@ button:hover {
 .tooltip .tooltiptext {
  visibility: hidden;
  width: 4em;
- background-color: rgba(0, 0, 0, 0.253);
- color: #fff;
+ background-color: var(--elevated-color);
+ color: var(--text-color);
  text-align: center;
  border-radius: 6px;
  padding: 5px 0;
@@ -46,7 +46,7 @@ button:hover {
  margin-top: -5px;
  border-width: 5px;
  border-style: solid;
- border-color: transparent rgba(0, 0, 0, 0.253) transparent transparent;
+ border-color: transparent var(--elevated-color) transparent transparent;
 }
 
 .tooltip:hover .tooltiptext {

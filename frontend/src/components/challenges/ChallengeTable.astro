@@ -1,7 +1,9 @@
 ---
+import { Globe, Terminal, Lock, Cpu, Zap, Code2, Hash } from "lucide-astro";
 const { challenges } = Astro.props;
 const KEEP_LOWER = new Set(["pwn", "rev"]);
 const fmt = (s: string) => { const l = s.toLowerCase(); return KEEP_LOWER.has(l) ? l : l[0].toUpperCase() + l.slice(1); };
+const CAT_ICONS: Record<string, any> = { web: Globe, pwn: Terminal, crypto: Lock, rev: Cpu, hardware: Zap, misc: Code2 };
 ---
 
 <div class="ch-table-wrap">
@@ -23,7 +25,12 @@ const fmt = (s: string) => { const l = s.toLowerCase(); return KEEP_LOWER.has(l)
           <tr class="ch-row" data-cat={c.category} data-name={c.title?.toLowerCase() ?? ""} data-id={c.id}>
             <td class="ch-num">{String(i + 1).padStart(2, "0")}</td>
             <td class="ch-name">{c.title}</td>
-            <td><span class={`ch-badge cat-${c.category}`}>{fmt(c.category)}</span></td>
+            <td>
+              <span class={`ch-badge cat-${c.category}`}>
+                {(() => { const Icon = CAT_ICONS[c.category] ?? Hash; return <Icon size={11} />; })()}
+                {fmt(c.category)}
+              </span>
+            </td>
             <td class="ch-mono">{c.solves ?? 0}</td>
             <td class="ch-pts">{c.points}</td>
             <td>

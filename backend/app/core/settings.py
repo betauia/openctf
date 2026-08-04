@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./openctf.db"
     SECRET_KEY: str
     INSTANCE_PROVIDER: str = "docker"
+    HOST_IP: str = "localhost"
 
 settings = Settings()
 

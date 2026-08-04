@@ -1,5 +1,5 @@
 .auth-wrap {
-  min-height: calc(100vh - 64px);
+  flex: 1;
   margin: 0 -3rem;
   display: flex;
   align-items: center;
@@ -7,19 +7,18 @@
 }
 
 .auth-card {
-  background: var(--bg-card);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  padding: 40px 36px;
-  width: 100%;
-  max-width: 380px;
+  background: var(--elevated-color);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 32px 36px;
+  width: clamp(300px, 28vw, 420px);
 }
 
 .auth-title {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.92);
-  margin: 0 0 28px;
+  margin: 0 0 20px;
 }
 
 .auth-field {
@@ -37,36 +36,36 @@
 }
 
 .auth-field input {
-  background: var(--bg-base);
+  background: var(--background-color);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--nav-text);
-  padding: 8px 10px;
+  color: var(--muted-text);
+  padding: 10px 12px;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   outline: none;
   width: 100%;
   box-sizing: border-box;
 }
 
 .auth-field input:focus {
-  border-color: var(--accent-color, #D1002C);
+  border-color: var(--accent-color);
 }
 
 .auth-error {
   font-size: 11px;
-  color: var(--error-color);
-  min-height: 16px;
-  margin-bottom: 12px;
+  color: var(--accent-color);
+  min-height: 0;
+  margin-bottom: 6px;
 }
 
 button[type="submit"] {
   width: 100%;
-  background: var(--accent-color, #D1002C);
+  background: var(--accent-color);
   border: none;
   color: white;
-  padding: 9px;
+  padding: 11px;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -85,6 +84,6 @@ button[type="submit"]:disabled { cursor: default; opacity: 0.6; }
 }
 
 .auth-switch a {
-  color: var(--accent-color, #D1002C);
+  color: var(--accent-color);
   text-decoration: none;
 }

@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from app.api import include_routers
-from app.db import Base, engine
+from app.db.migrations import migrate
 
 def create_app():
-    Base.metadata.create_all(bind=engine)
+    migrate()
     app = FastAPI()
     include_routers(app)
     return app

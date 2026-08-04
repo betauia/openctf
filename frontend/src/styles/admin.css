@@ -32,7 +32,7 @@
         max-width: 20rem;
     }
     th {
-        background-color: var(--primary-color);
+        background-color: var(--raised-color);
     }
 
     #searchInput {
@@ -42,7 +42,7 @@
       background-repeat: no-repeat;
       background-size: 16px;
       background-position: 10px center;
-      background-color: var(--primary-color);
+      background-color: var(--raised-color);
       color: gray;
       border: 0.5px solid #444;
       border-radius: 5px;
