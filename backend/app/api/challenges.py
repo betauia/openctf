@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 from app.db.models.challenge import Challenge
 from app.db.models.solve import Solve
 from app.db.models.user import User
@@ -30,8 +30,6 @@ class ChallengeOut(BaseModel):
     files: list[str]
     docker_image: str | None
     docker_port: int | None
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 def _out(c: Challenge) -> ChallengeOut:
