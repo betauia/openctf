@@ -1,12 +1,14 @@
 :root {
-  --primary-color: #303030;
-  --secondary-color: #232323;
-  --accent-color: #2979FF;
+  --background-color: #1a1a1a;              /** Main page background **/
+  --raised-color: #262626;                  /** Raised elements background **/
+  --text-color: #ffffff;                    /** General text color **/
+  --muted-text: rgba(255, 255, 255, 0.87);  /** Text color with transparency **/
+  --accent-color: #D1002C;                  /** Links, active atates, buttons,etc **/
+  --accent-dark: #9a001f;                   /** Darker shade of accent color **/
 }
-
 .baselayout-container {
-  background: var(--secondary-color);
-  color: white;
+  background: var(--background-color);
+  color: var(--text-color);
   padding-top: 64px;
   display: flex;
   justify-content: center;

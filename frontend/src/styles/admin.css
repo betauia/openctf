@@ -13,11 +13,11 @@
     table {
         text-align: center;
         font-size: smaller;
-        color: gray;
+        color: var(--nav-text);
         width: 100%;
 
         border-collapse: separate;
-        border: 0.5px solid #444;
+        border: 0.5px solid var(--raised-color);
         border-radius: 10px;
         border-spacing: 0;
 
@@ -32,7 +32,8 @@
         max-width: 20rem;
     }
     th {
-        background-color: var(--primary-color);
+        background-color: var(--raised-color);
+        color: var(--muted-text);
     }
 
     #searchInput {
@@ -42,9 +43,9 @@
       background-repeat: no-repeat;
       background-size: 16px;
       background-position: 10px center;
-      background-color: var(--primary-color);
-      color: gray;
-      border: 0.5px solid #444;
+      background-color: var(--raised-color);
+      color: var(--nav-text);
+      border: 0.5px solid var(--raised-color);
       border-radius: 5px;
       padding-left: 2rem;
     }
@@ -70,7 +71,7 @@
 }
 .header-icon {
   font-size: 18px;
-  color: #58a6ff;
+  color: var(--accent-color);
 }
 
 h1 {
@@ -78,7 +79,7 @@ h1 {
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: #e6edf3;
+  color: var(--nav-text);
 }
 
 .id-link {
@@ -89,3 +90,13 @@ h1 {
   text-decoration: underline;  
 }
 
+.container-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  border: 1px solid var(--raised-color);
+  border-radius: 20px;
+  padding: 1rem;
+}

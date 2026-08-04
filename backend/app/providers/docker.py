@@ -26,25 +26,27 @@ class DockerProvider(ContainerProvider):
                 "created_at": c.attrs['Created']
             }
             for c in containers
-            if c.labels.get("challenge") == "true"
+            if "challenge" in c.labels
         ]
     
     def get_instance(self, instance_id: str):
         try:
             container = self.client.containers.get(instance_id)
         except docker.errors.NotFound:
-            return None
-        
-        if "challenge" in container.labels:
-            return {
-                "id": container.short_id,
-                "name": container.name,
-                "image": container.image.tags[0] if container.image.tags else None,
-                "status": container.status,
-                "created_at": container.attrs['Created']
-            }
-        else:
-            return None
+            return {"error": "Container not found"}
+    
+        if "challenge" not in container.labels:
+            return {"error": "Container is not a challenge instance"}
+    
+        return {
+            "id": container.short_id,
+            "name": container.name,
+            "image": container.image.tags[0] if container.image.tags else None,
+            "status": container.status,
+            "created_at": container.attrs.get('Created'),
+            "provider": "docker"
+        }
+
 
     def delete_instance(self, instance_id: str):
         try:

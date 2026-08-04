@@ -1,7 +1,6 @@
 ---
 import AdminLayout from '@layouts/AdminLayout.astro';
 import "@styles/admin.css"
-import "@styles/button.css"
 
 const pageTitle = "Admin: Status";
 const response = await fetch("http://backend:8000/api/instances/status");
@@ -26,24 +25,28 @@ const instances = await response.json();
           		<th>CREATED</th>
         	</tr>
       	</thead>
-      <tbody>
-        {instances.map(instance => (
-          <tr key={instance.id}>
-            <td>
-  				<a href={`/admin/status/${instance.id}`} class="id-link">
-    				{instance.id}
-  				</a>
-			</td>
-            <td>{instance.name}</td>
-            <td>{instance.image}</td>
-            <td>{instance.status}</td>
-            <td>{new Date(instance.created_at).toLocaleString()}</td>
-          </tr>
-        ))}
-		
-      </tbody>
+        <tbody>
+          {instances.length === 0 ? (
+            <tr>
+              <td colSpan="5">No instances found.</td>
+            </tr>
+          ) : (
+            instances.map(instance => (
+              <tr key={instance.id}>
+                <td>
+                  <a href={`/admin/status/${instance.id}`} className="id-link">
+                    {instance.id}
+                  </a>
+                </td>
+                <td>{instance.name}</td>
+                <td>{instance.image}</td>
+                <td>{instance.status}</td>
+                <td>{new Date(instance.created_at).toLocaleString()}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
     </table>
-
   </div>
 </AdminLayout>
 <script>

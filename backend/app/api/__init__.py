@@ -6,3 +6,4 @@ def include_routers(app):
     app.include_router(base_router)
     app.include_router(auth_router)
     app.include_router(instance_router)
+    app.include_router(config_router)  
