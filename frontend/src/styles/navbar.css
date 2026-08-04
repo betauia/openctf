@@ -78,11 +78,12 @@ nav {
 .nav-logout {
   font-family: Arial, Helvetica, sans-serif;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.3);
-  background: none;
+  color: white;
+  background: var(--accent-color, #D1002C);
   border: none;
   cursor: pointer;
-  padding: 0;
+  padding: 5px 14px;
   letter-spacing: 0.06em;
+  transition: background 0.15s;
 }
-.nav-logout:hover { color: rgba(255, 255, 255, 0.7); }
+.nav-logout:hover { background: var(--accent-dark); }

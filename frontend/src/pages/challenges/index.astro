@@ -40,7 +40,7 @@ const totalPoints = challenges.reduce((s, c) => s + (c.points ?? 0), 0);
     </main>
   </div>
 
-  <script id="ch-data" type="application/json" set:html={JSON.stringify({ challenges, solvedIds })} />
+  <script id="ch-data" type="application/json" set:html={JSON.stringify({ challenges, solvedIds }).replace(/</g, "\\u003c")} />
   <ChallengeModal />
 </ChallengesLayout>
 
@@ -69,9 +69,11 @@ const totalPoints = challenges.reduce((s, c) => s + (c.points ?? 0), 0);
     solvedArrow.textContent = solvedCollapsed ? "▶" : "▼";
   }
 
+  const rowById = (id: number) => tbody.querySelector<HTMLTableRowElement>(`.ch-row[data-id="${id}"]`);
+
   function initSolvedRows() {
     solvedIds.forEach((id) => {
-      const row = tbody.querySelector<HTMLTableRowElement>(`.ch-row[data-id="${id}"]`);
+      const row = rowById(id);
       if (row) { row.classList.add("ch-solved"); tbody.appendChild(row); }
     });
     if (solvedIds.size > 0) tbody.insertBefore(solvedSep, tbody.querySelector(".ch-solved")!);
@@ -82,7 +84,7 @@ const totalPoints = challenges.reduce((s, c) => s + (c.points ?? 0), 0);
   function markChallengeSolved(id: number) {
     if (solvedIds.has(id)) return;
     solvedIds.add(id);
-    const row = tbody.querySelector<HTMLTableRowElement>(`.ch-row[data-id="${id}"]`);
+    const row = rowById(id);
     if (row) {
       row.classList.add("ch-solved");
       if (!tbody.contains(solvedSep)) tbody.appendChild(solvedSep);
@@ -122,7 +124,7 @@ const totalPoints = challenges.reduce((s, c) => s + (c.points ?? 0), 0);
       }
     });
     const anyMatchSolved = solvedCollapsed && [...solvedIds].some((id) => {
-      const r = tbody.querySelector<HTMLTableRowElement>(`.ch-row[data-id="${id}"]`);
+      const r = rowById(id);
       return r && (activeCat === "all" || r.dataset.cat === activeCat) && (r.dataset.name ?? "").includes(searchQuery);
     });
     solvedSep.style.display = visibleSolved > 0 || anyMatchSolved ? "" : "none";
@@ -196,13 +198,15 @@ const totalPoints = challenges.reduce((s, c) => s + (c.points ?? 0), 0);
   const flagInput = document.getElementById("ch-flag") as HTMLInputElement;
   const flagBtn   = document.getElementById("ch-flag-btn") as HTMLButtonElement;
 
+  function markSolvedByTitle(title: string) {
+    const id = challenges.find((c: any) => c.title === title)?.id;
+    if (id) markChallengeSolved(id);
+  }
+
   flagForm?.addEventListener("submit", (e) => {
     e.preventDefault();
     const flag = flagInput.value.trim();
-    if (flag) submitFlag(flag, flagBtn, flagInput, undefined, (title) => {
-      const id = challenges.find((c: any) => c.title === title)?.id;
-      if (id) markChallengeSolved(id);
-    });
+    if (flag) submitFlag(flag, flagBtn, flagInput, undefined, markSolvedByTitle);
   });
 
   // modal
@@ -228,13 +232,17 @@ const totalPoints = challenges.reduce((s, c) => s + (c.points ?? 0), 0);
   const KEEP_LOWER = new Set(["pwn", "rev"]);
   const fmt = (s: string) => { const l = s.toLowerCase(); return KEEP_LOWER.has(l) ? l : l[0].toUpperCase() + l.slice(1); };
 
+  function esc(s: unknown) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+  }
+
   function badge(text: string, color: string) {
-    return `<span style="display:inline-block;padding:3px 10px;font-size:10px;letter-spacing:.08em;font-weight:600;color:${color};background:${color}20;border:1px solid ${color}40">${text}</span>`;
+    return `<span style="display:inline-block;padding:3px 10px;font-size:10px;letter-spacing:.08em;font-weight:600;color:${color};background:${color}20;border:1px solid ${color}40">${esc(text)}</span>`;
   }
 
   function openModal(id: number) {
     currentModalId = id;
-    const c = challenges.find((x) => x.id === id);
+    const c = challenges.find((x: any) => x.id === id);
     if (!c) return;
 
     const catColor  = CAT_COLORS[c.category] ?? "#888";
@@ -249,13 +257,13 @@ const totalPoints = challenges.reduce((s, c) => s + (c.points ?? 0), 0);
     mDesc.textContent = c.description ?? "No description provided.";
 
     mMeta.innerHTML = [
-      ["Author", c.author,      "rgba(255,255,255,0.8)"],
+      ["Author", c.author,      "rgba(255,255,255,0.87)"],
       ["Points", c.points,      css.getPropertyValue("--pts-color").trim()],
-      ["Solves", c.solves ?? 0, "rgba(255,255,255,0.8)"],
+      ["Solves", c.solves ?? 0, "rgba(255,255,255,0.87)"],
     ].map(([k, v, color]) => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.04)">
-        <span style="font-size:11px;color:rgba(255,255,255,0.35)">${k}</span>
-        <span style="font-size:12px;font-weight:600;color:${color}">${v}</span>
+        <span style="font-size:11px;color:rgba(255,255,255,0.35)">${esc(k)}</span>
+        <span style="font-size:12px;font-weight:600;color:${color}">${esc(v)}</span>
       </div>`).join("");
 
     mConnBlock.style.display = c.connection_info ? "" : "none";
@@ -290,10 +298,7 @@ const totalPoints = challenges.reduce((s, c) => s + (c.points ?? 0), 0);
     e.preventDefault();
     const flag = mFlagInput.value.trim();
     const openTitle = challenges.find((c: any) => c.id === currentModalId)?.title;
-    if (flag) submitFlag(flag, mFlagBtn, mFlagInput, mFlagMsg, (title) => {
-      const id = challenges.find((c: any) => c.title === title)?.id;
-      if (id) markChallengeSolved(id);
-    }, openTitle);
+    if (flag) submitFlag(flag, mFlagBtn, mFlagInput, mFlagMsg, markSolvedByTitle, openTitle);
   });
 
   initSolvedRows();

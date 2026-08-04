@@ -27,29 +27,6 @@ import "@styles/auth.css";
 </BaseLayout>
 
 <script>
-  const form = document.getElementById("auth-form") as HTMLFormElement;
-  const btn  = document.getElementById("auth-btn") as HTMLButtonElement;
-  const err  = document.getElementById("auth-error")!;
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    btn.disabled = true;
-    btn.textContent = "...";
-    err.textContent = "";
-
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(Object.fromEntries(new FormData(form))),
-    });
-
-    if (res.ok) {
-      window.location.href = "/challenges";
-    } else {
-      const body = await res.json().catch(() => ({}));
-      err.textContent = body.detail ?? "Login failed";
-      btn.disabled = false;
-      btn.textContent = "Sign in";
-    }
-  });
+  import { bindAuthForm } from "@lib/authForm";
+  bindAuthForm("/api/auth/login", "Login failed");
 </script>

@@ -1,6 +1,7 @@
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, ConfigDict
 from app.db.models.challenge import Challenge
@@ -73,8 +74,12 @@ def submit_flag(
             db.add(Solve(user_id=user.id, challenge_id=c.id))
             user.score += c.points
             c.solves += 1
+            try:
+                db.commit()
+            except IntegrityError:
+                db.rollback()
     else:
         c.solves += 1
+        db.commit()
 
-    db.commit()
     return {"correct": True, "challenge": c.title, "points": c.points}

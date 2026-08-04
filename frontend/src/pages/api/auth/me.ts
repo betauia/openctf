@@ -1,10 +1,5 @@
 import type { APIRoute } from "astro";
+import { proxyBackend } from "@lib/backend";
 
-export const GET: APIRoute = async ({ request }) => {
-  const cookie = request.headers.get("cookie") ?? "";
-  const res = await fetch("http://backend:8000/api/auth/me", { headers: { cookie } });
-  return new Response(await res.text(), {
-    status: res.status,
-    headers: { "Content-Type": "application/json" },
-  });
-};
+export const GET: APIRoute = async ({ request }) =>
+  proxyBackend("/api/auth/me", { cookie: request.headers.get("cookie") ?? "" });
