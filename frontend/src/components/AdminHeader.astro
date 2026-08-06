@@ -1,11 +1,21 @@
 ---
-import "../styles/navbar.css"
+import "../styles/navbar.css";
+import logo from "@assets/logo.png";
+import { BACKEND_URL } from "@lib/backend";
+
 const links = [
     { name: "Status", href: "/admin/status" },
     { name: "Config", href: "/admin/config" },
 ];
 
-import logo from '@assets/logo.png';
+const cookie = Astro.request.headers.get("cookie") ?? "";
+const path = Astro.url.pathname;
+let user: { username: string } | null = null;
+
+try {
+  const r = await fetch(`${BACKEND_URL}/api/auth/me`, { headers: { cookie } });
+  if (r.ok) user = await r.json();
+} catch {}
 ---
 
 <nav>
@@ -13,11 +23,33 @@ import logo from '@assets/logo.png';
     <a href="/" class="nav-logo">
       <img src={logo.src} alt="Logo" class="nav-logo-img" />
     </a>
-    
+
     <ul class="nav-links">
-      {links.map(link => (
-        <li><a href={link.href}>{link.name}</a></li>
+      {links.map((link) => (
+        <li>
+          <a href={link.href} class={path.startsWith(link.href) ? "active" : ""}>
+            {link.name}
+          </a>
+        </li>
       ))}
     </ul>
+
+    <div class="nav-user">
+      {user ? (
+        <>
+          <div class="nav-avatar">{user.username[0].toUpperCase()}</div>
+          <button class="nav-logout" id="nav-logout-btn">Logout</button>
+        </>
+      ) : (
+        <a href="/login" class="nav-login">Login</a>
+      )}
+    </div>
   </div>
 </nav>
+
+<script>
+  document.getElementById("nav-logout-btn")?.addEventListener("click", async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    window.location.href = "/";
+  });
+</script>
