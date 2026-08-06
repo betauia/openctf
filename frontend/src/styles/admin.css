@@ -36,18 +36,27 @@
         color: var(--muted-text);
     }
 
-    #searchInput {
+    .search-wrap {
+      position: relative;
       width: 40%;
       max-width: 20rem;
-      background-image: url('/css/searchicon.png');
-      background-repeat: no-repeat;
-      background-size: 16px;
-      background-position: 10px center;
+    }
+    .search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted-text);
+      pointer-events: none;
+    }
+    #searchInput {
+      width: 100%;
       background-color: var(--raised-color);
       color: var(--nav-text);
       border: 0.5px solid var(--raised-color);
       border-radius: 5px;
       padding-left: 2rem;
+      box-sizing: border-box;
     }
     #statusTable {
       table-layout: fixed;

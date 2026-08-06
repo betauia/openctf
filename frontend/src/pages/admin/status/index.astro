@@ -2,6 +2,7 @@
 import AdminLayout from '@layouts/AdminLayout.astro';
 import "@styles/admin.css"
 import { BACKEND_URL } from "@lib/backend";
+import { Search } from "@lucide/astro";
 
 const pageTitle = "Admin: Status";
 const response = await fetch(`${BACKEND_URL}/api/instances`);
@@ -14,7 +15,10 @@ const instances = await response.json();
         <span class="header-icon">▣</span>
         <h1>challenge containers</h1>
       </div>
-      <input type="text" id="searchInput" onkeyup="searchContainer()" placeholder="Filter searches...">
+      <div class="search-wrap">
+        <Search size={14} class="search-icon" />
+        <input type="text" id="searchInput" onkeyup="searchContainer()" placeholder="Filter searches..." />
+      </div>
     </div>
     <table id="statusTable">
       	<thead>
