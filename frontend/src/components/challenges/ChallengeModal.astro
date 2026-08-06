@@ -1,14 +1,10 @@
 ---
-import { Globe, Terminal, Lock, Cpu, Zap, Code2, X, ArrowRight, Play, Copy, Check, Square, ChevronDown, ChevronUp, Download, File } from "@lucide/astro";
+import { X, ArrowRight, Play, Copy, Check, Square, ChevronDown, ChevronUp, Download, File } from "@lucide/astro";
+import { CATS, FALLBACK_ICON } from "@lib/categories";
 ---
 
 <div id="m-cat-icons" style="display:none">
-  <span data-cat="web"><Globe size={20} /></span>
-  <span data-cat="pwn"><Terminal size={20} /></span>
-  <span data-cat="crypto"><Lock size={20} /></span>
-  <span data-cat="rev"><Cpu size={20} /></span>
-  <span data-cat="hardware"><Zap size={20} /></span>
-  <span data-cat="misc"><Code2 size={20} /></span>
+  {CATS.map(({ slug, Icon }) => <span data-cat={slug}><Icon size={20} /></span>)}
 </div>
 
 <div id="m-icon-cache" style="display:none">

@@ -1,19 +1,19 @@
 ---
 import "../styles/navbar.css";
 import logo from "@assets/logo.png";
-import { BACKEND_URL } from "@lib/backend";
+import { cookieOf, apiFetch } from "@lib/backend";
 
 const links = [
     { name: "Status", href: "/admin/status" },
     { name: "Config", href: "/admin/config" },
 ];
 
-const cookie = Astro.request.headers.get("cookie") ?? "";
+const cookie = cookieOf(Astro.request);
 const path = Astro.url.pathname;
 let user: { username: string } | null = null;
 
 try {
-  const r = await fetch(`${BACKEND_URL}/api/auth/me`, { headers: { cookie } });
+  const r = await apiFetch(cookie, "/api/auth/me");
   if (r.ok) user = await r.json();
 } catch {}
 ---

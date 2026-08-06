@@ -90,6 +90,24 @@ def get_file(id: int, filename: str, db: Session = Depends(get_db)):
     return FileResponse(path, filename=filename)
 
 
+@challenge_router.get("/{id}/solves")        #added by arch for solves list on challenge page. entire this route.
+def get_solves(id: int, db: Session = Depends(get_db)):
+    c = db.query(Challenge).filter(Challenge.id == id, Challenge.is_visible == True).first()
+    if not c:
+        raise HTTPException(status_code=404)
+    rows = (
+        db.query(Solve, User)
+        .join(User, Solve.user_id == User.id)
+        .filter(Solve.challenge_id == id)
+        .order_by(Solve.solved_at)
+        .all()
+    )
+    return [
+        {"uid": u.id, "username": u.username, "team": None, "solved_at": s.solved_at.isoformat() if s.solved_at else None}
+        for s, u in rows
+    ]
+
+
 class FlagSubmit(BaseModel):
     flag: str
 

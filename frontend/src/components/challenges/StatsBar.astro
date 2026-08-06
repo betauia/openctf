@@ -1,20 +1,21 @@
 ---
-const { count, totalSolves, totalPoints, userScore, userRank } = Astro.props;
+const { count, teamSolves, teamScore, teamRank, totalPoints, userScore } = Astro.props;
 
 const stats = [
-  { label: "Challenges",   value: count,       accent: true,  id: null },
-  { label: "Total solves", value: totalSolves, accent: true,  id: null },
-  { label: "Max points",   value: totalPoints, accent: true,  id: null },
-  { label: "Your score",   value: userScore,   accent: true,  id: "ch-score-val" },
-  { label: "Your rank",    value: userRank,    accent: true,  id: null },
+  { label: "Challenges",  value: count,              id: null },
+  { label: "Max points",  value: totalPoints,        id: null },
+  { label: "Team solves", value: teamSolves,         id: null },
+  { label: "Team score",  value: teamScore,          id: null },
+  { label: "Team rank",   value: teamRank,           id: null },
+  { label: "Personal score",  value: userScore,      id: null },
 ];
 ---
 
 <div class="ch-stats">
-  {stats.map(({ label, value, accent, id }) => (
+  {stats.map(({ label, value, id }) => (
     <div class="ch-stat">
       <span class="ch-stat-label">{label}</span>
-      <span id={id ?? undefined} class:list={["ch-stat-value", { "ch-stat-dim": !accent }]}>{value}</span>
+      <span id={id ?? undefined} class="ch-stat-value">{value}</span>
     </div>
   ))}
 </div>

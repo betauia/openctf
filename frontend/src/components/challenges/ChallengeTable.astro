@@ -1,9 +1,7 @@
 ---
-import { Globe, Terminal, Lock, Cpu, Zap, Code2, Hash } from "@lucide/astro";
+import { CAT_MAP } from "@lib/categories";
+import { fmt } from "@lib/utils";
 const { challenges } = Astro.props;
-const KEEP_LOWER = new Set(["pwn", "rev"]);
-const fmt = (s: string) => { const l = s.toLowerCase(); return KEEP_LOWER.has(l) ? l : l[0].toUpperCase() + l.slice(1); };
-const CAT_ICONS: Record<string, any> = { web: Globe, pwn: Terminal, crypto: Lock, rev: Cpu, hardware: Zap, misc: Code2 };
 ---
 
 <div class="ch-table-wrap">
@@ -27,7 +25,7 @@ const CAT_ICONS: Record<string, any> = { web: Globe, pwn: Terminal, crypto: Lock
             <td class="ch-name">{c.title}</td>
             <td>
               <span class={`ch-badge cat-${c.category}`}>
-                {(() => { const Icon = CAT_ICONS[c.category] ?? Hash; return <Icon size={11} />; })()}
+                {(() => { const Icon = CAT_MAP[c.category]?.Icon; return Icon ? <Icon size={11} /> : null; })()}
                 {fmt(c.category)}
               </span>
             </td>

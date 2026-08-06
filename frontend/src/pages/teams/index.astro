@@ -6,9 +6,9 @@ import LeaderboardTab from "@components/teams/LeaderboardTab.astro";
 import "@styles/challenges.css";
 import "@styles/challenges-table.css";
 import "@styles/teams.css";
-import { BACKEND_URL } from "@lib/backend";
+import { cookieOf, apiFetch } from "@lib/backend";
 
-const cookie = Astro.request.headers.get("cookie") ?? "";
+const cookie = cookieOf(Astro.request);
 
 let myTeam: any = null;
 let teams: any[] = [];
@@ -17,10 +17,10 @@ let activity: any[] = [];
 
 try {
   const [meRes, myTeamRes, teamsRes, actRes] = await Promise.all([
-    fetch(`${BACKEND_URL}/api/auth/me`,        { headers: { cookie } }),
-    fetch(`${BACKEND_URL}/api/teams/my`,       { headers: { cookie } }),
-    fetch(`${BACKEND_URL}/api/teams`),
-    fetch(`${BACKEND_URL}/api/teams/activity`, { headers: { cookie } }),
+    apiFetch(cookie, "/api/auth/me"),
+    apiFetch(cookie, "/api/teams/my"),
+    apiFetch("",     "/api/teams"),
+    apiFetch(cookie, "/api/teams/activity"),
   ]);
   if (!meRes.ok) throw null;
   me = await meRes.json();

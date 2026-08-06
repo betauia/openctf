@@ -8,18 +8,6 @@
   --accent-dark: #9a001f;                     /** Darker shade of accent color **/
   --border-subtle: rgba(255, 255, 255, 0.07); /** Subtle border color **/
 
-  --cat-web:      #2979ff;                    /** Web category color **/
-  --cat-pwn:      #ef5350;                    /** Pwn category color **/
-  --cat-crypto:   #ab47bc;                    /** Crypto category color **/
-  --cat-rev:      #ffa726;                    /** Reversing category color **/
-  --cat-hardware: #ff7043;                    /** Hardware category color **/
-  --cat-misc:     #66bb6a;                    /** Misc category color **/
-
-  --diff-easy:   #66bb6a;                     /** Easy difficulty color **/
-  --diff-medium: #ffa726;                     /** Medium difficulty color **/
-  --diff-hard:   #ff7043;                     /** Hard difficulty color **/
-  --diff-insane: #ef5350;                     /** Insane difficulty color **/
-
   --pts-color: #ffd54f;                       /** Points value color **/
 
   --color-correct:      #66bb6a;              /** Correct flag feedback **/

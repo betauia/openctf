@@ -16,6 +16,10 @@ export function exclusiveActive(selector: string, active: Element) {
   document.querySelectorAll(selector).forEach(el => el.classList.toggle("active", el === active));
 }
 
+export function iconFrom(cacheId: string): (name: string) => string {
+  return (name) => document.querySelector<HTMLElement>(`#${cacheId} [data-icon="${name}"]`)?.innerHTML ?? "";
+}
+
 export function timeAgo(iso: string | null): string {
   if (!iso) return "—";
   const utc = iso.endsWith("Z") || iso.includes("+") ? iso : iso + "Z";

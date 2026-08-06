@@ -43,17 +43,7 @@ td { padding: 10px 12px; font-size: 13px; }
   letter-spacing: 0.07em;
 }
 
-.cat-web      { color: var(--cat-web);      background: color-mix(in srgb, var(--cat-web)      12%, transparent); }
-.cat-pwn      { color: var(--cat-pwn);      background: color-mix(in srgb, var(--cat-pwn)      12%, transparent); }
-.cat-crypto   { color: var(--cat-crypto);   background: color-mix(in srgb, var(--cat-crypto)   12%, transparent); }
-.cat-rev      { color: var(--cat-rev);      background: color-mix(in srgb, var(--cat-rev)      12%, transparent); }
-.cat-hardware { color: var(--cat-hardware); background: color-mix(in srgb, var(--cat-hardware) 12%, transparent); }
-.cat-misc     { color: var(--cat-misc);     background: color-mix(in srgb, var(--cat-misc)     12%, transparent); }
 
-.diff-easy   { color: var(--diff-easy);   background: color-mix(in srgb, var(--diff-easy)   12%, transparent); }
-.diff-medium { color: var(--diff-medium); background: color-mix(in srgb, var(--diff-medium) 12%, transparent); }
-.diff-hard   { color: var(--diff-hard);   background: color-mix(in srgb, var(--diff-hard)   12%, transparent); }
-.diff-insane { color: var(--diff-insane); background: color-mix(in srgb, var(--diff-insane) 12%, transparent); }
 
 /* solved */
 .ch-solved-sep-cell {

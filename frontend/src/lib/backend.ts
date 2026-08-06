@@ -1,5 +1,9 @@
 export const BACKEND_URL = "http://backend:8000";
 
+export const cookieOf = (req: Request) => req.headers.get("cookie") ?? "";
+export const apiFetch = (cookie: string, path: string) =>
+  fetch(`${BACKEND_URL}${path}`, cookie ? { headers: { cookie } } : {});
+
 export async function proxyBackend(
   path: string,
   opts: { method?: string; body?: unknown; cookie?: string } = {},

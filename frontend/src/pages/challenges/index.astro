@@ -8,33 +8,49 @@ import ChallengeModal from "@components/challenges/ChallengeModal.astro";
 import "@styles/challenges.css";
 import "@styles/challenges-table.css";
 import "@styles/challenges-modal.css";
-import { BACKEND_URL } from "@lib/backend";
+import { cookieOf, apiFetch } from "@lib/backend";
 
-const cookie = Astro.request.headers.get("cookie") ?? "";
+const cookie = cookieOf(Astro.request);
 
 let challenges: any[] = [];
 let solvedIds: number[] = [];
 let userScore: number | null = null;
 let userRank: number | null = null;
+let teamSolves: number | null = null;
+let teamScore: number | null = null;
+let teamRank:  number | null = null;
 
 try {
-  const [chRes, solveRes, meRes] = await Promise.all([
-    fetch(`${BACKEND_URL}/api/challenges`),
-    fetch(`${BACKEND_URL}/api/auth/solves`, { headers: { cookie } }),
-    fetch(`${BACKEND_URL}/api/auth/me`,     { headers: { cookie } }),
+  const [chRes, solveRes, meRes, teamRes, allTeamsRes] = await Promise.all([
+    apiFetch("",     "/api/challenges"),
+    apiFetch(cookie, "/api/auth/solves"),
+    apiFetch(cookie, "/api/auth/me"),
+    apiFetch(cookie, "/api/teams/my"),
+    apiFetch("",     "/api/teams"),
   ]);
   if (!meRes.ok) throw null;
-  if (chRes.ok) challenges = await chRes.json();
-  if (solveRes.ok) solvedIds = await solveRes.json();
+  if (chRes.ok)    challenges = await chRes.json();
+  if (solveRes.ok) solvedIds  = await solveRes.json();
   const me = await meRes.json();
   userScore = me.score;
-  userRank = me.rank ?? null;
+  userRank  = me.rank ?? null;
+  if (teamRes.ok) {
+    const team = await teamRes.json();
+    if (team) {
+      teamScore  = team.score;
+      teamSolves = team.members.reduce((s: number, m: any) => s + (m.solves ?? 0), 0);
+      if (allTeamsRes.ok) {
+        const allTeams = await allTeamsRes.json();
+        teamRank = allTeams.findIndex((t: any) => t.id === team.id) + 1 || null;
+      }
+    }
+  }
 } catch {
   return Astro.redirect("/login");
 }
 
+challenges.sort((a, b) => a.category.localeCompare(b.category) || a.points - b.points);
 const categories = [...new Set(challenges.map((c) => c.category))].sort() as string[];
-const totalSolves = challenges.reduce((s, c) => s + (c.solves ?? 0), 0);
 const totalPoints = challenges.reduce((s, c) => s + (c.points ?? 0), 0);
 const pageData = JSON.stringify({ challenges, solvedIds }).replace(/</g, "\\u003c");
 ---
@@ -43,7 +59,7 @@ const pageData = JSON.stringify({ challenges, solvedIds }).replace(/</g, "\\u003
   <div class="ch-layout">
     <Sidebar {categories} {challenges} {solvedIds} />
     <main class="ch-main">
-      <StatsBar count={challenges.length} {totalSolves} {totalPoints} {userScore} {userRank} />
+      <StatsBar count={challenges.length} {teamSolves} {teamScore} {teamRank} {totalPoints} {userScore} />
       <ActionBar />
       <ChallengeTable {challenges} />
     </main>

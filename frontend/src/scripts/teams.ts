@@ -1,11 +1,10 @@
-import { exclusiveActive, timeAgo } from "@lib/utils";
+import { exclusiveActive, timeAgo, iconFrom } from "@lib/utils";
 
 // data
 const { teams, inspectMemberId } = JSON.parse(document.getElementById("tm-data")!.textContent!);
 
 // helpers
-const icon = (name: string) =>
-  document.querySelector<HTMLElement>(`#tm-icon-cache [data-icon="${name}"]`)?.innerHTML ?? "";
+const icon = iconFrom("tm-icon-cache");
 
 async function post(url: string, body?: unknown) {
   return fetch(url, {

@@ -1,15 +1,16 @@
-import { fmt, esc, exclusiveActive, timeAgo } from "@lib/utils";
+import { fmt, esc, exclusiveActive, timeAgo, iconFrom } from "@lib/utils";
 import { markChallengeSolved } from "./filter";
+import { CAT_SLUGS, DIFF_SLUGS } from "@lib/categories";
 
 // colors
 const css = getComputedStyle(document.documentElement);
 
 const CAT_COLORS: Record<string, string> = Object.fromEntries(
-  ["web","pwn","crypto","rev","hardware","misc"].map((c) => [c, css.getPropertyValue(`--cat-${c}`).trim()])
+  CAT_SLUGS.map((c) => [c, css.getPropertyValue(`--cat-${c}`).trim()])
 );
 
 const DIFF_COLORS: Record<string, string> = Object.fromEntries(
-  ["easy","medium","hard","insane"].map((d) => [d, css.getPropertyValue(`--diff-${d}`).trim()])
+  DIFF_SLUGS.map((d) => [d, css.getPropertyValue(`--diff-${d}`).trim()])
 );
 
 const ptsColor = css.getPropertyValue("--pts-color").trim();
@@ -48,8 +49,7 @@ const mConnStartInner = mConnStart.innerHTML;
 const mFlagBtnInner   = mFlagBtn.innerHTML;
 
 // helpers
-const icon = (name: string) =>
-  document.querySelector<HTMLElement>(`#m-icon-cache [data-icon="${name}"]`)?.innerHTML ?? "";
+const icon = iconFrom("m-icon-cache");
 
 // state
 let currentModalId: number | null = null;
@@ -125,11 +125,6 @@ export async function submitFlag(
       btn.classList.add("correct");
       input.value = "";
       if (msg) { msg.textContent = `Correct! +${data.points} points`; msg.classList.add("correct"); }
-      const scoreEl = document.getElementById("ch-score-val");
-      if (scoreEl) {
-        const cur = parseInt(scoreEl.textContent ?? "0") || 0;
-        scoreEl.textContent = String(cur + data.points);
-      }
       onCorrect?.(data.challenge);
     } else {
       btn.textContent = "Wrong";
@@ -153,7 +148,7 @@ function renderHeader(c: any) {
   const catColor = CAT_COLORS[c.category];
   mTitle.textContent = c.title;
   const catIconSrc = document.querySelector<HTMLElement>(`#m-cat-icons [data-cat="${c.category}"]`);
-  mCatIcon.innerHTML = catIconSrc?.innerHTML ?? c.category[0].toUpperCase();
+  mCatIcon.innerHTML = catIconSrc?.innerHTML ?? "";
   mCatIcon.style.cssText = `color:${catColor};background:${catColor}20;border-color:${catColor}40`;
 }
 

@@ -102,10 +102,11 @@ def logout(response: Response):
 
 
 @auth_router.get("/me")
-def me(user: User | None = Depends(get_current_user)):
+def me(user: User | None = Depends(get_current_user), db: Session = Depends(get_db)): # rank stuff added by arch. CLEAN UP PLZ.
     if not user:
         raise HTTPException(401, "Not authenticated")
-    return {"id": user.id, "username": user.username, "score": user.score, "is_admin": user.is_admin}
+    rank = db.query(User).filter(User.score > user.score).count() + 1 
+    return {"id": user.id, "username": user.username, "score": user.score, "is_admin": user.is_admin, "rank": rank}
 
 
 @auth_router.get("/solves")
