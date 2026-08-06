@@ -58,8 +58,8 @@ nav {
 .nav-user {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 24px;
+  gap: 19px;
+  padding: 0 25px;
   border-left: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }

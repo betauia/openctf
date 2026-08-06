@@ -1,4 +1,4 @@
-import { Globe, Brain, Lock, Cpu, CircuitBoard, Aperture, Clock, Star, Terminal, Fingerprint, Eye, RotateCcw, Image } from "@lucide/astro";
+import { Globe, Brain, Lock, Undo2, CircuitBoard, Aperture, Clock, Star, Terminal, Fingerprint, Eye, Image } from "@lucide/astro";
 
 export const CAT_DEFS = [
   { slug: "web",       color: "#2979ff" },    /** Web category color **/
@@ -12,7 +12,6 @@ export const CAT_DEFS = [
   { slug: "coding",    color: "#42a5f5" },    /** Coding category color **/
   { slug: "forensics", color: "#26a69a" },    /** Forensics category color **/
   { slug: "osint",     color: "#ec407a" },    /** OSINT category color **/
-  { slug: "reversing", color: "#ffb74d" },    /** Reversing category color **/
   { slug: "stego",     color: "#ce93d8" },    /** Stego category color **/
 ] as const;
 
@@ -27,8 +26,8 @@ export const CAT_SLUGS = CAT_DEFS.map(c => c.slug);
 export const DIFF_SLUGS = DIFF_DEFS.map(d => d.slug);
 
 const ICONS: Record<string, any> = {
-  web: Globe, pwn: Brain, crypto: Lock, rev: Cpu, hardware: CircuitBoard, misc: Aperture,
-  afk: Clock, beginner: Star, coding: Terminal, forensics: Fingerprint, osint: Eye, reversing: RotateCcw, stego: Image,
+  web: Globe, pwn: Brain, crypto: Lock, rev: Undo2, hardware: CircuitBoard, misc: Aperture,
+  afk: Clock, beginner: Star, coding: Terminal, forensics: Fingerprint, osint: Eye, stego: Image,
 };
 
 export const CATS = CAT_DEFS.map(c => ({ ...c, Icon: ICONS[c.slug] }));

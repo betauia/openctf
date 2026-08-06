@@ -147,7 +147,7 @@ body {
 .ch-stat-value {
   font-size: 18px;
   font-weight: 700;
-  color: var(--accent-color);
+  color: var(--text-color);
 }
 
 .ch-stat-dim { color: rgba(255, 255, 255, 0.2); }
