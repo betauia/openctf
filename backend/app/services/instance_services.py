@@ -1,6 +1,8 @@
 class InstanceService:
     def __init__(self, provider):
         self.provider = provider
+    def create_instance(self, challenge_id: int, image: str, port: int):
+        return self.provider.create_instance(challenge_id, image, port)
     def list_instances(self):
         return self.provider.list_instances()
     def get_instance(self, instance_id: str):

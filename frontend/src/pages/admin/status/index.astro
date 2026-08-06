@@ -3,7 +3,7 @@ import AdminLayout from '@layouts/AdminLayout.astro';
 import "@styles/admin.css"
 
 const pageTitle = "Admin: Status";
-const response = await fetch("http://backend:8000/api/instances/status");
+const response = await fetch("http://backend:8000/api/instances");
 const instances = await response.json();
 ---
 <AdminLayout pageTitle={pageTitle}>

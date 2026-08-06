@@ -1,0 +1,57 @@
+---
+import { Globe, Terminal, Lock, Cpu, Zap, Code2, Hash } from "@lucide/astro";
+const { challenges } = Astro.props;
+const KEEP_LOWER = new Set(["pwn", "rev"]);
+const fmt = (s: string) => { const l = s.toLowerCase(); return KEEP_LOWER.has(l) ? l : l[0].toUpperCase() + l.slice(1); };
+const CAT_ICONS: Record<string, any> = { web: Globe, pwn: Terminal, crypto: Lock, rev: Cpu, hardware: Zap, misc: Code2 };
+---
+
+<div class="ch-table-wrap">
+  {challenges.length === 0 ? (
+    <div class="ch-empty">No challenges available</div>
+  ) : (
+    <table id="ch-table">
+
+      <thead>
+        <tr>
+          {["#", "Challenges", "Category", "Solves", "Points", "Difficulty"].map((h) => (
+            <th>{h}</th>
+          ))}
+        </tr>
+      </thead>
+
+      <tbody>
+        {challenges.map((c: any, i: number) => (
+          <tr class="ch-row" data-cat={c.category} data-name={c.title?.toLowerCase() ?? ""} data-id={c.id}>
+            <td class="ch-num">{String(i + 1).padStart(2, "0")}</td>
+            <td class="ch-name">{c.title}</td>
+            <td>
+              <span class={`ch-badge cat-${c.category}`}>
+                {(() => { const Icon = CAT_ICONS[c.category] ?? Hash; return <Icon size={11} />; })()}
+                {fmt(c.category)}
+              </span>
+            </td>
+            <td class="ch-mono">{c.solves ?? 0}</td>
+            <td class="ch-pts">{c.points}</td>
+            <td>
+              <span class={`ch-badge diff-${(c.difficulty ?? "").toLowerCase()}`}>
+                {c.difficulty ? fmt(c.difficulty) : "—"}
+              </span>
+            </td>
+          </tr>
+        ))}
+
+        <tr id="ch-solved-sep" style="display:none">
+          <td colspan="6" class="ch-solved-sep-cell">
+            <button id="ch-solved-toggle">
+              <span id="ch-solved-arrow">▼</span>
+              Solved
+              <span id="ch-solved-count"></span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+
+    </table>
+  )}
+</div>

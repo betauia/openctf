@@ -1,0 +1,48 @@
+---
+import { Hash, Globe, Terminal, Lock, Cpu, Zap, Code2 } from "@lucide/astro";
+
+const { categories, challenges, solvedIds } = Astro.props;
+const ids = new Set(solvedIds as number[]);
+const KEEP_LOWER = new Set(["pwn", "rev"]);
+const fmt = (s: string) => { const l = s.toLowerCase(); return KEEP_LOWER.has(l) ? l : l[0].toUpperCase() + l.slice(1); };
+
+const CAT_ICONS: Record<string, any> = {
+  all: Hash,
+  web: Globe,
+  pwn: Terminal,
+  crypto: Lock,
+  rev: Cpu,
+  hardware: Zap,
+  misc: Code2,
+};
+
+const catStats = (cat: string) => {
+  const cats = cat === "all" ? challenges : challenges.filter((c: any) => c.category === cat);
+  const total = cats.length;
+  const solved = cats.filter((c: any) => ids.has(c.id)).length;
+  return { total, solved, pct: total > 0 ? (solved / total) * 100 : 0 };
+};
+
+const totalSolved = (challenges as any[]).filter((c: any) => ids.has(c.id)).length;
+const totalAll = (challenges as any[]).length;
+---
+
+<aside class="ch-sidebar">
+  <div class="ch-sidebar-score">{totalSolved} <span>/ {totalAll} solved</span></div>
+
+  {[["all", "All"], ...categories.map((cat: string) => [cat, fmt(cat)])].map(([cat, label], i) => {
+    const Icon = CAT_ICONS[cat] ?? Hash;
+    const { total, pct } = catStats(cat);
+    return (
+      <button class={`ch-cat${i === 0 ? " active" : ""}`} data-cat={cat}>
+        <div class="ch-cat-row">
+          <div class="ch-cat-icon"><Icon size={13} /></div>
+          <span class="ch-cat-name">{label} <em>{total}</em></span>
+        </div>
+        <div class="ch-progress-wrap">
+          <div class="ch-progress-bar" style={`width: ${pct}%`}></div>
+        </div>
+      </button>
+    );
+  })}
+</aside>

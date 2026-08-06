@@ -1,14 +1,33 @@
 import docker
 from app.providers.base import ContainerProvider
+from app.core.settings import settings
 
 class DockerProvider(ContainerProvider):
     def __init__(self):
         self.client = docker.from_env()
         self.low = docker.APIClient()
 
-    def create_instance(self, name: str, image: str, command: str = None, env_vars: dict = None):
-        # This needs to be implemented in the future, for now we will just pass
-        pass
+    def create_instance(self, challenge_id: int, image: str, port: int):
+        container = self.client.containers.run(
+            image,
+            detach=True,
+            labels={"challenge": "true", "challenge_id": str(challenge_id)},
+            ports={f"{port}/tcp": port},
+        )
+    
+        bindings = container.attrs["NetworkSettings"]["Ports"].get(f"{port}/tcp")
+        host_port = bindings[0]["HostPort"] if bindings else None
+    
+        return {
+            "id": container.short_id,
+            "name": container.name,
+            "image": container.image.tags[0] if container.image.tags else None,
+            "status": container.status,
+            "created_at": container.attrs["Created"],
+            "host_ip": settings.HOST_IP,
+            "host_port": host_port,
+            "challenge_id": challenge_id,
+        }
 
     def list_instances(self):
         try:
@@ -46,7 +65,6 @@ class DockerProvider(ContainerProvider):
             "created_at": container.attrs.get('Created'),
             "provider": "docker"
         }
-
 
     def delete_instance(self, instance_id: str):
         try:

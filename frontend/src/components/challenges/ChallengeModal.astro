@@ -1,0 +1,108 @@
+---
+import { Globe, Terminal, Lock, Cpu, Zap, Code2, X, ArrowRight, Play, Copy, Square, ChevronDown, ChevronUp, Download, File } from "@lucide/astro";
+---
+
+<div id="m-cat-icons" style="display:none">
+  <span data-cat="web"><Globe size={20} /></span>
+  <span data-cat="pwn"><Terminal size={20} /></span>
+  <span data-cat="crypto"><Lock size={20} /></span>
+  <span data-cat="rev"><Cpu size={20} /></span>
+  <span data-cat="hardware"><Zap size={20} /></span>
+  <span data-cat="misc"><Code2 size={20} /></span>
+</div>
+<div id="m-icon-cache" style="display:none">
+  <span data-icon="chevron-down"><ChevronDown size={16} /></span>
+  <span data-icon="chevron-up"><ChevronUp size={16} /></span>
+  <span data-icon="download"><Download size={13} /></span>
+  <span data-icon="file"><File size={13} /></span>
+  <span data-icon="play"><Play size={16} /></span>
+</div>
+
+<div id="ch-overlay" class="ch-overlay">
+  <div id="ch-modal" class="ch-modal">
+
+    <div class="ch-modal-head">
+      <div class="ch-modal-head-top">
+        <span class="ch-modal-name-label">CHALLENGE NAME</span>
+        <div class="ch-modal-head-actions">
+          <div class="ch-modal-cat-icon" id="m-cat-icon"></div>
+          <button id="ch-modal-close" class="ch-modal-close"><X size={16} /></button>
+        </div>
+      </div>
+      <div class="ch-modal-title" id="m-title"></div>
+    </div>
+
+    <div class="ch-modal-tabs">
+      <button class="ch-tab active" data-tab="overview">Overview</button>
+      <button class="ch-tab" data-tab="solves">Solves</button>
+    </div>
+
+    <div id="ch-tab-overview" class="ch-tab-panel">
+
+      <div class="ch-modal-desc-wrap" id="m-desc-wrap">
+        <p id="m-desc" class="ch-modal-desc"></p>
+        <button id="m-desc-toggle" class="ch-modal-desc-toggle" style="display:none">Show more</button>
+      </div>
+
+      <form id="m-flag-form" class="ch-modal-flag-form" data-form-type="other">
+        <input id="m-flag" type="text" placeholder="Submit flag & press enter" autocomplete="off" data-form-type="other" data-lpignore="true" />
+        <button type="submit" id="m-flag-btn"><ArrowRight size={16} /></button>
+      </form>
+      <div id="m-flag-msg" class="ch-modal-flag-msg"></div>
+
+      <!-- unified connection / instance block -->
+      <div id="m-conn-block" class="ch-modal-block" style="display:none">
+
+        <!-- idle -->
+        <div id="m-conn-idle" class="ch-conn-idle">
+          <div class="ch-conn-idle-text">
+            <div class="ch-conn-idle-title">Create Instance</div>
+            <div class="ch-conn-idle-sub">Creates for all team members</div>
+          </div>
+          <button id="m-conn-start" class="ch-create-play" title="Start"><Play size={16} /></button>
+        </div>
+
+        <!-- running -->
+        <div id="m-conn-running" style="display:none">
+          <div class="ch-conn-running-hd">
+            <span class="ch-create-dot"></span>
+            <span class="ch-conn-running-label">RUNNING</span>
+          </div>
+          <div class="ch-create-info">
+            <div class="ch-create-info-cell">
+              <div class="ch-create-info-val" id="m-conn-host">—</div>
+              <div class="ch-create-info-key">HOST</div>
+            </div>
+            <div class="ch-create-info-cell">
+              <div class="ch-create-info-val" id="m-conn-port">—</div>
+              <div class="ch-create-info-key">PORT</div>
+            </div>
+            <div class="ch-conn-actions">
+              <button class="ch-modal-icon-btn" id="m-conn-copy" title="Copy"><Copy size={14} /></button>
+              <button class="ch-conn-stop" id="m-conn-stop" title="Stop"><Square size={14} /></button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div id="m-file-block" class="ch-modal-block" style="display:none">
+        <div class="ch-modal-block-header">
+          <div>
+            <div class="ch-modal-block-title">Files</div>
+            <div class="ch-modal-block-sub">Required files for this challenge</div>
+          </div>
+        </div>
+        <div id="m-file-list" class="ch-file-list"></div>
+      </div>
+
+      <div id="m-stats" class="ch-modal-stats"></div>
+
+    </div>
+
+    <div id="ch-tab-solves" class="ch-tab-panel" style="display:none">
+      <div class="ch-modal-placeholder">Solves coming soon.</div>
+    </div>
+
+  </div>
+</div>

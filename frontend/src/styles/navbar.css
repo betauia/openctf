@@ -1,10 +1,4 @@
-html, body {
-  margin: 0;
-  padding: 0;
-}
-
-
-/* Container styles */
+/** Container styles **/
 .navbar-container {
   max-width: 1000rem;
   margin: 0 auto;
@@ -16,11 +10,11 @@ html, body {
   display: block;
 }
 
-/* Navbar styles */
+/** Navbar styles **/
 nav {
   background: var(--raised-color);
   border-bottom: 1px solid var(--background-color);
-  color: var(--nav-text);
+  color: white;
   position: fixed;
   top: 0;
   left: 0;
@@ -28,11 +22,12 @@ nav {
 }
 .navbar {
   width: 100%;
-  color: var(--nav-text);
+  background: var(--raised-color);
+  color: white;
   font-size: 1rem;
 }
 .nav-inner {
-  height: 64px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -53,5 +48,42 @@ nav {
   font-weight: 500;
 }
 .nav-links a:hover {
-  color: var(--accent-color);
+  opacity: 0.7;
 }
+
+.nav-user {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-username {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.nav-login {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  color: white;
+  text-decoration: none;
+  background: var(--accent-color);
+  padding: 5px 14px;
+  transition: background 0.15s;
+}
+.nav-login:hover { background: var(--accent-dark); }
+
+.nav-logout {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  color: white;
+  background: var(--accent-color);
+  border: none;
+  cursor: pointer;
+  padding: 5px 14px;
+  letter-spacing: 0.06em;
+  transition: background 0.15s;
+}
+.nav-logout:hover { background: var(--accent-dark); }

@@ -12,6 +12,8 @@ export default defineConfig({
         "@pages": "/src/pages",
         "@layouts": "/src/layouts",
         "@styles": "/src/styles",
+        "@lib": "/src/lib",
+        "@scripts": "/src/scripts",
       },
     },
   },
