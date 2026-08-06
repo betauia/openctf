@@ -1,20 +1,51 @@
 :root {
-  --background-color: #1a1a1a;              /** Main page background **/
-  --raised-color: #262626;                  /** Raised elements background **/
-  --text-color: #ffffff;                    /** General text color **/
-  --muted-text: rgba(255, 255, 255, 0.87);  /** Text color with transparency **/
-  --accent-color: #D1002C;                  /** Links, active atates, buttons,etc **/
-  --accent-dark: #9a001f;                   /** Darker shade of accent color **/
+  --background-color: #1a1a1a;                /** Main page background **/
+  --raised-color: #262626;                    /** Raised elements background **/
+  --elevated-color: #2e2e2e;                  /** Further raised elements **/
+  --text-color: #ffffff;                      /** General text color **/
+  --muted-text: rgba(255, 255, 255, 0.87);    /** Text color with transparency **/
+  --accent-color: #D1002C;                    /** Links, active states, buttons, etc **/
+  --accent-dark: #9a001f;                     /** Darker shade of accent color **/
+  --border-subtle: rgba(255, 255, 255, 0.07); /** Subtle border color **/
+
+  --pts-color: #ffd54f;                       /** Points value color **/
+
+  --color-correct:      #66bb6a;              /** Correct flag feedback **/
+  --color-correct-rgb:  102, 187, 106;          /** Correct color as RGB for rgba() use **/
+  --color-correct-dark: #388e3c;              /** Darker shade of correct color **/
+  --color-wrong:        #ef5350;              /** Wrong flag feedback **/
+  --color-wrong-dark:   #c62828;              /** Darker shade of wrong color **/
 }
+
+html, body, input, button, select, textarea {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+html, body {
+  margin: 0;
+  background: var(--background-color);
+}
+
+@keyframes icon-pop {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
 .baselayout-container {
   background: var(--background-color);
   color: var(--text-color);
   padding-top: 64px;
+  min-height: 100vh;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
 }
 .baselayout-content {
-  max-width: 75rem;   
-  width: 100%;        
-  padding: 0 3rem;    
+  max-width: 75rem;
+  width: 100%;
+  padding: 0 3rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }

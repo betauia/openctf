@@ -1,0 +1,21 @@
+---
+const { count, teamSolves, teamScore, teamRank, totalPoints, userScore } = Astro.props;
+
+const stats = [
+  { label: "Challenges",     value: count,          id: null },
+  { label: "Max points",     value: totalPoints,    id: null },
+  { label: "Personal score", value: userScore,      id: null },
+  { label: "Team solves",    value: teamSolves,     id: null },
+  { label: "Team score",     value: teamScore,      id: null },
+  { label: "Team rank",      value: teamRank,       id: null },
+];
+---
+
+<div class="ch-stats">
+  {stats.map(({ label, value, id }) => (
+    <div class="ch-stat">
+      <span class="ch-stat-label">{label}</span>
+      <span id={id ?? undefined} class="ch-stat-value">{value}</span>
+    </div>
+  ))}
+</div>

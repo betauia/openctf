@@ -1,0 +1,32 @@
+---
+import BaseLayout from "@layouts/BaseLayout.astro";
+import "@styles/auth.css";
+---
+
+<BaseLayout pageTitle="Login — OpenCTF">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <h1 class="auth-title">Sign in</h1>
+
+      <form id="auth-form">
+        <div class="auth-field">
+          <label for="username">Username</label>
+          <input id="username" name="username" type="text" autocomplete="username" required />
+        </div>
+        <div class="auth-field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required />
+        </div>
+        <div id="auth-error" class="auth-error"></div>
+        <button type="submit" id="auth-btn">Sign in</button>
+      </form>
+
+      <p class="auth-switch">No account? <a href="/register">Register</a></p>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { bindAuthForm } from "@lib/authForm";
+  bindAuthForm("/api/auth/login", "Login failed");
+</script>

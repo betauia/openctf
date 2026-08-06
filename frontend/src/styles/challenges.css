@@ -1,0 +1,208 @@
+body {
+  color: var(--muted-text);
+}
+
+.ch-layout {
+  display: flex;
+  height: calc(100vh - 60px);
+  margin-top: 60px;
+}
+
+/** sidebar **/
+.ch-sidebar {
+  width: 160px;
+  flex-shrink: 0;
+  background: var(--background-color);
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 12px 0;
+}
+
+.ch-sidebar-score {
+  padding: 0 14px 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-color);
+  text-align: center;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 6px;
+}
+
+.ch-sidebar-score span {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted-text);
+  opacity: 0.4;
+}
+
+.ch-cat {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.1s;
+}
+
+.ch-cat:hover { background: rgba(255, 255, 255, 0.03); }
+
+.ch-cat.active .ch-cat-icon {
+  background: color-mix(in srgb, var(--accent-color) 18%, var(--elevated-color));
+  color: var(--accent-color);
+}
+
+.ch-cat.active .ch-cat-name { color: rgba(255, 255, 255, 0.9); }
+
+.ch-cat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.ch-cat-icon {
+  width: 30px;
+  height: 30px;
+  background: var(--elevated-color);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.4);
+  transition: background 0.1s;
+}
+
+
+.ch-cat-name {
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.55);
+  transition: color 0.1s;
+}
+
+.ch-cat:hover .ch-cat-name { color: rgba(255, 255, 255, 0.8); }
+
+.ch-cat-name em {
+  font-style: normal;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.2);
+  margin-left: 4px;
+}
+
+.ch-progress-wrap {
+  height: 2px;
+  background: var(--elevated-color);
+  margin-left: 40px;
+  overflow: hidden;
+}
+
+.ch-progress-bar {
+  height: 100%;
+  background: var(--accent-color);
+  transition: width 0.3s ease;
+}
+
+/** main **/
+.ch-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--raised-color);
+}
+
+/** stats bar **/
+.ch-stats {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--elevated-color);
+  flex-shrink: 0;
+}
+
+.ch-stat {
+  flex: 1;
+  padding: 12px 20px;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.ch-stat:last-child { border-right: none; }
+
+.ch-stat-label {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.ch-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.ch-stat-dim { color: rgba(255, 255, 255, 0.2); }
+
+/** action bar **/
+.ch-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--elevated-color);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.ch-search-wrap input {
+  background: var(--background-color);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--muted-text);
+  padding: 6px 10px;
+  font-size: 12px;
+  outline: none;
+  width: 220px;
+}
+
+.ch-search-wrap input:focus { border-color: var(--accent-color); }
+
+.ch-flag-wrap { display: flex; margin: 0; }
+
+.ch-flag-wrap input {
+  background: var(--background-color);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: none;
+  color: var(--muted-text);
+  padding: 6px 10px;
+  font-size: 12px;
+  outline: none;
+  width: 260px;
+}
+
+.ch-flag-wrap input:focus { border-color: color-mix(in srgb, var(--accent-color) 40%, transparent); }
+
+.ch-flag-wrap button {
+  background: var(--accent-color);
+  border: none;
+  color: white;
+  padding: 6px 16px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  font-weight: 700;
+  transition: background 0.15s;
+}
+
+.ch-flag-wrap button:hover:not(:disabled) { background: var(--accent-dark); }
+.ch-flag-wrap button:disabled { cursor: default; }
+.ch-flag-wrap button.correct { background: var(--color-correct-dark); }
+.ch-flag-wrap button.wrong   { background: var(--color-wrong-dark); }

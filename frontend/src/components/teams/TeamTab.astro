@@ -1,0 +1,112 @@
+---
+import { Copy, Check } from "@lucide/astro";
+import { timeAgo } from "@lib/utils";
+
+const { myTeam, me, myRank, sortedMembers, activity } = Astro.props;
+---
+
+<div class="tm-content" id="tab-team">
+  {myTeam ? (
+    <div class="tm-workspace" id="tm-workspace">
+      <div class="tm-header">
+        <div class="tm-header-left">
+          <div class="tm-header-name">{myTeam.name}</div>
+          <div class="tm-header-meta">
+            <span class="tm-header-score">{myTeam.score} pts</span>
+            {myRank && <span class="tm-header-rank">Rank #{myRank}</span>}
+          </div>
+        </div>
+
+        <div class="tm-header-right">
+          <div class="tm-invite-row">
+            <span id="tm-invite-code" class="tm-invite-code">{myTeam.invite_code}</span>
+            <button id="tm-copy-btn" class="tm-copy-btn" title="Copy invite code">
+              <Copy size={14} class="tm-copy-icon" />
+              <Check size={14} class="tm-check-icon" />
+            </button>
+          </div>
+          <button id="tm-leave-btn" class="tm-leave-btn">Leave Team</button>
+        </div>
+      </div>
+
+      <div class="ch-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              {["#", "Member", "Score", "Solves", "Contribution"].map((h) => <th>{h}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {sortedMembers.map((m: any, i: number) => {
+              const pct = myTeam.score > 0 ? Math.round((m.score / myTeam.score) * 100) : 0;
+              return (
+                <tr class="tm-member-row" data-id={m.id}>
+                  <td class="ch-num">{String(i + 1).padStart(2, "0")}</td>
+                  <td>
+                    <div class="tm-member-cell">
+                      <div class="tm-avatar">{m.username[0].toUpperCase()}</div>
+                      <span class="ch-name">{m.username}</span>
+                      {m.id === me.id && <span class="tm-you">you</span>}
+                    </div>
+                  </td>
+                  <td class="ch-pts">{m.score}</td>
+                  <td class="ch-mono">{m.solves}</td>
+                  <td>
+                    <div class="tm-share-cell">
+                      <div class="tm-share-bar">
+                        <div class="tm-share-fill" style={`width: ${pct}%`}></div>
+                      </div>
+                      <span class="tm-share-pct">{pct}%</span>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div id="tm-error" class="tm-error" style="padding: 0 16px 8px"></div>
+
+      <div class="tm-activity-section">
+        <div class="tm-activity-label">Recent Activity</div>
+        <div class="tm-activity-scroll">
+          {activity.length === 0 ? <div class="ch-empty">No activity yet</div> : activity.map((e: any) => (
+            <div class="tm-feed-entry">
+              <div class="tm-avatar tm-avatar-sm">{e.username[0].toUpperCase()}</div>
+              <div class="tm-feed-body">
+                <div class="tm-feed-line">
+                  <span class="tm-feed-user">{e.username}</span>
+                  <span class="tm-feed-verb">solved</span>
+                  <span class={`tm-feed-chall cat-${e.category}`}>{e.challenge}</span>
+                  <span class="tm-feed-pts">+{e.points}</span>
+                </div>
+                <div class="tm-feed-time">{timeAgo(e.solved_at)}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div class="tm-no-team-wrap">
+      <div class="tm-form-card">
+        <div class="tm-form-title">Create a Team</div>
+        <form id="tm-create-form" class="tm-form">
+          <input name="name" type="text" placeholder="Team name" class="tm-input" autocomplete="off" />
+          <button type="submit" class="tm-btn">Create</button>
+          <div id="tm-create-error" class="tm-error"></div>
+        </form>
+      </div>
+      <div class="tm-form-divider"></div>
+      <div class="tm-form-card">
+        <div class="tm-form-title">Join a Team</div>
+        <form id="tm-join-form" class="tm-form">
+          <input name="invite_code" type="text" placeholder="Invite code" class="tm-input" autocomplete="off" />
+          <button type="submit" class="tm-btn">Join</button>
+          <div id="tm-join-error" class="tm-error"></div>
+        </form>
+      </div>
+    </div>
+  )}
+  <div id="tm-member-detail" style="display:none"></div>
+</div>

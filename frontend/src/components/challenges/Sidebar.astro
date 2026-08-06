@@ -1,0 +1,38 @@
+---
+import { CAT_MAP } from "@lib/categories";
+import { Hash } from "@lucide/astro";
+import { fmt } from "@lib/utils";
+
+const { categories, challenges, solvedIds } = Astro.props;
+const ids = new Set(solvedIds as number[]);
+
+const catStats = (cat: string) => {
+  const cats = cat === "all" ? challenges : challenges.filter((c: any) => c.category === cat);
+  const total = cats.length;
+  const solved = cats.filter((c: any) => ids.has(c.id)).length;
+  return { total, solved, pct: total > 0 ? (solved / total) * 100 : 0 };
+};
+
+const totalSolved = (challenges as any[]).filter((c: any) => ids.has(c.id)).length;
+const totalAll = (challenges as any[]).length;
+---
+
+<aside class="ch-sidebar">
+  <div class="ch-sidebar-score">{totalSolved} <span>/ {totalAll} solved</span></div>
+
+  {[["all", "All"], ...categories.map((cat: string) => [cat, fmt(cat)])].map(([cat, label], i) => {
+    const Icon = cat === "all" ? Hash : CAT_MAP[cat]?.Icon;
+    const { total, pct } = catStats(cat);
+    return (
+      <button class={`ch-cat${i === 0 ? " active" : ""}`} data-cat={cat}>
+        <div class="ch-cat-row">
+          <div class="ch-cat-icon">{Icon && <Icon size={13} />}</div>
+          <span class="ch-cat-name">{label} <em>{total}</em></span>
+        </div>
+        <div class="ch-progress-wrap">
+          <div class="ch-progress-bar" style={`width: ${pct}%`}></div>
+        </div>
+      </button>
+    );
+  })}
+</aside>

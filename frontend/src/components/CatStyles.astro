@@ -1,0 +1,7 @@
+---
+import { CAT_DEFS, DIFF_DEFS } from "@lib/categories";
+const all  = [...CAT_DEFS.map(c => ({ prefix: "cat",  ...c })), ...DIFF_DEFS.map(d => ({ prefix: "diff", ...d }))];
+const vars   = all.map(x => `--${x.prefix}-${x.slug}:${x.color}`).join(';');
+const badges = all.map(x => `.${x.prefix}-${x.slug}{color:var(--${x.prefix}-${x.slug});background:color-mix(in srgb,var(--${x.prefix}-${x.slug}) 12%,transparent)}`).join('');
+---
+<Fragment set:html={`<style>:root{${vars}}${badges}</style>`} />

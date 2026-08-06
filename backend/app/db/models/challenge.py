@@ -1,6 +1,5 @@
-from sqlalchemy import Boolean, Column, Integer, String, ForeignKey
-from sqlalchemy.orm import relationship
-from app.db.database import Base
+from sqlalchemy import Boolean, Column, Integer, String
+from app.db import Base
 
 class Challenge(Base):
     __tablename__ = "challenges"
@@ -8,7 +7,13 @@ class Challenge(Base):
     title = Column(String)
     description = Column(String)
     author = Column(String)
-    flag = Column(String)
     points = Column(Integer)
     category = Column(String)
+    difficulty = Column(String, default="Easy")
+    solves = Column(Integer, default=0)
+    connection_info = Column(String, nullable=True)
+    flags = Column(String, nullable=True)       
+    files = Column(String, nullable=True)      
+    docker_image = Column(String, nullable=True)
+    docker_port = Column(Integer, default=80, nullable=True)
     is_visible = Column(Boolean, default=False)

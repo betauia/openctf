@@ -1,0 +1,60 @@
+---
+import TeamsLayout from "@layouts/TeamsLayout.astro";
+import { ArrowLeft } from "@lucide/astro";
+import TeamTab from "@components/teams/TeamTab.astro";
+import LeaderboardTab from "@components/teams/LeaderboardTab.astro";
+import "@styles/challenges.css";
+import "@styles/challenges-table.css";
+import "@styles/teams.css";
+import { cookieOf, apiFetch } from "@lib/backend";
+
+const cookie = cookieOf(Astro.request);
+
+let myTeam: any = null;
+let teams: any[] = [];
+let me: any = null;
+let activity: any[] = [];
+
+try {
+  const [meRes, myTeamRes, teamsRes, actRes] = await Promise.all([
+    apiFetch(cookie, "/api/auth/me"),
+    apiFetch(cookie, "/api/teams/my"),
+    apiFetch("",     "/api/teams"),
+    apiFetch(cookie, "/api/teams/activity"),
+  ]);
+  if (!meRes.ok) throw null;
+  me = await meRes.json();
+  if (myTeamRes.ok) myTeam = await myTeamRes.json();
+  if (teamsRes.ok)  teams  = await teamsRes.json();
+  if (actRes.ok)    activity = await actRes.json();
+} catch {
+  return Astro.redirect("/login");
+}
+
+const myRank        = myTeam ? teams.findIndex((t: any) => t.id === myTeam.id) + 1 : null;
+const sortedMembers = (myTeam?.members ?? []).toSorted((a: any, b: any) => b.score - a.score);
+const inspectMemberId = Number(Astro.url.searchParams.get("member"));
+const pageData      = JSON.stringify({ teams, inspectMemberId }).replace(/</g, "\\u003c");
+---
+
+<TeamsLayout pageTitle="Teams - OpenCTF">
+  <div class="tm-page">
+    <div class="tm-tabbar">
+      <button class="tm-tab active" data-tab="team">My Team</button>
+      <button class="tm-tab" data-tab="leaderboard">Leaderboard</button>
+    </div>
+
+    <TeamTab myTeam={myTeam} me={me} myRank={myRank} sortedMembers={sortedMembers} activity={activity} />
+    <LeaderboardTab teams={teams} myTeam={myTeam} />
+  </div>
+
+  <div id="tm-icon-cache" style="display:none">
+    <span data-icon="arrow-left"><ArrowLeft size={14} /></span>
+  </div>
+
+  <script id="tm-data" type="application/json" set:html={pageData} />
+</TeamsLayout>
+
+<script>
+  import "@scripts/teams";
+</script>
