@@ -14,5 +14,5 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 def init_db():
-    from app.db.models import user, challenge, solve
+    from app.db.models import user, challenge, solve, team
     Base.metadata.create_all(bind=engine)
