@@ -1,28 +1,30 @@
-const tbody = document.querySelector<HTMLTableSectionElement>("#ch-table tbody")!;
+import { exclusiveActive } from "@lib/utils";
+
+// elements
+const tbody       = document.querySelector<HTMLTableSectionElement>("#ch-table tbody")!;
 const solvedSep   = document.getElementById("ch-solved-sep")!;
 const solvedArrow = document.getElementById("ch-solved-arrow")!;
 const solvedCount = document.getElementById("ch-solved-count")!;
 
-export const solvedIds = new Set<number>(
-  JSON.parse(document.getElementById("ch-data")!.textContent!).solvedIds
-);
-
+// state
+export const solvedIds = new Set<number>();
 let solvedCollapsed = localStorage.getItem("openctf_solved_collapsed") === "true";
+let activeCat   = "all";
+let searchQuery = "";
 
+// helpers
 const rowById = (id: number) =>
   tbody.querySelector<HTMLTableRowElement>(`.ch-row[data-id="${id}"]`);
 
 function updateSolvedUI() {
   solvedCount.textContent = solvedIds.size > 0 ? `(${solvedIds.size})` : "";
-  solvedArrow.textContent = solvedCollapsed ? "▶" : "▼";
+  solvedArrow.classList.toggle("collapsed", solvedCollapsed);
 }
 
-let activeCat   = "all";
-let searchQuery = "";
-
+// filter
 export function filterRows() {
   let visibleSolved = 0;
-  document.querySelectorAll<HTMLTableRowElement>("#ch-table tbody .ch-row").forEach((row) => {
+  tbody.querySelectorAll<HTMLTableRowElement>(".ch-row").forEach((row) => {
     const isSolved = row.classList.contains("ch-solved");
     const match =
       (activeCat === "all" || row.dataset.cat === activeCat) &&
@@ -41,6 +43,7 @@ export function filterRows() {
   solvedSep.style.display = visibleSolved > 0 || anyMatchSolved ? "" : "none";
 }
 
+// solved
 export function markChallengeSolved(id: number) {
   if (solvedIds.has(id)) return;
   solvedIds.add(id);
@@ -54,7 +57,9 @@ export function markChallengeSolved(id: number) {
   filterRows();
 }
 
-export function initFilter() {
+// init
+export function initFilter(ids: number[]) {
+  ids.forEach(id => solvedIds.add(id));
   solvedIds.forEach((id) => {
     const row = rowById(id);
     if (row) { row.classList.add("ch-solved"); tbody.appendChild(row); }
@@ -63,6 +68,7 @@ export function initFilter() {
   updateSolvedUI();
   filterRows();
 
+  // collapse
   document.getElementById("ch-solved-toggle")!.addEventListener("click", () => {
     solvedCollapsed = !solvedCollapsed;
     localStorage.setItem("openctf_solved_collapsed", String(solvedCollapsed));
@@ -70,15 +76,16 @@ export function initFilter() {
     filterRows();
   });
 
+  // categories
   document.querySelectorAll<HTMLButtonElement>(".ch-cat").forEach((btn) => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll<HTMLButtonElement>(".ch-cat").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
+      exclusiveActive(".ch-cat", btn);
       activeCat = btn.dataset.cat ?? "all";
       filterRows();
     });
   });
 
+  // search
   const searchInput = document.getElementById("ch-search") as HTMLInputElement;
   searchInput?.addEventListener("input", () => {
     searchQuery = searchInput.value.toLowerCase();

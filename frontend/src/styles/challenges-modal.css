@@ -92,7 +92,6 @@
   border: none;
   border-bottom: 2px solid transparent;
   color: rgba(255, 255, 255, 0.32);
-  font-family: Arial, Helvetica, sans-serif;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -150,7 +149,6 @@
   font-size: 11px;
   cursor: pointer;
   padding: 4px 0 0;
-  font-family: Arial, Helvetica, sans-serif;
   letter-spacing: 0.04em;
   display: inline-flex;
   align-items: center;
@@ -244,6 +242,9 @@
   transition: background 0.15s;
 }
 .ch-modal-icon-btn:hover { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.8); }
+.ch-modal-icon-btn .tm-check-icon { display: none; }
+.ch-modal-icon-btn.copied .tm-copy-icon { display: none; }
+.ch-modal-icon-btn.copied .tm-check-icon { display: block; color: var(--color-correct); animation: icon-pop 0.15s ease-out; }
 
 .ch-modal-file-actions { display: flex; gap: 6px; }
 
@@ -307,7 +308,6 @@
 .ch-modal-stat-val {
   font-size: 17px;
   font-weight: 700;
-  font-family: monospace;
   margin-bottom: 4px;
 }
 

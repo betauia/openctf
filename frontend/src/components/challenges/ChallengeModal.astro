@@ -1,5 +1,5 @@
 ---
-import { Globe, Terminal, Lock, Cpu, Zap, Code2, X, ArrowRight, Play, Copy, Square, ChevronDown, ChevronUp, Download, File } from "@lucide/astro";
+import { Globe, Terminal, Lock, Cpu, Zap, Code2, X, ArrowRight, Play, Copy, Check, Square, ChevronDown, ChevronUp, Download, File } from "@lucide/astro";
 ---
 
 <div id="m-cat-icons" style="display:none">
@@ -10,6 +10,7 @@ import { Globe, Terminal, Lock, Cpu, Zap, Code2, X, ArrowRight, Play, Copy, Squa
   <span data-cat="hardware"><Zap size={20} /></span>
   <span data-cat="misc"><Code2 size={20} /></span>
 </div>
+
 <div id="m-icon-cache" style="display:none">
   <span data-icon="chevron-down"><ChevronDown size={16} /></span>
   <span data-icon="chevron-up"><ChevronUp size={16} /></span>
@@ -45,9 +46,10 @@ import { Globe, Terminal, Lock, Cpu, Zap, Code2, X, ArrowRight, Play, Copy, Squa
       </div>
 
       <form id="m-flag-form" class="ch-modal-flag-form" data-form-type="other">
-        <input id="m-flag" type="text" placeholder="Submit flag & press enter" autocomplete="off" data-form-type="other" data-lpignore="true" />
+        <input id="m-flag" type="text" placeholder="Submit flag & press enter" autocomplete="off" data-lpignore="true" />
         <button type="submit" id="m-flag-btn"><ArrowRight size={16} /></button>
       </form>
+
       <div id="m-flag-msg" class="ch-modal-flag-msg"></div>
 
       <!-- unified connection / instance block -->
@@ -78,12 +80,14 @@ import { Globe, Terminal, Lock, Cpu, Zap, Code2, X, ArrowRight, Play, Copy, Squa
               <div class="ch-create-info-key">PORT</div>
             </div>
             <div class="ch-conn-actions">
-              <button class="ch-modal-icon-btn" id="m-conn-copy" title="Copy"><Copy size={14} /></button>
+              <button class="ch-modal-icon-btn" id="m-conn-copy" title="Copy">
+                <Copy size={14} class="tm-copy-icon" />
+                <Check size={14} class="tm-check-icon" />
+              </button>
               <button class="ch-conn-stop" id="m-conn-stop" title="Stop"><Square size={14} /></button>
             </div>
           </div>
         </div>
-
       </div>
 
       <div id="m-file-block" class="ch-modal-block" style="display:none">
@@ -99,7 +103,7 @@ import { Globe, Terminal, Lock, Cpu, Zap, Code2, X, ArrowRight, Play, Copy, Squa
       <div id="m-stats" class="ch-modal-stats"></div>
 
     </div>
-
+    
     <div id="ch-tab-solves" class="ch-tab-panel" style="display:none">
       <div class="ch-modal-placeholder">Solves coming soon.</div>
     </div>

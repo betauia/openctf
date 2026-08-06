@@ -1,5 +1,5 @@
 ---
-import { Hash, Globe, Terminal, Lock, Cpu, Zap, Code2 } from "@lucide/astro";
+import { Hash, Globe, Terminal, Lock, Cpu, Zap, Code } from "@lucide/astro";
 
 const { categories, challenges, solvedIds } = Astro.props;
 const ids = new Set(solvedIds as number[]);
@@ -13,7 +13,7 @@ const CAT_ICONS: Record<string, any> = {
   crypto: Lock,
   rev: Cpu,
   hardware: Zap,
-  misc: Code2,
+  misc: Code,
 };
 
 const catStats = (cat: string) => {

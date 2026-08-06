@@ -5,7 +5,7 @@ const stats = [
   { label: "Challenges",   value: count,       accent: true,  id: null },
   { label: "Total solves", value: totalSolves, accent: true,  id: null },
   { label: "Max points",   value: totalPoints, accent: true,  id: null },
-  { label: "Your score",   value: userScore ?? "—", accent: userScore !== null, id: "ch-score-val" },
+  { label: "Your score",   value: userScore  , accent: true,  id: "ch-score-val" },
   { label: "Your rank",    value: "—",         accent: false, id: null },
 ];
 ---
@@ -14,7 +14,7 @@ const stats = [
   {stats.map(({ label, value, accent, id }) => (
     <div class="ch-stat">
       <span class="ch-stat-label">{label}</span>
-      <span id={id ?? undefined} class={`ch-stat-value${accent ? "" : " ch-stat-dim"}`}>{value}</span>
+      <span id={id ?? undefined} class:list={["ch-stat-value", { "ch-stat-dim": !accent }]}>{value}</span>
     </div>
   ))}
 </div>

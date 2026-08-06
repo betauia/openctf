@@ -5,8 +5,12 @@ export function fmt(s: string): string {
   return KEEP_LOWER.has(l) ? l : l[0].toUpperCase() + l.slice(1);
 }
 
+const _esc = document.createElement("span");
 export function esc(s: unknown): string {
-  return String(s).replace(/[&<>"']/g, (c) => (
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" } as Record<string, string>)[c]
-  ));
+  _esc.textContent = String(s);
+  return _esc.innerHTML;
+}
+
+export function exclusiveActive(selector: string, active: Element) {
+  document.querySelectorAll(selector).forEach(el => el.classList.toggle("active", el === active));
 }

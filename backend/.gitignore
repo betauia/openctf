@@ -216,4 +216,7 @@ __marimo__/
 .streamlit/secrets.toml
 
 # Database
-.db
+*.db
+
+#challenge seed file
+seed.py

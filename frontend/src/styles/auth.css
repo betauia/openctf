@@ -14,7 +14,6 @@
 }
 
 .auth-title {
-  font-family: Arial, Helvetica, sans-serif;
   font-size: 24px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.92);
@@ -29,7 +28,6 @@
 }
 
 .auth-field label {
-  font-family: Arial, Helvetica, sans-serif;
   font-size: 11px;
   color: rgba(255, 255, 255, 0.45);
   letter-spacing: 0.08em;
@@ -40,7 +38,6 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--muted-text);
   padding: 10px 12px;
-  font-family: Arial, Helvetica, sans-serif;
   font-size: 14px;
   outline: none;
   width: 100%;
@@ -64,7 +61,6 @@ button[type="submit"] {
   border: none;
   color: white;
   padding: 11px;
-  font-family: Arial, Helvetica, sans-serif;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -76,7 +72,6 @@ button[type="submit"]:hover:not(:disabled) { background: var(--accent-dark); }
 button[type="submit"]:disabled { cursor: default; opacity: 0.6; }
 
 .auth-switch {
-  font-family: Arial, Helvetica, sans-serif;
   font-size: 12px;
   color: rgba(255, 255, 255, 0.35);
   margin: 20px 0 0;

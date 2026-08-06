@@ -1,9 +1,10 @@
 ---
 import AdminLayout from '@layouts/AdminLayout.astro';
 import "@styles/admin.css"
+import { BACKEND_URL } from "@lib/backend";
 
 const pageTitle = "Admin: Status";
-const response = await fetch("http://backend:8000/api/instances");
+const response = await fetch(`${BACKEND_URL}/api/instances`);
 const instances = await response.json();
 ---
 <AdminLayout pageTitle={pageTitle}>

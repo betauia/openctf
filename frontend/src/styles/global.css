@@ -1,37 +1,43 @@
 :root {
-  --background-color: #1a1a1a;              /** Main page background **/
-  --raised-color: #262626;                  /** Raised elements background **/
-  --elevated-color: #2e2e2e;                /** Further raised elements **/
-  --text-color: #ffffff;                    /** General text color **/
-  --muted-text: rgba(255, 255, 255, 0.87);  /** Text color with transparency **/
-  --accent-color: #D1002C;                  /** Links, active states, buttons, etc **/
-  --accent-dark: #9a001f;                   /** Darker shade of accent color **/
+  --background-color: #1a1a1a;                /** Main page background **/
+  --raised-color: #262626;                    /** Raised elements background **/
+  --elevated-color: #2e2e2e;                  /** Further raised elements **/
+  --text-color: #ffffff;                      /** General text color **/
+  --muted-text: rgba(255, 255, 255, 0.87);    /** Text color with transparency **/
+  --accent-color: #D1002C;                    /** Links, active states, buttons, etc **/
+  --accent-dark: #9a001f;                     /** Darker shade of accent color **/
   --border-subtle: rgba(255, 255, 255, 0.07); /** Subtle border color **/
 
-  --cat-web:      #2979ff;                  /** Web category color **/
-  --cat-pwn:      #ef5350;                  /** Pwn category color **/
-  --cat-crypto:   #ab47bc;                  /** Crypto category color **/
-  --cat-rev:      #ffa726;                  /** Reversing category color **/
-  --cat-hardware: #ff7043;                  /** Hardware category color **/
-  --cat-misc:     #66bb6a;                  /** Misc category color **/
+  --cat-web:      #2979ff;                    /** Web category color **/
+  --cat-pwn:      #ef5350;                    /** Pwn category color **/
+  --cat-crypto:   #ab47bc;                    /** Crypto category color **/
+  --cat-rev:      #ffa726;                    /** Reversing category color **/
+  --cat-hardware: #ff7043;                    /** Hardware category color **/
+  --cat-misc:     #66bb6a;                    /** Misc category color **/
 
-  --diff-easy:   #66bb6a;                   /** Easy difficulty color **/
-  --diff-medium: #ffa726;                   /** Medium difficulty color **/
-  --diff-hard:   #ff7043;                   /** Hard difficulty color **/
-  --diff-insane: #ef5350;                   /** Insane difficulty color **/
+  --diff-easy:   #66bb6a;                     /** Easy difficulty color **/
+  --diff-medium: #ffa726;                     /** Medium difficulty color **/
+  --diff-hard:   #ff7043;                     /** Hard difficulty color **/
+  --diff-insane: #ef5350;                     /** Insane difficulty color **/
 
-  --pts-color: #ffd54f;                     /** Points value color **/
+  --pts-color: #ffd54f;                       /** Points value color **/
 
-  --color-correct:      #66bb6a;            /** Correct flag feedback **/
-  --color-correct-rgb:  102, 187, 106;        /** Correct color as RGB for rgba() use **/
-  --color-correct-dark: #388e3c;            /** Darker shade of correct color **/
-  --color-wrong:        #ef5350;            /** Wrong flag feedback **/
-  --color-wrong-dark:   #c62828;            /** Darker shade of wrong color **/
+  --color-correct:      #66bb6a;              /** Correct flag feedback **/
+  --color-correct-rgb:  102, 187, 106;          /** Correct color as RGB for rgba() use **/
+  --color-correct-dark: #388e3c;              /** Darker shade of correct color **/
+  --color-wrong:        #ef5350;              /** Wrong flag feedback **/
+  --color-wrong-dark:   #c62828;              /** Darker shade of wrong color **/
 }
 
 html, body {
   margin: 0;
   background: var(--background-color);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes icon-pop {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
 }
 
 .baselayout-container {

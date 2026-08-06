@@ -13,6 +13,7 @@ services:
       - "4000:4000"
     volumes:
       - ./frontend:/app
+      - /app/node_modules # needed for frontend rendering
     depends_on:
       - backend
     networks:

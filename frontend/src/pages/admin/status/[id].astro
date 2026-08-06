@@ -1,12 +1,13 @@
 ---
 import AdminLayout from '@layouts/AdminLayout.astro';
 import "@styles/admin.css"
+import { BACKEND_URL } from "@lib/backend";
 
 export const prerender = false;
 
 const { id } = Astro.params;
 
-const response = await fetch(`http://backend:8000/api/instances/${id}`);
+const response = await fetch(`${BACKEND_URL}/api/instances/${id}`);
 const instance = await response.json();
 ---
 

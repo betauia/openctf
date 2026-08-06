@@ -8,19 +8,21 @@ import ChallengeModal from "@components/challenges/ChallengeModal.astro";
 import "@styles/challenges.css";
 import "@styles/challenges-table.css";
 import "@styles/challenges-modal.css";
+import { BACKEND_URL } from "@lib/backend";
 
 const cookie = Astro.request.headers.get("cookie") ?? "";
 
 let challenges: any[] = [];
 let solvedIds: number[] = [];
 let userScore: number | null = null;
+
 try {
   const [chRes, solveRes, meRes] = await Promise.all([
-    fetch("http://backend:8000/api/challenges"),
-    fetch("http://backend:8000/api/auth/solves", { headers: { cookie } }),
-    fetch("http://backend:8000/api/auth/me", { headers: { cookie } }),
+    fetch(`${BACKEND_URL}/api/challenges`),
+    fetch(`${BACKEND_URL}/api/auth/solves`, { headers: { cookie } }),
+    fetch(`${BACKEND_URL}/api/auth/me`,     { headers: { cookie } }),
   ]);
-  if (!meRes.ok) return Astro.redirect("/login");
+  if (!meRes.ok) throw null;
   if (chRes.ok) challenges = await chRes.json();
   if (solveRes.ok) solvedIds = await solveRes.json();
   userScore = (await meRes.json()).score;
@@ -31,6 +33,7 @@ try {
 const categories = [...new Set(challenges.map((c) => c.category))].sort() as string[];
 const totalSolves = challenges.reduce((s, c) => s + (c.solves ?? 0), 0);
 const totalPoints = challenges.reduce((s, c) => s + (c.points ?? 0), 0);
+const pageData = JSON.stringify({ challenges, solvedIds }).replace(/</g, "\\u003c");
 ---
 
 <ChallengesLayout pageTitle="Challenges - OpenCTF">
@@ -43,7 +46,7 @@ const totalPoints = challenges.reduce((s, c) => s + (c.points ?? 0), 0);
     </main>
   </div>
 
-  <script id="ch-data" type="application/json" set:html={JSON.stringify({ challenges, solvedIds }).replace(/</g, "\\u003c")} />
+  <script id="ch-data" type="application/json" set:html={pageData} />
   <ChallengeModal />
 </ChallengesLayout>
 
