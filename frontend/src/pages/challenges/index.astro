@@ -15,6 +15,7 @@ const cookie = Astro.request.headers.get("cookie") ?? "";
 let challenges: any[] = [];
 let solvedIds: number[] = [];
 let userScore: number | null = null;
+let userRank: number | null = null;
 
 try {
   const [chRes, solveRes, meRes] = await Promise.all([
@@ -25,7 +26,9 @@ try {
   if (!meRes.ok) throw null;
   if (chRes.ok) challenges = await chRes.json();
   if (solveRes.ok) solvedIds = await solveRes.json();
-  userScore = (await meRes.json()).score;
+  const me = await meRes.json();
+  userScore = me.score;
+  userRank = me.rank ?? null;
 } catch {
   return Astro.redirect("/login");
 }
@@ -40,7 +43,7 @@ const pageData = JSON.stringify({ challenges, solvedIds }).replace(/</g, "\\u003
   <div class="ch-layout">
     <Sidebar {categories} {challenges} {solvedIds} />
     <main class="ch-main">
-      <StatsBar count={challenges.length} {totalSolves} {totalPoints} {userScore} />
+      <StatsBar count={challenges.length} {totalSolves} {totalPoints} {userScore} {userRank} />
       <ActionBar />
       <ChallengeTable {challenges} />
     </main>

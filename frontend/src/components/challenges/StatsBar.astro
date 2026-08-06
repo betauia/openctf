@@ -1,12 +1,12 @@
 ---
-const { count, totalSolves, totalPoints, userScore } = Astro.props;
+const { count, totalSolves, totalPoints, userScore, userRank } = Astro.props;
 
 const stats = [
   { label: "Challenges",   value: count,       accent: true,  id: null },
   { label: "Total solves", value: totalSolves, accent: true,  id: null },
   { label: "Max points",   value: totalPoints, accent: true,  id: null },
-  { label: "Your score",   value: userScore  , accent: true,  id: "ch-score-val" },
-  { label: "Your rank",    value: "—",         accent: false, id: null },
+  { label: "Your score",   value: userScore,   accent: true,  id: "ch-score-val" },
+  { label: "Your rank",    value: userRank,    accent: true,  id: null },
 ];
 ---
 
