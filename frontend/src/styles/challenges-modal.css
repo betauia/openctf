@@ -193,6 +193,24 @@
 .ch-modal-flag-form button.correct { background: var(--color-correct-dark); }
 .ch-modal-flag-form button.wrong   { background: var(--color-wrong-dark); }
 
+.ch-modal-wrap { position: relative; }
+
+.ch-solved-banner {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(var(--color-correct-rgb), 0.06);
+  border: 1px solid rgba(var(--color-correct-rgb), 0.18);
+  color: var(--diff-easy);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 3px 10px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .ch-modal-flag-msg {
   font-size: 11px;
   min-height: 14px;
@@ -442,7 +460,7 @@
 }
 
 /* solves placeholder */
-.ch-modal-placeholder {
+.ch-modal-empty {
   text-align: center;
   padding: 48px 0;
   color: rgba(255, 255, 255, 0.22);

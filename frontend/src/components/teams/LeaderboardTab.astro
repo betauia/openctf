@@ -1,0 +1,29 @@
+---
+const { teams, myTeam } = Astro.props;
+---
+
+<div class="tm-content" id="tab-leaderboard" style="display:none">
+  <div class="ch-table-wrap">
+    {teams.length === 0 ? <div class="ch-empty">No teams yet</div> : (
+      <table>
+        <thead>
+          <tr>
+            {["#", "Team", "Members", "Score"].map((h) => <th>{h}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {teams.map((t: any, i: number) =>
+            <tr class={`tm-row${t.id === myTeam?.id ? " tm-mine" : ""}`}
+                data-team={JSON.stringify(t)} data-rank={String(i + 1)}
+                style="cursor:pointer">
+              <td class="ch-num">{String(i + 1).padStart(2, "0")}</td>
+              <td class="ch-name">{t.name}</td>
+              <td class="ch-mono">{t.members.length}</td>
+              <td class="ch-pts">{t.score}</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    )}
+  </div>
+</div>

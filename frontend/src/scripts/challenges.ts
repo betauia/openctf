@@ -4,7 +4,7 @@ import { initModal, submitFlag } from "./modal";
 const { challenges, solvedIds } = JSON.parse(document.getElementById("ch-data")!.textContent!);
 
 initFilter(solvedIds);
-initModal(challenges);
+initModal(challenges, solvedIds);
 
 // global flagbar
 const flagForm  = document.getElementById("ch-flag-form") as HTMLFormElement;

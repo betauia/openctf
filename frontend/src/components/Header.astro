@@ -39,7 +39,7 @@ try {
     <div class="nav-user">
       {user ? (
         <>
-          <span class="nav-username">{user.username}</span>
+          <div class="nav-avatar">{user.username[0].toUpperCase()}</div>
           <button class="nav-logout" id="nav-logout-btn">Logout</button>
         </>
       ) : (

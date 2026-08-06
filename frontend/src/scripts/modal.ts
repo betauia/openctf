@@ -1,4 +1,4 @@
-import { fmt, esc, exclusiveActive } from "@lib/utils";
+import { fmt, esc, exclusiveActive, timeAgo } from "@lib/utils";
 import { markChallengeSolved } from "./filter";
 
 // colors
@@ -39,8 +39,9 @@ const mFlagInput   = document.getElementById("m-flag") as HTMLInputElement;
 const mFlagBtn     = document.getElementById("m-flag-btn") as HTMLButtonElement;
 const mFlagMsg     = document.getElementById("m-flag-msg")!;
 
-const mTabOverview = document.getElementById("ch-tab-overview")!;
-const mTabSolves   = document.getElementById("ch-tab-solves")!;
+const mTabOverview  = document.getElementById("ch-tab-overview")!;
+const mTabSolves    = document.getElementById("ch-tab-solves")!;
+const mSolvedBanner = document.getElementById("m-solved-banner")!;
 
 // snapshots
 const mConnStartInner = mConnStart.innerHTML;
@@ -54,6 +55,30 @@ const icon = (name: string) =>
 let currentModalId: number | null = null;
 let currentInstanceId: string | null = null;
 let descExpanded = false;
+let solvedSet = new Set<number>();
+let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+function showSolvedBanner() { mSolvedBanner.style.display = ""; }
+function hideSolvedBanner() { mSolvedBanner.style.display = "none"; }
+
+function stopPoll() {
+  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+}
+
+function startPoll() {
+  stopPoll();
+  pollInterval = setInterval(async () => {
+    const id = currentModalId;
+    if (!id || solvedSet.has(id)) { stopPoll(); return; }
+    const res = await fetch(`/api/challenges/${id}/solves`);
+    if (res.ok && (await res.json()).length > 0) {
+      solvedSet.add(id);
+      markChallengeSolved(id);
+      showSolvedBanner();
+      stopPoll();
+    }
+  }, 5000);
+}
 
 // instance
 async function resolveConn(c: any): Promise<{ host: string; port: string; instanceId?: string } | null> {
@@ -199,17 +224,25 @@ function openModal(challenges: any[], id: number) {
   mTabOverview.style.display = "";
   mTabSolves.style.display = "none";
 
+  if (solvedSet.has(id)) showSolvedBanner();
+  else { hideSolvedBanner(); startPoll(); }
+
   overlay.classList.add("open");
   mFlagInput.focus();
 }
 
-function closeModal() { overlay.classList.remove("open"); }
+function closeModal() { overlay.classList.remove("open"); stopPoll(); }
 
 // init
-export function initModal(challenges: any[]) {
+export function initModal(challenges: any[], initialSolvedIds: number[]) {
+  solvedSet = new Set(initialSolvedIds);
+
   const markSolvedByTitle = (title: string) => {
     const id = challenges.find((c: any) => c.title === title)?.id;
-    if (id) markChallengeSolved(id);
+    if (!id) return;
+    solvedSet.add(id);
+    markChallengeSolved(id);
+    if (id === currentModalId) { showSolvedBanner(); stopPoll(); }
   };
 
   // rows
@@ -222,6 +255,38 @@ export function initModal(challenges: any[]) {
   overlay.addEventListener("click", (e) => { if (e.target === overlay) closeModal(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
 
+  // solves tab
+  type SolveEntry = { uid: number; username: string; team: string | null; solved_at: string | null };
+  const solvesCache = new Map<number, SolveEntry[]>();
+
+  mTabSolves.addEventListener("click", (e) => {
+    const el = (e.target as HTMLElement).closest<HTMLElement>(".ch-solve-name-link");
+    if (el) window.location.href = `/teams?member=${el.dataset.uid}`;
+  });
+
+  async function loadSolves() {
+    const id = currentModalId!;
+    if (!solvesCache.has(id)) {
+      mTabSolves.innerHTML = '<div class="ch-modal-empty">Loading...</div>';
+      const res = await fetch(`/api/challenges/${id}/solves`);
+      if (!res.ok) { mTabSolves.innerHTML = '<div class="ch-modal-empty">Failed to load.</div>'; return; }
+      solvesCache.set(id, await res.json());
+    }
+    const data = solvesCache.get(id)!;
+    mTabSolves.innerHTML = data.length === 0
+      ? '<div class="ch-modal-empty">No solves yet.</div>'
+      : `<div class="ch-solves-list">${data.map((s, i) =>
+          `<div class="ch-solve-row">
+            <span class="ch-solve-rank">${String(i + 1).padStart(2, "0")}</span>
+            <div class="ch-solve-user">
+              <span class="ch-solve-name ch-solve-name-link" data-uid="${s.uid}">${esc(s.username)}</span>
+              ${s.team ? `<span class="ch-solve-team">${esc(s.team)}</span>` : ""}
+            </div>
+            <span class="ch-solve-time">${timeAgo(s.solved_at)}</span>
+          </div>`).join("")}
+        </div>`;
+  }
+
   // tabs
   document.querySelectorAll<HTMLButtonElement>(".ch-tab").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -229,6 +294,7 @@ export function initModal(challenges: any[]) {
       const tab = btn.dataset.tab;
       mTabOverview.style.display = tab === "overview" ? "" : "none";
       mTabSolves.style.display   = tab === "solves"   ? "" : "none";
+      if (tab === "solves") loadSolves();
     });
   });
 

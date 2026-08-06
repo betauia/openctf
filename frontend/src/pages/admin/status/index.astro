@@ -6,7 +6,7 @@ import { Search } from "@lucide/astro";
 
 const pageTitle = "Admin: Status";
 const response = await fetch(`${BACKEND_URL}/api/instances`);
-const instances = await response.json();
+const instances: any[] = await response.json();
 ---
 <AdminLayout pageTitle={pageTitle}>
   <div class="instance-status">
@@ -21,76 +21,47 @@ const instances = await response.json();
       </div>
     </div>
     <table id="statusTable">
-      	<thead>
-        	<tr>
-          		<th>ID</th>
-          		<th>NAME</th>
-          		<th>IMAGE</th>
-          		<th>STATUS</th>
-          		<th>CREATED</th>
-        	</tr>
-      	</thead>
-        <tbody>
-          {instances.length === 0 ? (
-            <tr>
-              <td colSpan="5">No instances found.</td>
-            </tr>
-          ) : (
-            instances.map(instance => (
-              <tr key={instance.id}>
-                <td>
-                  <a href={`/admin/status/${instance.id}`} className="id-link">
-                    {instance.id}
-                  </a>
-                </td>
-                <td>{instance.name}</td>
-                <td>{instance.image}</td>
-                <td>{instance.status}</td>
-                <td>{new Date(instance.created_at).toLocaleString()}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>NAME</th>
+          <th>IMAGE</th>
+          <th>STATUS</th>
+          <th>CREATED</th>
+        </tr>
+      </thead>
+      <tbody>
+        {instances.length === 0 ? (
+          <tr><td colspan="5">No instances found.</td></tr>
+        ) : instances.map((instance: any) => (
+          <tr>
+            <td><a href={`/admin/status/${instance.id}`} class="id-link">{instance.id}</a></td>
+            <td>{instance.name}</td>
+            <td>{instance.image}</td>
+            <td>{instance.status}</td>
+            <td>{new Date(instance.created_at).toLocaleString()}</td>
+          </tr>
+        ))}
+      </tbody>
     </table>
   </div>
 </AdminLayout>
+
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    window.searchContainer = function () {
-      const input = document.getElementById("searchInput");
-      const filter = input.value.toUpperCase();
-      const table = document.getElementById("statusTable");
-      const rows = table.getElementsByTagName("tr");
+  (window as any).searchContainer = function () {
+    const input = document.getElementById("searchInput") as HTMLInputElement;
+    const filter = input.value.toUpperCase();
+    const table = document.getElementById("statusTable") as HTMLTableElement;
+    const rows = table.getElementsByTagName("tr");
 
-      for (let i = 0; i < rows.length; i++) {
-        const cells = rows[i].getElementsByTagName("td");
-
-        // Skip header row (no <td> cells)
-        if (cells.length === 0) {
-          rows[i].style.display = "";
-          continue;
-        }
-
-        let match = false;
-
-        // Check every column in the row
-        for (let j = 0; j < cells.length; j++) {
-          const text = cells[j].textContent || cells[j].innerText;
-          if (text.toUpperCase().includes(filter)) {
-            match = true;
-            break;
-          }
-        }
-
-        rows[i].style.display = match ? "" : "none";
+    for (let i = 0; i < rows.length; i++) {
+      const cells = rows[i].getElementsByTagName("td");
+      if (cells.length === 0) { rows[i].style.display = ""; continue; }
+      let match = false;
+      for (let j = 0; j < cells.length; j++) {
+        if ((cells[j].textContent ?? "").toUpperCase().includes(filter)) { match = true; break; }
       }
-    };
-  });
+      rows[i].style.display = match ? "" : "none";
+    }
+  };
 </script>
-
-
-
-
-
-
-<!-- id, name, image, status, created_at -->
