@@ -24,7 +24,7 @@ class DockerProvider(ContainerProvider):
             "image": container.image.tags[0] if container.image.tags else None,
             "status": container.status,
             "created_at": container.attrs["Created"],
-            "host_ip": settings.HOST_IP,
+            "host_ip": settings.HOST_DOMAIN,
             "host_port": host_port,
             "challenge_id": challenge_id,
         }
