@@ -5,35 +5,31 @@ import StatsBar from "@components/challenges/StatsBar.astro";
 import ActionBar from "@components/challenges/ActionBar.astro";
 import ChallengeTable from "@components/challenges/ChallengeTable.astro";
 import ChallengeModal from "@components/challenges/ChallengeModal.astro";
-import "@styles/challenges.css";
-import "@styles/challenges-table.css";
-import "@styles/challenges-modal.css";
-import { cookieOf, apiFetch } from "@lib/backend";
+import { cookieOf, apiFetch } from "@library/backend";
 
 const cookie = cookieOf(Astro.request);
 
 let challenges: any[] = [];
 let solvedIds: number[] = [];
 let userScore: number | null = null;
-let userRank: number | null = null;
 let teamSolves: number | null = null;
 let teamScore: number | null = null;
 let teamRank:  number | null = null;
 
 try {
-  const [chRes, solveRes, meRes, teamRes, allTeamsRes] = await Promise.all([
+  const meRes = await apiFetch(cookie, "/api/auth/me");
+  if (!meRes.ok) throw null;
+
+  const [chRes, solveRes, teamRes, allTeamsRes] = await Promise.all([
     apiFetch("",     "/api/challenges"),
     apiFetch(cookie, "/api/auth/solves"),
-    apiFetch(cookie, "/api/auth/me"),
     apiFetch(cookie, "/api/teams/my"),
     apiFetch("",     "/api/teams"),
   ]);
-  if (!meRes.ok) throw null;
   if (chRes.ok)    challenges = await chRes.json();
   if (solveRes.ok) solvedIds  = await solveRes.json();
   const me = await meRes.json();
   userScore = me.score;
-  userRank  = me.rank ?? null;
   if (teamRes.ok) {
     const team = await teamRes.json();
     if (team) {
@@ -56,16 +52,16 @@ const pageData = JSON.stringify({ challenges, solvedIds }).replace(/</g, "\\u003
 ---
 
 <ChallengesLayout pageTitle="Challenges - OpenCTF">
-  <div class="ch-layout">
+  <div class="flex h-[calc(100vh-64px)] mt-16 text-muted-text">
     <Sidebar {categories} {challenges} {solvedIds} />
-    <main class="ch-main">
+    <main class="flex-1 flex flex-col overflow-hidden bg-raised">
       <StatsBar count={challenges.length} {teamSolves} {teamScore} {teamRank} {totalPoints} {userScore} />
       <ActionBar />
       <ChallengeTable {challenges} />
     </main>
   </div>
 
-  <script id="ch-data" type="application/json" set:html={pageData} />
+  <script id="ch-data" type="application/json" set:html={pageData} is:inline />
   <ChallengeModal />
 </ChallengesLayout>
 

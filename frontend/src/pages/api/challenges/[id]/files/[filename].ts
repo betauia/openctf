@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { BACKEND_URL } from "@lib/backend";
+import { BACKEND_URL } from "@library/backend";
 
 export const GET: APIRoute = async ({ params }) => {
   const res = await fetch(`${BACKEND_URL}/api/challenges/${params.id}/files/${params.filename}`);

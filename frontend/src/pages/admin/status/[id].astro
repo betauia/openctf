@@ -1,7 +1,6 @@
 ---
 import AdminLayout from '@layouts/AdminLayout.astro';
-import "@styles/admin.css"
-import { BACKEND_URL } from "@lib/backend";
+import { BACKEND_URL } from "@library/backend";
 
 export const prerender = false;
 
@@ -13,7 +12,7 @@ const instance = await response.json();
 
 <AdminLayout pageTitle={`Container: ${id}`}>
   <div class="container-page">
-    <div class="container-details">
+    <div class="flex flex-col items-center gap-4 mt-4 border border-raised rounded-[20px] p-4">
         <div class="info-section">
           <h3>Basic Info</h3>
           <p><strong>ID:</strong> {instance.id}</p>
@@ -25,4 +24,3 @@ const instance = await response.json();
         </div>
   </div>
 </AdminLayout>
-

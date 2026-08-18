@@ -1,45 +1,57 @@
 ---
 import AdminLayout from '@layouts/AdminLayout.astro';
-import "@styles/admin.css"
-import { BACKEND_URL } from "@lib/backend";
+import { BACKEND_URL } from "@library/backend";
 import { Search } from "@lucide/astro";
 
 const pageTitle = "Admin: Status";
 const response = await fetch(`${BACKEND_URL}/api/instances`);
 const instances: any[] = await response.json();
+
+const th = "p-2 min-w-28 max-w-80 bg-raised text-muted-text";
+const td = "p-2 min-w-28 max-w-80";
 ---
 <AdminLayout pageTitle={pageTitle}>
-  <div class="instance-status">
-    <div class="header-row">
-      <div class="header-left">
-        <span class="header-icon">▣</span>
-        <h1>challenge containers</h1>
+  <div class="flex flex-col items-center gap-4 overflow-y-auto max-h-[40rem] max-w-[calc(100%-1rem)] mx-auto px-6">
+    <div class="mt-4 flex items-center justify-between gap-2.5 -mb-2.5 w-full">
+      <div class="flex items-center gap-1.5">
+        <span class="text-[18px] text-accent">▣</span>
+        <h1 class="m-0 text-[18px] font-bold tracking-[-0.02em] text-text">challenge containers</h1>
       </div>
-      <div class="search-wrap">
-        <Search size={14} class="search-icon" />
-        <input type="text" id="searchInput" onkeyup="searchContainer()" placeholder="Filter searches..." />
+      <div class="relative w-2/5 max-w-80">
+        <Search size={14} class="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-text pointer-events-none" />
+        <input
+          type="text"
+          id="searchInput"
+          onkeyup="searchContainer()"
+          placeholder="Filter searches..."
+          class="w-full bg-raised text-text border-[0.5px] border-raised rounded-[5px] pl-8 box-border"
+        />
       </div>
     </div>
-    <table id="statusTable">
+    <table
+      id="statusTable"
+      class="table-fixed w-full text-center text-sm text-text border-separate border-[0.5px] border-raised
+             rounded-[10px] border-spacing-0 overflow-hidden"
+    >
       <thead>
         <tr>
-          <th>ID</th>
-          <th>NAME</th>
-          <th>IMAGE</th>
-          <th>STATUS</th>
-          <th>CREATED</th>
+          <th class={th}>ID</th>
+          <th class={th}>NAME</th>
+          <th class={th}>IMAGE</th>
+          <th class={th}>STATUS</th>
+          <th class={th}>CREATED</th>
         </tr>
       </thead>
       <tbody>
         {instances.length === 0 ? (
-          <tr><td colspan="5">No instances found.</td></tr>
+          <tr><td colspan="5" class={td}>No instances found.</td></tr>
         ) : instances.map((instance: any) => (
           <tr>
-            <td><a href={`/admin/status/${instance.id}`} class="id-link">{instance.id}</a></td>
-            <td>{instance.name}</td>
-            <td>{instance.image}</td>
-            <td>{instance.status}</td>
-            <td>{new Date(instance.created_at).toLocaleString()}</td>
+            <td class={td}><a href={`/admin/status/${instance.id}`} class="no-underline hover:underline">{instance.id}</a></td>
+            <td class={td}>{instance.name}</td>
+            <td class={td}>{instance.image}</td>
+            <td class={td}>{instance.status}</td>
+            <td class={td}>{new Date(instance.created_at).toLocaleString()}</td>
           </tr>
         ))}
       </tbody>

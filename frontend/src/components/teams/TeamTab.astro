@@ -1,62 +1,83 @@
 ---
-import { Copy, Check } from "@lucide/astro";
-import { timeAgo } from "@lib/utils";
+import { timeAgo } from "@library/utils";
+import { Check, Copy } from "@lucide/astro";
 
 const { myTeam, me, myRank, sortedMembers, activity } = Astro.props;
+const memberHeaders = ["#", "Member", "Score", "Solves", "Contribution"];
+const memberColWidths = ["w-9", "w-2/5", "", "", "w-1/3"];
+
+const numCls = "text-[11px] text-text/18 w-9";
+const nameCls = "text-muted-text font-medium";
+const monoCls = "text-[12px] text-text/45 text-center";
+const ptsCls = "font-bold text-pts text-center";
+const avatarCls = "w-7 h-7 bg-accent/15 border border-accent/30 flex items-center justify-center text-[12px] font-bold text-accent shrink-0";
 ---
 
-<div class="tm-content" id="tab-team">
+<div class="flex-1 overflow-y-auto flex flex-col" id="tab-team">
   {myTeam ? (
-    <div class="tm-workspace" id="tm-workspace">
-      <div class="tm-header">
-        <div class="tm-header-left">
-          <div class="tm-header-name">{myTeam.name}</div>
-          <div class="tm-header-meta">
-            <span class="tm-header-score">{myTeam.score} pts</span>
-            {myRank && <span class="tm-header-rank">Rank #{myRank}</span>}
+    <div class="flex flex-col shrink-0" id="tm-workspace">
+      <div class="flex items-center justify-between py-4.5 px-6 bg-elevated border-b border-border-subtle shrink-0">
+        <div>
+          <div class="text-xl font-bold text-text mb-1">{myTeam.name}</div>
+          <div class="flex items-center gap-3.5">
+            <span class="text-[12px] font-semibold text-pts">{myTeam.score} pts</span>
+            {myRank && <span class="text-[11px] text-text/30 tracking-[0.06em]">Rank #{myRank}</span>}
           </div>
         </div>
 
-        <div class="tm-header-right">
-          <div class="tm-invite-row">
-            <span id="tm-invite-code" class="tm-invite-code">{myTeam.invite_code}</span>
-            <button id="tm-copy-btn" class="tm-copy-btn" title="Copy invite code">
+        <div class="flex items-center gap-5">
+          <div class="flex items-center gap-2.5 bg-background border border-border-subtle py-1.5 px-3">
+            <span id="tm-invite-code" class="font-mono text-[13px] text-muted-text tracking-[0.06em]">{myTeam.invite_code}</span>
+            <button
+              id="tm-copy-btn"
+              title="Copy invite code"
+              class="flex items-center justify-center w-3.5 h-3.5 bg-transparent border-none text-text/30
+                cursor-pointer p-0 transition-colors duration-100 shrink-0 hover:text-muted-text
+                [&.copied_.tm-copy-icon]:hidden [&.copied_.tm-check-icon]:block
+                [&.copied_.tm-check-icon]:text-correct [&.copied_.tm-check-icon]:animate-[icon-pop_0.15s_ease-out]"
+            >
               <Copy size={14} class="tm-copy-icon" />
-              <Check size={14} class="tm-check-icon" />
+              <Check size={14} class="tm-check-icon hidden" />
             </button>
           </div>
-          <button id="tm-leave-btn" class="tm-leave-btn">Leave Team</button>
+          <button
+            id="tm-leave-btn"
+            class="bg-accent border-none text-text text-[11px] tracking-[0.08em] py-1.75 px-4 cursor-pointer
+              transition-colors duration-100 hover:bg-accent-dark"
+          >Leave Team</button>
         </div>
       </div>
 
-      <div class="ch-table-wrap">
-        <table>
+      <div class="flex-1 overflow-y-auto p-4 max-h-70 flex-none">
+        <table class="w-full table-fixed border-separate border-spacing-x-0 border-spacing-y-0.5">
           <thead>
             <tr>
-              {["#", "Member", "Score", "Solves", "Contribution"].map((h) => <th>{h}</th>)}
+              {memberHeaders.map((h, i) => (
+                <th class={`py-2 px-3 text-[11px] tracking-[0.12em] text-text/55 ${i === 2 || i === 3 ? "text-center" : "text-left"}${memberColWidths[i] ? ` ${memberColWidths[i]}` : ""}`}>{h}</th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {sortedMembers.map((m: any, i: number) => {
               const pct = myTeam.score > 0 ? Math.round((m.score / myTeam.score) * 100) : 0;
               return (
-                <tr class="tm-member-row" data-id={m.id}>
-                  <td class="ch-num">{String(i + 1).padStart(2, "0")}</td>
-                  <td>
-                    <div class="tm-member-cell">
-                      <div class="tm-avatar">{m.username[0].toUpperCase()}</div>
-                      <span class="ch-name">{m.username}</span>
-                      {m.id === me.id && <span class="tm-you">you</span>}
+                <tr class="tm-member-row bg-elevated hover:bg-[color-mix(in_srgb,var(--elevated-color)_85%,white)]" data-id={m.id}>
+                  <td class={`py-2.5 px-3 text-[13px] ${numCls}`}>{String(i + 1).padStart(2, "0")}</td>
+                  <td class="py-2.5 px-3 text-[13px]">
+                    <div class="flex items-center gap-2.5">
+                      <div class={avatarCls}>{m.username[0].toUpperCase()}</div>
+                      <span class={nameCls}>{m.username}</span>
+                      {m.id === me.id && <span class="text-[9px] tracking-[0.1em] text-accent bg-accent/12 border border-accent/28 py-px px-1.5">you</span>}
                     </div>
                   </td>
-                  <td class="ch-pts">{m.score}</td>
-                  <td class="ch-mono">{m.solves}</td>
-                  <td>
-                    <div class="tm-share-cell">
-                      <div class="tm-share-bar">
-                        <div class="tm-share-fill" style={`width: ${pct}%`}></div>
+                  <td class={`py-2.5 px-3 text-[13px] ${ptsCls}`}>{m.score}</td>
+                  <td class={`py-2.5 px-3 text-[13px] ${monoCls}`}>{m.solves}</td>
+                  <td class="py-2.5 px-3 text-[13px]">
+                    <div class="flex items-center gap-2.5 min-w-35">
+                      <div class="flex-1 h-0.5 bg-background overflow-hidden">
+                        <div class="h-full bg-accent" style={`width: ${pct}%`}></div>
                       </div>
-                      <span class="tm-share-pct">{pct}%</span>
+                      <span class="text-[10px] text-text/25 min-w-7 text-right">{pct}%</span>
                     </div>
                   </td>
                 </tr>
@@ -65,22 +86,22 @@ const { myTeam, me, myRank, sortedMembers, activity } = Astro.props;
           </tbody>
         </table>
       </div>
-      <div id="tm-error" class="tm-error" style="padding: 0 16px 8px"></div>
+      <div id="tm-error" class="mt-1 text-[11px] text-wrong min-h-4" style="padding: 0 16px 8px"></div>
 
-      <div class="tm-activity-section">
-        <div class="tm-activity-label">Recent Activity</div>
-        <div class="tm-activity-scroll">
-          {activity.length === 0 ? <div class="ch-empty">No activity yet</div> : activity.map((e: any) => (
-            <div class="tm-feed-entry">
-              <div class="tm-avatar tm-avatar-sm">{e.username[0].toUpperCase()}</div>
-              <div class="tm-feed-body">
-                <div class="tm-feed-line">
-                  <span class="tm-feed-user">{e.username}</span>
-                  <span class="tm-feed-verb">solved</span>
-                  <span class={`tm-feed-chall cat-${e.category}`}>{e.challenge}</span>
-                  <span class="tm-feed-pts">+{e.points}</span>
+      <div class="border-t border-border-subtle flex flex-col">
+        <div class="text-[9px] tracking-[0.14em] text-text/25 pt-2.5 px-6 pb-1.5 shrink-0">Recent Activity</div>
+        <div class="max-h-60 overflow-y-auto">
+          {activity.length === 0 ? <div class="text-center py-20 text-text/18 text-[13px]">No activity yet</div> : activity.map((e: any) => (
+            <div class="flex items-start gap-3 py-2 px-6 border-b border-border-subtle last:border-b-0">
+              <div class={`${avatarCls} w-6 h-6 text-[10px] mt-px`}>{e.username[0].toUpperCase()}</div>
+              <div class="flex flex-col gap-0.75">
+                <div class="flex items-center flex-wrap gap-1.5 text-[12px]">
+                  <span class="text-muted-text font-semibold">{e.username}</span>
+                  <span class="text-text/30">solved</span>
+                  <span class={`text-[11px] py-px px-1.75 cat-${e.category}`}>{e.challenge}</span>
+                  <span class="text-[11px] font-bold text-pts">+{e.points}</span>
                 </div>
-                <div class="tm-feed-time">{timeAgo(e.solved_at)}</div>
+                <div class="text-[10px] text-text/20 tracking-[0.04em]">{timeAgo(e.solved_at)}</div>
               </div>
             </div>
           ))}
@@ -88,22 +109,40 @@ const { myTeam, me, myRank, sortedMembers, activity } = Astro.props;
       </div>
     </div>
   ) : (
-    <div class="tm-no-team-wrap">
-      <div class="tm-form-card">
-        <div class="tm-form-title">Create a Team</div>
-        <form id="tm-create-form" class="tm-form">
-          <input name="name" type="text" placeholder="Team name" class="tm-input" autocomplete="off" />
-          <button type="submit" class="tm-btn">Create</button>
-          <div id="tm-create-error" class="tm-error"></div>
+    <div class="flex items-start justify-center py-16 px-6">
+      <div class="w-70 p-6 bg-elevated border border-border-subtle">
+        <div class="text-[11px] tracking-[0.12em] text-text/40 mb-4">Create a Team</div>
+        <form id="tm-create-form" class="flex flex-col gap-2">
+          <input
+            name="name" type="text" placeholder="Team name" autocomplete="off"
+            class="bg-background border border-border-subtle text-muted-text py-2 px-3 text-[12px]
+              outline-none w-full box-border focus:border-accent/50"
+          />
+          <button
+            type="submit"
+            class="bg-accent border-none text-text py-2 text-[11px] tracking-[0.1em] font-bold cursor-pointer
+              w-full transition-colors duration-150 hover:bg-accent-dark
+              disabled:opacity-60 disabled:cursor-default"
+          >Create</button>
+          <div id="tm-create-error" class="mt-1 text-[11px] text-wrong min-h-4"></div>
         </form>
       </div>
-      <div class="tm-form-divider"></div>
-      <div class="tm-form-card">
-        <div class="tm-form-title">Join a Team</div>
-        <form id="tm-join-form" class="tm-form">
-          <input name="invite_code" type="text" placeholder="Invite code" class="tm-input" autocomplete="off" />
-          <button type="submit" class="tm-btn">Join</button>
-          <div id="tm-join-error" class="tm-error"></div>
+      <div class="w-px bg-border-subtle mx-8 self-stretch"></div>
+      <div class="w-70 p-6 bg-elevated border border-border-subtle">
+        <div class="text-[11px] tracking-[0.12em] text-text/40 mb-4">Join a Team</div>
+        <form id="tm-join-form" class="flex flex-col gap-2">
+          <input
+            name="invite_code" type="text" placeholder="Invite code" autocomplete="off"
+            class="bg-background border border-border-subtle text-muted-text py-2 px-3 text-[12px]
+              outline-none w-full box-border focus:border-accent/50"
+          />
+          <button
+            type="submit"
+            class="bg-accent border-none text-text py-2 text-[11px] tracking-[0.1em] font-bold cursor-pointer
+              w-full transition-colors duration-150 hover:bg-accent-dark
+              disabled:opacity-60 disabled:cursor-default"
+          >Join</button>
+          <div id="tm-join-error" class="mt-1 text-[11px] text-wrong min-h-4"></div>
         </form>
       </div>
     </div>

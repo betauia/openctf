@@ -1,7 +1,7 @@
 ---
-import "../styles/navbar.css";
+import { Image } from "astro:assets";
 import logo from "@assets/logo.png";
-import { cookieOf, apiFetch } from "@lib/backend";
+import { cookieOf, apiFetch } from "@library/backend";
 
 const links = [
   { name: "Challenges", href: "/challenges" },
@@ -9,6 +9,10 @@ const links = [
   { name: "Teams", href: "/teams" },
   { name: "Rules", href: "/rules" },
 ];
+
+const linkBase = "flex items-center h-full px-3.5 text-muted-text no-underline text-[12px] tracking-[0.08em] border-b-2 border-transparent transition-colors hover:text-text";
+const linkActive = "text-accent border-b-accent";
+const authBtn = "inline-flex items-center h-7 text-[11px] font-bold tracking-[0.08em] text-text bg-accent border-none px-3.5 cursor-pointer no-underline transition-colors hover:bg-accent-dark";
 
 const cookie = cookieOf(Astro.request);
 const path = Astro.url.pathname;
@@ -20,30 +24,28 @@ try {
 } catch {}
 ---
 
-<nav>
-  <div class="nav-inner">
-    <a href="/" class="nav-logo">
-      <img src={logo.src} alt="Logo" class="nav-logo-img" />
+<nav class="fixed top-0 left-0 w-full h-16 bg-raised border-b border-background z-50">
+  <div class="h-full flex items-stretch">
+    <a href="/" class="flex items-center px-6 shrink-0 w-40 box-border">
+      <Image src={logo} alt="Logo" width={242} height={56} format="webp" class="h-7 w-auto block" />
     </a>
 
-    <ul class="nav-links">
+    <ul class="list-none flex m-0 px-2 h-full flex-1">
       {links.map((link) => (
         <li>
-          <a href={link.href} class={path.startsWith(link.href) ? "active" : ""}>
-            {link.name}
-          </a>
+          <a href={link.href} class={`${linkBase} ${path.startsWith(link.href) ? linkActive : ""}`}>{link.name}</a>
         </li>
       ))}
     </ul>
 
-    <div class="nav-user">
+    <div class="flex items-center gap-4.75 px-6.25 shrink-0">
       {user ? (
         <>
-          <div class="nav-avatar">{user.username[0].toUpperCase()}</div>
-          <button class="nav-logout" id="nav-logout-btn">Logout</button>
+          <div class="w-7 h-7 bg-accent/15 border border-accent/30 flex items-center justify-center text-[12px] font-bold text-accent shrink-0">{user.username[0].toUpperCase()}</div>
+          <button class={authBtn} id="nav-logout-btn">Logout</button>
         </>
       ) : (
-        <a href="/login" class="nav-login">Login</a>
+        <a href="/login" class={authBtn}>Login</a>
       )}
     </div>
   </div>

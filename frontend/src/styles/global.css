@@ -1,20 +1,21 @@
-:root {
-  --background-color: #1a1a1a;                /** Main page background **/
-  --raised-color: #262626;                    /** Raised elements background **/
-  --elevated-color: #2e2e2e;                  /** Further raised elements **/
-  --text-color: #ffffff;                      /** General text color **/
-  --muted-text: rgba(255, 255, 255, 0.87);    /** Text color with transparency **/
-  --accent-color: #D1002C;                    /** Links, active states, buttons, etc **/
-  --accent-dark: #9a001f;                     /** Darker shade of accent color **/
-  --border-subtle: rgba(255, 255, 255, 0.07); /** Subtle border color **/
+@import "tailwindcss";
+@import "./themes/uiactf.css";
+@import "./themes/special.css";
 
-  --pts-color: #ffd54f;                       /** Points value color **/
-
-  --color-correct:      #66bb6a;              /** Correct flag feedback **/
-  --color-correct-rgb:  102, 187, 106;          /** Correct color as RGB for rgba() use **/
-  --color-correct-dark: #388e3c;              /** Darker shade of correct color **/
-  --color-wrong:        #ef5350;              /** Wrong flag feedback **/
-  --color-wrong-dark:   #c62828;              /** Darker shade of wrong color **/
+@theme inline {
+  --color-background: var(--background-color);
+  --color-raised: var(--raised-color);
+  --color-elevated: var(--elevated-color);
+  --color-text: var(--text-color);
+  --color-muted-text: var(--muted-text);
+  --color-accent: var(--accent-color);
+  --color-accent-dark: var(--accent-dark);
+  --color-border-subtle: var(--border-subtle);
+  --color-pts: var(--pts-color);
+  --color-correct: var(--color-correct);
+  --color-correct-dark: var(--color-correct-dark);
+  --color-wrong: var(--color-wrong);
+  --color-wrong-dark: var(--color-wrong-dark);
 }
 
 html, body, input, button, select, textarea {
@@ -27,8 +28,15 @@ html, body {
 }
 
 @keyframes icon-pop {
-  from { transform: scale(0.5); opacity: 0; }
-  to   { transform: scale(1);   opacity: 1; }
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .baselayout-container {
@@ -41,6 +49,7 @@ html, body {
   align-items: center;
   box-sizing: border-box;
 }
+
 .baselayout-content {
   max-width: 75rem;
   width: 100%;

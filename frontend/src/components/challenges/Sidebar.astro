@@ -1,7 +1,7 @@
 ---
-import { CAT_MAP } from "@lib/categories";
+import { CAT_MAP } from "@library/categories";
+import { fmt } from "@library/utils";
 import { Hash } from "@lucide/astro";
-import { fmt } from "@lib/utils";
 
 const { categories, challenges, solvedIds } = Astro.props;
 const ids = new Set(solvedIds as number[]);
@@ -17,20 +17,36 @@ const totalSolved = (challenges as any[]).filter((c: any) => ids.has(c.id)).leng
 const totalAll = (challenges as any[]).length;
 ---
 
-<aside class="ch-sidebar">
-  <div class="ch-sidebar-score">{totalSolved} <span>/ {totalAll} solved</span></div>
+<aside class="w-40 shrink-0 bg-background border-r border-text/7 flex flex-col overflow-y-auto py-3">
+  <div class="px-3.5 pb-3 text-base font-bold text-text text-center border-b border-border-subtle mb-1.5">
+    {totalSolved} <span class="text-[12px] font-normal text-muted-text opacity-40">/ {totalAll} solved</span>
+  </div>
 
   {[["all", "All"], ...categories.map((cat: string) => [cat, fmt(cat)])].map(([cat, label], i) => {
     const Icon = cat === "all" ? Hash : CAT_MAP[cat]?.Icon;
     const { total, pct } = catStats(cat);
     return (
-      <button class={`ch-cat${i === 0 ? " active" : ""}`} data-cat={cat}>
-        <div class="ch-cat-row">
-          <div class="ch-cat-icon">{Icon && <Icon size={13} />}</div>
-          <span class="ch-cat-name">{label} <em>{total}</em></span>
+      <button
+        data-cat={cat}
+        class={`group ch-cat flex flex-col py-2.5 px-3 border-none bg-transparent text-text/45 cursor-pointer
+          text-left w-full transition-colors duration-100 hover:bg-text/3${i === 0 ? " active" : ""}`}
+      >
+        <div class="flex items-center gap-2.5 mb-2">
+          <div
+            class="w-7.5 h-7.5 bg-elevated rounded-md flex items-center justify-center shrink-0
+              text-text/40 transition-colors duration-100
+              group-[.active]:bg-[color-mix(in_srgb,var(--accent-color)_18%,var(--elevated-color))]
+              group-[.active]:text-accent"
+          >{Icon && <Icon size={13} />}</div>
+          <span
+            class="text-[13px] tracking-[0.03em] text-text/55 transition-colors duration-100
+              group-hover:text-text/80 group-[.active]:text-text/90"
+          >
+            {label} <em class="not-italic text-[10px] text-text/20 ml-1">{total}</em>
+          </span>
         </div>
-        <div class="ch-progress-wrap">
-          <div class="ch-progress-bar" style={`width: ${pct}%`}></div>
+        <div class="h-0.5 bg-elevated ml-10 overflow-hidden">
+          <div class="h-full bg-accent transition-[width] duration-300 ease-out" style={`width: ${pct}%`}></div>
         </div>
       </button>
     );

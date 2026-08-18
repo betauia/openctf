@@ -12,6 +12,12 @@ export function esc(s: unknown): string {
   return _esc.innerHTML;
 }
 
+export function flashCopy(btn: HTMLElement, text: string) {
+  navigator.clipboard.writeText(text);
+  btn.classList.add("copied");
+  setTimeout(() => btn.classList.remove("copied"), 1500);
+}
+
 export function exclusiveActive(selector: string, active: Element) {
   document.querySelectorAll(selector).forEach(el => el.classList.toggle("active", el === active));
 }
