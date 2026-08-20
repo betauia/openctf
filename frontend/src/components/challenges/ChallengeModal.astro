@@ -1,6 +1,7 @@
 ---
-import { X, ArrowRight, Play, Copy, Check, Square, ChevronDown, ChevronUp, Download, File } from "@lucide/astro";
-import { CATS, FALLBACK_ICON } from "@lib/categories";
+import { CATS } from "@library/categories";
+import { ArrowRight, Check, ChevronDown, ChevronUp, Copy, Download, File, Play, Square, X } from "@lucide/astro";
+import "@styles/themes/uiactf.css";
 ---
 
 <div id="m-cat-icons" style="display:none">
@@ -15,96 +16,185 @@ import { CATS, FALLBACK_ICON } from "@lib/categories";
   <span data-icon="play"><Play size={16} /></span>
 </div>
 
-<div id="ch-overlay" class="ch-overlay">
-  <div class="ch-modal-wrap">
-    <div id="m-solved-banner" class="ch-solved-banner" style="display:none">Solved</div>
-    <div id="ch-modal" class="ch-modal">
+<div
+  id="ch-overlay"
+  class="hidden fixed inset-0 z-100 items-center justify-center
+    bg-black/65"
+>
+  <div class="relative">
+    <div
+      id="m-solved-banner"
+      style="display:none"
+      class="absolute top-0 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none
+        py-0.75 px-2.5 text-[13px] font-bold tracking-widest
+        border border-correct/18 bg-correct/6 text-correct"
+    >Solved</div>
 
-    <div class="ch-modal-head">
-      <div class="ch-modal-head-top">
-        <span class="ch-modal-name-label">CHALLENGE NAME</span>
-        <div class="ch-modal-head-actions">
-          <div class="ch-modal-cat-icon" id="m-cat-icon"></div>
-          <button id="ch-modal-close" class="ch-modal-close"><X size={16} /></button>
-        </div>
-      </div>
-      <div class="ch-modal-title" id="m-title"></div>
-    </div>
+    <div
+      id="ch-modal"
+      class="flex w-125 max-w-[96vw] max-h-[90vh] flex-col overflow-hidden
+        bg-raised shadow-[0_32px_80px_rgba(0,0,0,0.7)]"
+    >
 
-    <div class="ch-modal-tabs">
-      <button class="ch-tab active" data-tab="overview">Overview</button>
-      <button class="ch-tab" data-tab="solves">Solves</button>
-    </div>
-
-    <div id="ch-tab-overview" class="ch-tab-panel">
-
-      <div class="ch-modal-desc-wrap" id="m-desc-wrap">
-        <p id="m-desc" class="ch-modal-desc"></p>
-        <button id="m-desc-toggle" class="ch-modal-desc-toggle" style="display:none">Show more</button>
-      </div>
-
-      <form id="m-flag-form" class="ch-modal-flag-form" data-form-type="other">
-        <input id="m-flag" type="text" placeholder="Submit flag & press enter" autocomplete="off" data-lpignore="true" />
-        <button type="submit" id="m-flag-btn"><ArrowRight size={16} /></button>
-      </form>
-
-      <div id="m-flag-msg" class="ch-modal-flag-msg"></div>
-
-      <!-- unified connection / instance block -->
-      <div id="m-conn-block" class="ch-modal-block" style="display:none">
-
-        <!-- idle -->
-        <div id="m-conn-idle" class="ch-conn-idle">
-          <div class="ch-conn-idle-text">
-            <div class="ch-conn-idle-title">Create Instance</div>
-            <div class="ch-conn-idle-sub">Creates for all team members</div>
+      <div
+        class="shrink-0 pt-4.5 px-5 pb-4
+          border-b border-border-subtle bg-elevated"
+      >
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] tracking-[0.14em] text-text/28">CHALLENGE NAME</span>
+          <div class="flex items-center gap-2">
+            <div id="m-cat-icon" class="w-9 h-9 flex items-center justify-center text-[0px] border"></div>
+            <button
+              id="ch-modal-close"
+              class="p-0 leading-none text-[13px] cursor-pointer
+                text-text/22 hover:text-text/70"
+            ><X size={16} /></button>
           </div>
-          <button id="m-conn-start" class="ch-create-play" title="Start"><Play size={16} /></button>
+        </div>
+        <div class="text-xl font-bold tracking-[0.01em] leading-tight text-text/92" id="m-title"></div>
+      </div>
+
+      <div class="flex shrink-0 border-b border-border-subtle bg-elevated">
+        <button
+          data-tab="overview"
+          class="ch-tab flex-1 p-2.75 border-b-2 border-transparent
+            text-xs font-semibold tracking-wider cursor-pointer
+            transition-colors duration-150 text-text/32 hover:text-text/60
+            [&.active]:text-muted-text [&.active]:border-b-accent active"
+        >Overview</button>
+        <button
+          data-tab="solves"
+          class="ch-tab flex-1 p-2.75 border-b-2 border-transparent
+            text-xs font-semibold tracking-wider cursor-pointer
+            transition-colors duration-150 text-text/32 hover:text-text/60
+            [&.active]:text-muted-text [&.active]:border-b-accent"
+        >Solves</button>
+      </div>
+
+      <div id="ch-tab-overview" class="flex-1 flex flex-col gap-3.5 overflow-y-auto p-5">
+
+        <div
+          id="m-desc-wrap"
+          class="relative
+            [&.collapsed]:after:content-[''] [&.collapsed]:after:absolute
+            [&.collapsed]:after:right-0 [&.collapsed]:after:bottom-5.5 [&.collapsed]:after:left-0
+            [&.collapsed]:after:h-9.5 [&.collapsed]:after:pointer-events-none
+            [&.collapsed]:after:bg-[linear-gradient(transparent,var(--raised-color))]"
+        >
+          <p
+            id="m-desc"
+            class="m-0 whitespace-pre-wrap text-[13px] leading-[1.75] text-text/70
+              [&.collapsed]:max-h-23 [&.collapsed]:overflow-hidden"
+          ></p>
+          <button
+            id="m-desc-toggle"
+            style="display:none"
+            class="inline-flex items-center gap-1 pt-1 px-0 pb-0
+              text-[11px] tracking-[0.04em] cursor-pointer text-accent hover:underline"
+          >Show more</button>
         </div>
 
-        <!-- running -->
-        <div id="m-conn-running" style="display:none">
-          <div class="ch-conn-running-hd">
-            <span class="ch-create-dot"></span>
-            <span class="ch-conn-running-label">RUNNING</span>
-          </div>
-          <div class="ch-create-info">
-            <div class="ch-create-info-cell">
-              <div class="ch-create-info-val" id="m-conn-host">—</div>
-              <div class="ch-create-info-key">HOST</div>
+        <form id="m-flag-form" data-form-type="other" class="flex m-0 overflow-hidden rounded-md border border-text/12">
+          <input
+            id="m-flag"
+            type="text"
+            placeholder="Submit flag & press enter"
+            autocomplete="off"
+            data-lpignore="true"
+            class="flex-1 min-w-0 border-none bg-background py-2.5 px-3.5
+              font-mono text-xs text-muted-text outline-none focus:bg-text/2"
+          />
+          <button
+            type="submit"
+            id="m-flag-btn"
+            class="shrink-0 border-none py-2.5 px-4.5 text-base cursor-pointer text-white bg-accent
+              transition-colors duration-150 hover:enabled:bg-accent-dark
+              disabled:cursor-default disabled:opacity-70
+              [&.correct]:bg-correct-dark [&.wrong]:bg-wrong-dark"
+          ><ArrowRight size={16} /></button>
+        </form>
+
+        <div
+          id="m-flag-msg"
+          class="-mt-2 min-h-3.5 text-[11px]
+            [&.correct]:text-correct [&.wrong]:text-wrong"
+        ></div>
+
+        <!-- unified connection / instance block -->
+        <div id="m-conn-block" style="display:none" class="overflow-hidden rounded border border-border-subtle bg-elevated">
+
+          <!-- idle -->
+          <div id="m-conn-idle" class="flex items-center justify-between py-3 px-3.5">
+            <div>
+              <div class="text-[13px] font-bold text-text">Create Instance</div>
+              <div class="mt-0.5 text-[11px] text-text/32">Creates for all team members</div>
             </div>
-            <div class="ch-create-info-cell">
-              <div class="ch-create-info-val" id="m-conn-port">—</div>
-              <div class="ch-create-info-key">PORT</div>
+            <button
+              id="m-conn-start"
+              title="Start"
+              class="shrink-0 w-7.5 h-7.5 flex items-center justify-center rounded-full border border-text/10
+                text-[11px] cursor-pointer text-muted-text bg-text/8 transition-colors duration-150
+                hover:enabled:bg-text/14 disabled:opacity-50 disabled:cursor-default"
+            ><Play size={16} /></button>
+          </div>
+
+          <!-- running -->
+          <div id="m-conn-running" style="display:none">
+            <div class="flex items-center gap-2 py-2.5 px-3.5 border-b border-correct/20 bg-correct/12">
+              <span class="w-2 h-2 shrink-0 rounded-full bg-correct"></span>
+              <span class="text-[10px] font-bold tracking-widest text-correct">RUNNING</span>
             </div>
-            <div class="ch-conn-actions">
-              <button class="ch-modal-icon-btn" id="m-conn-copy" title="Copy">
-                <Copy size={14} class="tm-copy-icon" />
-                <Check size={14} class="tm-check-icon" />
-              </button>
-              <button class="ch-conn-stop" id="m-conn-stop" title="Stop"><Square size={14} /></button>
+            <div class="flex items-center pr-3.5 border-b border-border-subtle">
+              <div class="flex-1 p-3.5">
+                <div class="mb-1 font-mono text-[14px] font-semibold text-muted-text" id="m-conn-host">—</div>
+                <div class="text-[9px] tracking-[0.12em] uppercase text-text/28">HOST</div>
+              </div>
+              <div class="flex-1 p-3.5">
+                <div class="mb-1 font-mono text-[14px] font-semibold text-muted-text" id="m-conn-port">—</div>
+                <div class="text-[9px] tracking-[0.12em] uppercase text-text/28">PORT</div>
+              </div>
+              <div class="shrink-0 flex items-center gap-1.5 pr-3.5">
+                <button
+                  id="m-conn-copy"
+                  title="Copy"
+                  class="inline-flex items-center rounded border border-text/8 py-1.25 px-2.25 text-[13px]
+                    cursor-pointer no-underline text-text/45 bg-text/5 transition-colors duration-150
+                    hover:bg-text/10 hover:text-text/80
+                    [&.copied_.tm-copy-icon]:hidden [&.copied_.tm-check-icon]:block
+                    [&.copied_.tm-check-icon]:text-correct [&.copied_.tm-check-icon]:animate-[icon-pop_0.15s_ease-out]"
+                >
+                  <Copy size={14} class="tm-copy-icon" />
+                  <Check size={14} class="tm-check-icon hidden" />
+                </button>
+                <button
+                  id="m-conn-stop"
+                  title="Stop"
+                  class="w-7 h-7 flex items-center justify-center rounded border border-accent/30 text-[10px]
+                    cursor-pointer text-wrong bg-accent/15 transition-colors duration-150
+                    hover:enabled:bg-accent/28 disabled:opacity-50 disabled:cursor-default"
+                ><Square size={14} /></button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div id="m-file-block" class="ch-modal-block" style="display:none">
-        <div class="ch-modal-block-header">
-          <div>
-            <div class="ch-modal-block-title">Files</div>
-            <div class="ch-modal-block-sub">Required files for this challenge</div>
+        <div id="m-file-block" style="display:none" class="overflow-hidden rounded border border-border-subtle bg-elevated">
+          <div class="flex items-center justify-between py-3 px-3.5">
+            <div>
+              <div class="text-[13px] font-semibold text-muted-text">Files</div>
+              <div class="mt-0.5 text-[11px] text-text/32">Required files for this challenge</div>
+            </div>
           </div>
+          <div id="m-file-list" class="flex flex-col gap-1 px-3.5 pb-3"></div>
         </div>
-        <div id="m-file-list" class="ch-file-list"></div>
+
+        <div id="m-stats" class="grid grid-cols-2 overflow-hidden rounded border border-border-subtle"></div>
+
       </div>
 
-      <div id="m-stats" class="ch-modal-stats"></div>
+      <div id="ch-tab-solves" style="display:none" class="flex-1 flex flex-col gap-3.5 overflow-y-auto p-5">
+      </div>
 
     </div>
-    
-    <div id="ch-tab-solves" class="ch-tab-panel" style="display:none">
-    </div>
-
-</div>
   </div>
 </div>

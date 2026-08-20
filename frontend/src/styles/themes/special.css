@@ -1,0 +1,9 @@
+:root {
+  --pts-color: #ffd54f;                       /** Points value color **/
+
+  --color-correct:      #66bb6a;              /** Correct flag feedback **/
+  --color-correct-rgb:  102, 187, 106;          /** Correct color as RGB for rgba() use **/
+  --color-correct-dark: #388e3c;              /** Darker shade of correct color **/
+  --color-wrong:        #ef5350;              /** Wrong flag feedback **/
+  --color-wrong-dark:   #c62828;              /** Darker shade of wrong color **/
+}

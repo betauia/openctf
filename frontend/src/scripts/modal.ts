@@ -1,75 +1,90 @@
-import { fmt, esc, exclusiveActive, timeAgo, iconFrom } from "@lib/utils";
+import { CAT_SLUGS, DIFF_SLUGS } from "@library/categories";
+import { esc, exclusiveActive, flashCopy, fmt, iconFrom, timeAgo } from "@library/utils";
 import { markChallengeSolved } from "./filter";
-import { CAT_SLUGS, DIFF_SLUGS } from "@lib/categories";
 
 // colors
 const css = getComputedStyle(document.documentElement);
 
 const CAT_COLORS: Record<string, string> = Object.fromEntries(
-  CAT_SLUGS.map((c) => [c, css.getPropertyValue(`--cat-${c}`).trim()])
+  CAT_SLUGS.map((c) => [c, css.getPropertyValue(`--cat-${c}`).trim()]),
 );
 
 const DIFF_COLORS: Record<string, string> = Object.fromEntries(
-  DIFF_SLUGS.map((d) => [d, css.getPropertyValue(`--diff-${d}`).trim()])
+  DIFF_SLUGS.map((d) => [d, css.getPropertyValue(`--diff-${d}`).trim()]),
 );
 
 const ptsColor = css.getPropertyValue("--pts-color").trim();
 
 // elements
-const overlay      = document.getElementById("ch-overlay")!;
-const mTitle       = document.getElementById("m-title")!;
-const mCatIcon     = document.getElementById("m-cat-icon")!;
-const mStats       = document.getElementById("m-stats")!;
+const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
+  document.getElementById(id) as T;
 
-const mDesc        = document.getElementById("m-desc")!;
-const mDescWrap    = document.getElementById("m-desc-wrap")!;
-const mDescToggle  = document.getElementById("m-desc-toggle") as HTMLButtonElement;
+const overlay = $("ch-overlay");
+const mTitle = $("m-title");
+const mCatIcon = $("m-cat-icon");
+const mStats = $("m-stats");
 
-const mConnBlock   = document.getElementById("m-conn-block")!;
-const mConnIdle    = document.getElementById("m-conn-idle")!;
-const mConnRunning = document.getElementById("m-conn-running")!;
-const mConnStart   = document.getElementById("m-conn-start") as HTMLButtonElement;
-const mConnHost    = document.getElementById("m-conn-host")!;
-const mConnPort    = document.getElementById("m-conn-port")!;
+const mDesc = $("m-desc");
+const mDescWrap = $("m-desc-wrap");
+const mDescToggle = $<HTMLButtonElement>("m-desc-toggle");
 
-const mFileBlock   = document.getElementById("m-file-block")!;
-const mFileList    = document.getElementById("m-file-list")!;
+const mConnBlock = $("m-conn-block");
+const mConnIdle = $("m-conn-idle");
+const mConnRunning = $("m-conn-running");
+const mConnStart = $<HTMLButtonElement>("m-conn-start");
+const mConnHost = $("m-conn-host");
+const mConnPort = $("m-conn-port");
 
-const mFlagForm    = document.getElementById("m-flag-form") as HTMLFormElement;
-const mFlagInput   = document.getElementById("m-flag") as HTMLInputElement;
-const mFlagBtn     = document.getElementById("m-flag-btn") as HTMLButtonElement;
-const mFlagMsg     = document.getElementById("m-flag-msg")!;
+const mFileBlock = $("m-file-block");
+const mFileList = $("m-file-list");
 
-const mTabOverview  = document.getElementById("ch-tab-overview")!;
-const mTabSolves    = document.getElementById("ch-tab-solves")!;
-const mSolvedBanner = document.getElementById("m-solved-banner")!;
+const mFlagForm = $<HTMLFormElement>("m-flag-form");
+const mFlagInput = $<HTMLInputElement>("m-flag");
+const mFlagBtn = $<HTMLButtonElement>("m-flag-btn");
+const mFlagMsg = $("m-flag-msg");
+
+const mTabOverview = $("ch-tab-overview");
+const mTabSolves = $("ch-tab-solves");
+const mSolvedBanner = $("m-solved-banner");
+const mConnStop = $("m-conn-stop");
 
 // snapshots
 const mConnStartInner = mConnStart.innerHTML;
-const mFlagBtnInner   = mFlagBtn.innerHTML;
+const mFlagBtnInner = mFlagBtn.innerHTML;
 
 // helpers
 const icon = iconFrom("m-icon-cache");
 
 // state
+let challenges: any[] = [];
 let currentModalId: number | null = null;
 let currentInstanceId: string | null = null;
 let descExpanded = false;
 let solvedSet = new Set<number>();
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 
-function showSolvedBanner() { mSolvedBanner.style.display = ""; }
-function hideSolvedBanner() { mSolvedBanner.style.display = "none"; }
+function showSolvedBanner() {
+  mSolvedBanner.style.display = "";
+}
+function hideSolvedBanner() {
+  mSolvedBanner.style.display = "none";
+}
 
 function stopPoll() {
-  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
+  }
 }
 
 function startPoll() {
   stopPoll();
   pollInterval = setInterval(async () => {
     const id = currentModalId;
-    if (!id || solvedSet.has(id)) { stopPoll(); return; }
+    if (!id || solvedSet.has(id)) {
+      stopPoll();
+      return;
+    }
     const res = await fetch(`/api/challenges/${id}/solves`);
     if (res.ok && (await res.json()).length > 0) {
       solvedSet.add(id);
@@ -81,7 +96,9 @@ function startPoll() {
 }
 
 // instance
-async function resolveConn(c: any): Promise<{ host: string; port: string; instanceId?: string } | null> {
+async function resolveConn(
+  c: any,
+): Promise<{ host: string; port: string; instanceId?: string } | null> {
   if (c.docker_image) {
     const res = await fetch("/api/instances", {
       method: "POST",
@@ -90,11 +107,20 @@ async function resolveConn(c: any): Promise<{ host: string; port: string; instan
     });
     if (!res.ok) return null;
     const inst = await res.json();
-    return { host: inst.host_ip ?? "—", port: inst.host_port ?? "—", instanceId: inst.id };
+    return {
+      host: inst.host_ip ?? "—",
+      port: inst.host_port ?? "—",
+      instanceId: inst.id,
+    };
   }
+
+  // connection_info is free text set by the challenge author (e.g. "nc host port", "ncat ...")
   const parts = c.connection_info.trim().split(/\s+/);
-  const port  = parts.findLast((p: string) => /^\d+$/.test(p)) ?? "—";
-  const host  = parts.findLast((p: string) => p !== port && !/^nc$|^ncat$|^telnet$/i.test(p)) ?? c.connection_info;
+  const port = parts.findLast((p: string) => /^\d+$/.test(p)) ?? "—";
+  const host =
+    parts.findLast(
+      (p: string) => p !== port && !/^nc$|^ncat$|^telnet$/i.test(p),
+    ) ?? c.connection_info;
   return { host, port };
 }
 
@@ -110,7 +136,10 @@ export async function submitFlag(
   const origInner = btn.innerHTML;
   btn.disabled = true;
   btn.textContent = "...";
-  if (msg) { msg.textContent = ""; msg.classList.remove("correct", "wrong"); }
+  if (msg) {
+    msg.textContent = "";
+    msg.classList.remove("correct", "wrong");
+  }
 
   try {
     const res = await fetch("/api/challenges/submit", {
@@ -124,12 +153,18 @@ export async function submitFlag(
       btn.textContent = `+${data.points}!`;
       btn.classList.add("correct");
       input.value = "";
-      if (msg) { msg.textContent = `Correct! +${data.points} points`; msg.classList.add("correct"); }
+      if (msg) {
+        msg.textContent = `Correct! +${data.points} points`;
+        msg.classList.add("correct");
+      }
       onCorrect?.(data.challenge);
     } else {
       btn.textContent = "Wrong";
       btn.classList.add("wrong");
-      if (msg) { msg.textContent = "Incorrect flag, try again."; msg.classList.add("wrong"); }
+      if (msg) {
+        msg.textContent = "Incorrect flag, try again.";
+        msg.classList.add("wrong");
+      }
     }
   } catch {
     btn.textContent = "Error";
@@ -147,65 +182,100 @@ export async function submitFlag(
 function renderHeader(c: any) {
   const catColor = CAT_COLORS[c.category];
   mTitle.textContent = c.title;
-  const catIconSrc = document.querySelector<HTMLElement>(`#m-cat-icons [data-cat="${c.category}"]`);
+  const catIconSrc = document.querySelector<HTMLElement>(
+    `#m-cat-icons [data-cat="${c.category}"]`,
+  );
   mCatIcon.innerHTML = catIconSrc?.innerHTML ?? "";
   mCatIcon.style.cssText = `color:${catColor};background:${catColor}20;border-color:${catColor}40`;
 }
 
+function setDescCollapsed(collapsed: boolean) {
+  mDesc.classList.toggle("collapsed", collapsed);
+  mDescWrap.classList.toggle("collapsed", collapsed);
+}
+
 function renderDesc(c: any) {
   mDesc.textContent = c.description ?? "No description provided.";
-  const descLong = (c.description?.length ?? 0) > 200 || (c.description?.split("\n").length ?? 0) > 4;
-  mDesc.classList.toggle("collapsed", descLong);
-  mDescWrap.classList.toggle("collapsed", descLong);
+  const descLong =
+    (c.description?.length ?? 0) > 200 ||
+    (c.description?.split("\n").length ?? 0) > 4;
+  setDescCollapsed(descLong);
   mDescToggle.style.display = descLong ? "" : "none";
-  if (descLong) { mDescToggle.innerHTML = `${icon("chevron-down")} Show more`; descExpanded = false; }
+  if (descLong) {
+    mDescToggle.innerHTML = `${icon("chevron-down")} Show more`;
+    descExpanded = false;
+  }
 }
 
 function renderStats(c: any) {
   const diffColor = DIFF_COLORS[(c.difficulty ?? "").toLowerCase()];
   mStats.innerHTML = [
-    [c.points,          ptsColor,            "POINTS"],
-    [fmt(c.difficulty), diffColor,           "DIFFICULTY"],
-    [c.author ?? "—",   "var(--muted-text)", "AUTHOR"],
-    [c.solves ?? 0,     "var(--muted-text)", "SOLVES"],
-  ].map(([val, color, label]) => `
-    <div class="ch-modal-stat-cell">
-      <div class="ch-modal-stat-val" style="color:${color}">${esc(val)}</div>
-      <div class="ch-modal-stat-label">${label}</div>
-    </div>`).join("");
+    [c.points, ptsColor, "POINTS"],
+    [fmt(c.difficulty), diffColor, "DIFFICULTY"],
+    [c.author ?? "—", "var(--muted-text)", "AUTHOR"],
+    [c.solves ?? 0, "var(--muted-text)", "SOLVES"],
+  ]
+    .map(
+      ([val, color, label]) => `
+    <div class="p-4 text-center bg-elevated border-r border-b border-border-subtle [&:nth-child(even)]:border-r-0 [&:nth-last-child(-n+2)]:border-b-0">
+      <div class="mb-1 text-[17px] font-bold" style="color:${color}">${esc(val)}</div>
+      <div class="text-[9px] tracking-[0.14em] uppercase text-text/28">${label}</div>
+    </div>`,
+    )
+    .join("");
 }
 
 function renderFiles(c: any) {
   mFileBlock.style.display = c.files?.length ? "" : "none";
-  mFileList.innerHTML = (c.files ?? []).map((f: string) =>
-    `<a class="ch-file-item" href="/api/challenges/${c.id}/files/${encodeURIComponent(f)}" download>
-      <span class="ch-file-name">${icon("file")} ${esc(f)}</span>
-      <span class="ch-file-dl">${icon("download")}</span>
-    </a>`
-  ).join("");
+  mFileList.innerHTML = (c.files ?? [])
+    .map(
+      (f: string) =>
+        `<a class="group flex items-center justify-between rounded py-1.75 px-2.5 text-xs no-underline border border-border-subtle bg-text/4 text-text/60 transition-colors duration-150 hover:bg-text/8 hover:text-text/90" href="/api/challenges/${c.id}/files/${encodeURIComponent(f)}" download>
+      <span class="inline-flex items-center gap-1.5 font-mono">${icon("file")} ${esc(f)}</span>
+      <span class="flex items-center text-text/30 transition-colors duration-150 group-hover:text-text/70">${icon("download")}</span>
+    </a>`,
+    )
+    .join("");
 }
 
-function resetConn(c: any) {
-  mConnBlock.style.display = (c.connection_info || c.docker_image) ? "" : "none";
+type SolveEntry = { uid: number; username: string; team: string | null; solved_at: string | null };
+
+function solveRowHTML(s: SolveEntry, i: number): string {
+  return `<div class="ch-solve-row">
+    <span class="ch-solve-rank">${String(i + 1).padStart(2, "0")}</span>
+    <div class="ch-solve-user">
+      <span class="ch-solve-name ch-solve-name-link" data-uid="${s.uid}">${esc(s.username)}</span>
+      ${s.team ? `<span class="ch-solve-team">${esc(s.team)}</span>` : ""}
+    </div>
+    <span class="ch-solve-time">${timeAgo(s.solved_at)}</span>
+  </div>`;
+}
+
+function resetConnUI() {
   mConnIdle.style.display = "";
   mConnRunning.style.display = "none";
   mConnStart.disabled = false;
   mConnStart.innerHTML = mConnStartInner;
+}
+
+function resetConn(c: any) {
+  mConnBlock.style.display = c.connection_info || c.docker_image ? "" : "none";
+  resetConnUI();
   currentInstanceId = null;
 }
 
 function resetFlag() {
   mFlagInput.value = "";
   mFlagMsg.textContent = "";
-  mFlagMsg.className = "ch-modal-flag-msg";
+  mFlagMsg.classList.remove("correct", "wrong");
   mFlagBtn.innerHTML = mFlagBtnInner;
   mFlagBtn.disabled = false;
   mFlagBtn.classList.remove("correct", "wrong");
 }
 
-function openModal(challenges: any[], id: number) {
+function openModal(id: number) {
   currentModalId = id;
-  const c = challenges.find((x: any) => x.id === id);
+  const c = findChallenge(id);
   if (!c) return;
 
   renderHeader(c);
@@ -215,21 +285,37 @@ function openModal(challenges: any[], id: number) {
   resetConn(c);
   resetFlag();
 
-  exclusiveActive(".ch-tab", document.querySelector<HTMLButtonElement>(".ch-tab[data-tab='overview']")!);
+  exclusiveActive(
+    ".ch-tab",
+    document.querySelector<HTMLButtonElement>(".ch-tab[data-tab='overview']")!,
+  );
   mTabOverview.style.display = "";
   mTabSolves.style.display = "none";
 
   if (solvedSet.has(id)) showSolvedBanner();
-  else { hideSolvedBanner(); startPoll(); }
+  else {
+    hideSolvedBanner();
+    startPoll();
+  }
 
-  overlay.classList.add("open");
+  overlay.classList.remove("hidden");
+  overlay.classList.add("flex");
   mFlagInput.focus();
 }
 
-function closeModal() { overlay.classList.remove("open"); stopPoll(); }
+function closeModal() {
+  overlay.classList.remove("flex");
+  overlay.classList.add("hidden");
+  stopPoll();
+}
+
+function findChallenge(id: number | null) {
+  return challenges.find((c: any) => c.id === id);
+}
 
 // init
-export function initModal(challenges: any[], initialSolvedIds: number[]) {
+export function initModal(chs: any[], initialSolvedIds: number[]) {
+  challenges = chs;
   solvedSet = new Set(initialSolvedIds);
 
   const markSolvedByTitle = (title: string) => {
@@ -237,58 +323,61 @@ export function initModal(challenges: any[], initialSolvedIds: number[]) {
     if (!id) return;
     solvedSet.add(id);
     markChallengeSolved(id);
-    if (id === currentModalId) { showSolvedBanner(); stopPoll(); }
+    if (id === currentModalId) {
+      showSolvedBanner();
+      stopPoll();
+    }
   };
 
   // rows
   document.querySelectorAll<HTMLTableRowElement>(".ch-row").forEach((row) => {
-    row.addEventListener("click", () => openModal(challenges, Number(row.dataset.id)));
+    row.addEventListener("click", () => openModal(Number(row.dataset.id)));
   });
 
   // close
-  document.getElementById("ch-modal-close")!.addEventListener("click", closeModal);
-  overlay.addEventListener("click", (e) => { if (e.target === overlay) closeModal(); });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+  $("ch-modal-close").addEventListener("click", closeModal);
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closeModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeModal();
+  });
 
   // solves tab
-  type SolveEntry = { uid: number; username: string; team: string | null; solved_at: string | null };
   const solvesCache = new Map<number, SolveEntry[]>();
 
   mTabSolves.addEventListener("click", (e) => {
-    const el = (e.target as HTMLElement).closest<HTMLElement>(".ch-solve-name-link");
+    const el = (e.target as HTMLElement).closest<HTMLElement>(
+      ".ch-solve-name-link",
+    );
     if (el) window.location.href = `/teams?member=${el.dataset.uid}`;
   });
 
   async function loadSolves() {
     const id = currentModalId!;
     if (!solvesCache.has(id)) {
-      mTabSolves.innerHTML = '<div class="ch-modal-empty">Loading...</div>';
+      mTabSolves.innerHTML = '<div class="text-center py-12 text-[13px] text-text/22">Loading...</div>';
       const res = await fetch(`/api/challenges/${id}/solves`);
-      if (!res.ok) { mTabSolves.innerHTML = '<div class="ch-modal-empty">Failed to load.</div>'; return; }
+      if (!res.ok) {
+        mTabSolves.innerHTML =
+          '<div class="text-center py-12 text-[13px] text-text/22">Failed to load.</div>';
+        return;
+      }
       solvesCache.set(id, await res.json());
     }
     const data = solvesCache.get(id)!;
     mTabSolves.innerHTML = data.length === 0
-      ? '<div class="ch-modal-empty">No solves yet.</div>'
-      : `<div class="ch-solves-list">${data.map((s, i) =>
-          `<div class="ch-solve-row">
-            <span class="ch-solve-rank">${String(i + 1).padStart(2, "0")}</span>
-            <div class="ch-solve-user">
-              <span class="ch-solve-name ch-solve-name-link" data-uid="${s.uid}">${esc(s.username)}</span>
-              ${s.team ? `<span class="ch-solve-team">${esc(s.team)}</span>` : ""}
-            </div>
-            <span class="ch-solve-time">${timeAgo(s.solved_at)}</span>
-          </div>`).join("")}
-        </div>`;
+      ? '<div class="text-center py-12 text-[13px] text-text/22">No solves yet.</div>'
+      : `<div class="ch-solves-list">${data.map(solveRowHTML).join("")}</div>`;
   }
 
   // tabs
-  document.querySelectorAll<HTMLButtonElement>(".ch-tab").forEach(btn => {
+  document.querySelectorAll<HTMLButtonElement>(".ch-tab").forEach((btn) => {
     btn.addEventListener("click", () => {
       exclusiveActive(".ch-tab", btn);
       const tab = btn.dataset.tab;
       mTabOverview.style.display = tab === "overview" ? "" : "none";
-      mTabSolves.style.display   = tab === "solves"   ? "" : "none";
+      mTabSolves.style.display = tab === "solves" ? "" : "none";
       if (tab === "solves") loadSolves();
     });
   });
@@ -296,8 +385,7 @@ export function initModal(challenges: any[], initialSolvedIds: number[]) {
   // description
   mDescToggle.addEventListener("click", () => {
     descExpanded = !descExpanded;
-    mDesc.classList.toggle("collapsed", !descExpanded);
-    mDescWrap.classList.toggle("collapsed", !descExpanded);
+    setDescCollapsed(!descExpanded);
     mDescToggle.innerHTML = descExpanded
       ? `${icon("chevron-up")} Show less`
       : `${icon("chevron-down")} Show more`;
@@ -305,15 +393,14 @@ export function initModal(challenges: any[], initialSolvedIds: number[]) {
 
   // connection
   mConnStart.addEventListener("click", async () => {
-    const c = challenges.find((x: any) => x.id === currentModalId);
+    const c = findChallenge(currentModalId);
     if (!c) return;
     mConnStart.disabled = true;
     mConnStart.textContent = "…";
 
     const conn = await resolveConn(c).catch(() => null);
     if (!conn) {
-      mConnStart.innerHTML = mConnStartInner;
-      mConnStart.disabled = false;
+      resetConnUI();
       return;
     }
 
@@ -324,34 +411,41 @@ export function initModal(challenges: any[], initialSolvedIds: number[]) {
     mConnRunning.style.display = "";
   });
 
-  document.getElementById("m-conn-stop")?.addEventListener("click", async () => {
+  mConnStop.addEventListener("click", async () => {
     if (currentInstanceId) {
-      try { await fetch(`/api/instances/${currentInstanceId}`, { method: "DELETE" }); } catch {}
+      try {
+        await fetch(`/api/instances/${currentInstanceId}`, {
+          method: "DELETE",
+        });
+      } catch {}
       currentInstanceId = null;
     }
-    mConnRunning.style.display = "none";
-    mConnIdle.style.display = "";
-    mConnStart.innerHTML = mConnStartInner;
-    mConnStart.disabled = false;
+    resetConnUI();
   });
 
-  const mConnCopy = document.getElementById("m-conn-copy")!;
+  const mConnCopy = $("m-conn-copy");
   mConnCopy.addEventListener("click", () => {
-    const c = challenges.find((x: any) => x.id === currentModalId);
+    const c = findChallenge(currentModalId);
     if (!c) return;
     const text = currentInstanceId
       ? `nc ${mConnHost.textContent} ${mConnPort.textContent}`
       : (c.connection_info ?? "");
-    navigator.clipboard.writeText(text);
-    mConnCopy.classList.add("copied");
-    setTimeout(() => mConnCopy.classList.remove("copied"), 1500);
+    flashCopy(mConnCopy, text);
   });
 
   // flag
   mFlagForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const flag = mFlagInput.value.trim();
-    const openTitle = challenges.find((c: any) => c.id === currentModalId)?.title;
-    if (flag) submitFlag(flag, mFlagBtn, mFlagInput, mFlagMsg, markSolvedByTitle, openTitle);
+    const openTitle = findChallenge(currentModalId)?.title;
+    if (flag)
+      submitFlag(
+        flag,
+        mFlagBtn,
+        mFlagInput,
+        mFlagMsg,
+        markSolvedByTitle,
+        openTitle,
+      );
   });
 }

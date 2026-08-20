@@ -11,11 +11,11 @@ const stats = [
 ];
 ---
 
-<div class="ch-stats">
+<div class="flex border-b border-text/6 bg-elevated shrink-0">
   {stats.map(({ label, value, id }) => (
-    <div class="ch-stat">
-      <span class="ch-stat-label">{label}</span>
-      <span id={id ?? undefined} class="ch-stat-value">{value}</span>
+    <div class="flex-1 py-3 px-5 border-r border-text/5 flex flex-col items-center gap-1 last:border-r-0">
+      <span class="text-[11px] tracking-[0.14em] text-text/55">{label}</span>
+      <span id={id ?? undefined} class="text-[18px] font-bold text-text">{value}</span>
     </div>
   ))}
 </div>

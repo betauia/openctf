@@ -1,4 +1,4 @@
-import { exclusiveActive } from "@lib/utils";
+import { exclusiveActive } from "@library/utils";
 
 // elements
 const tbody       = document.querySelector<HTMLTableSectionElement>("#ch-table tbody")!;
@@ -22,24 +22,21 @@ function updateSolvedUI() {
 }
 
 // filter
+function matches(row: HTMLTableRowElement) {
+  return (activeCat === "all" || row.dataset.cat === activeCat) &&
+    (row.dataset.name ?? "").includes(searchQuery);
+}
+
 export function filterRows() {
   let visibleSolved = 0;
   tbody.querySelectorAll<HTMLTableRowElement>(".ch-row").forEach((row) => {
     const isSolved = row.classList.contains("ch-solved");
-    const match =
-      (activeCat === "all" || row.dataset.cat === activeCat) &&
-      (row.dataset.name ?? "").includes(searchQuery);
-    if (isSolved) {
-      row.style.display = match && !solvedCollapsed ? "" : "none";
-      if (match) visibleSolved++;
-    } else {
-      row.style.display = match ? "" : "none";
-    }
+    const match = matches(row);
+    row.style.display = match && (!isSolved || !solvedCollapsed) ? "" : "none";
+    if (isSolved && match) visibleSolved++;
   });
-  const anyMatchSolved = solvedCollapsed && [...solvedIds].some((id) => {
-    const r = rowById(id);
-    return r && (activeCat === "all" || r.dataset.cat === activeCat) && (r.dataset.name ?? "").includes(searchQuery);
-  });
+  const anyMatchSolved = solvedCollapsed &&
+    [...solvedIds].some((id) => { const r = rowById(id); return r && matches(r); });
   solvedSep.style.display = visibleSolved > 0 || anyMatchSolved ? "" : "none";
 }
 

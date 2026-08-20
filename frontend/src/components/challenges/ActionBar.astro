@@ -1,13 +1,33 @@
 ---
 ---
 
-<div class="ch-bar">
-  <div class="ch-search-wrap">
-    <input id="ch-search" type="text" placeholder="Search challenges..." />
+<div class="flex items-center gap-3 py-2.5 px-4 bg-elevated border-b border-text/6 shrink-0">
+  <div>
+    <input
+      id="ch-search"
+      type="text"
+      placeholder="Search challenges..."
+      class="bg-background border border-text/10 text-muted-text py-1.5 px-2.5 text-[12px]
+        outline-none w-55 focus:border-accent"
+    />
   </div>
-  
-  <form id="ch-flag-form" class="ch-flag-wrap" data-form-type="other">
-    <input id="ch-flag" type="text" placeholder="CTF{submit_flag_here}" autocomplete="off" data-lpignore="true" />
-    <button type="submit" id="ch-flag-btn">Submit</button>
+
+  <form id="ch-flag-form" data-form-type="other" class="flex m-0">
+    <input
+      id="ch-flag"
+      type="text"
+      placeholder="CTF{submit_flag_here}"
+      autocomplete="off"
+      data-lpignore="true"
+      class="bg-background border border-text/10 border-r-0 text-muted-text py-1.5 px-2.5 text-[12px]
+        outline-none w-65 focus:border-accent/40"
+    />
+    <button
+      type="submit"
+      id="ch-flag-btn"
+      class="bg-accent border-none text-white py-1.5 px-4 text-[11px] tracking-[0.1em] cursor-pointer
+        font-bold transition-colors duration-150 hover:enabled:bg-accent-dark disabled:cursor-default
+        [&.correct]:bg-correct-dark [&.wrong]:bg-wrong-dark"
+    >Submit</button>
   </form>
 </div>

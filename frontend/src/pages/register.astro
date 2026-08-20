@@ -1,36 +1,35 @@
 ---
 import BaseLayout from "@layouts/BaseLayout.astro";
-import "@styles/auth.css";
 ---
 
 <BaseLayout pageTitle="Register — OpenCTF">
-  <div class="auth-wrap">
-    <div class="auth-card">
-      <h1 class="auth-title">Create account</h1>
+  <div class="flex-1 mx-[-3rem] flex items-center justify-center">
+    <div class="bg-elevated border border-text/4 py-8 px-9 w-[clamp(300px,28vw,420px)]">
+      <h1 class="text-2xl font-bold text-text/92 m-0 mb-5">Create account</h1>
 
       <form id="auth-form">
-        <div class="auth-field">
-          <label for="username">Username</label>
-          <input id="username" name="username" type="text" autocomplete="username" required />
+        <div class="flex flex-col gap-1.5 mb-4">
+          <label for="username" class="text-[11px] text-text/45 tracking-[0.08em]">Username</label>
+          <input id="username" name="username" type="text" autocomplete="username" required class="bg-background border border-text/10 text-muted-text py-2.5 px-3 text-sm outline-none w-full box-border focus:border-accent" />
         </div>
-        <div class="auth-field">
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" autocomplete="email" required />
+        <div class="flex flex-col gap-1.5 mb-4">
+          <label for="email" class="text-[11px] text-text/45 tracking-[0.08em]">Email</label>
+          <input id="email" name="email" type="email" autocomplete="email" required class="bg-background border border-text/10 text-muted-text py-2.5 px-3 text-sm outline-none w-full box-border focus:border-accent" />
         </div>
-        <div class="auth-field">
-          <label for="password">Password</label>
-          <input id="password" name="password" type="password" autocomplete="new-password" required />
+        <div class="flex flex-col gap-1.5 mb-4">
+          <label for="password" class="text-[11px] text-text/45 tracking-[0.08em]">Password</label>
+          <input id="password" name="password" type="password" autocomplete="new-password" required class="bg-background border border-text/10 text-muted-text py-2.5 px-3 text-sm outline-none w-full box-border focus:border-accent" />
         </div>
-        <div id="auth-error" class="auth-error"></div>
-        <button type="submit" id="auth-btn">Create account</button>
+        <div id="auth-error" class="text-[11px] text-accent min-h-0 mb-1.5"></div>
+        <button type="submit" id="auth-btn" class="w-full bg-accent border-none text-white p-2.75 text-[13px] font-bold tracking-[0.08em] cursor-pointer transition-colors hover:enabled:bg-accent-dark disabled:cursor-default disabled:opacity-60">Create account</button>
       </form>
 
-      <p class="auth-switch">Already have an account? <a href="/login">Sign in</a></p>
+      <p class="text-[12px] text-text/35 mt-5 mx-0 mb-0 text-center">Already have an account? <a href="/login" class="text-accent no-underline">Sign in</a></p>
     </div>
   </div>
 </BaseLayout>
 
 <script>
-  import { bindAuthForm } from "@lib/authForm";
+  import { bindAuthForm } from "@library/authForm";
   bindAuthForm("/api/auth/register", "Registration failed");
 </script>

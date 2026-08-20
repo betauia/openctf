@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { proxyBackend } from "@lib/backend";
+import { proxyBackend } from "@library/backend";
 
 export const POST: APIRoute = async ({ request }) => {
   const cookie = request.headers.get("cookie") ?? "";

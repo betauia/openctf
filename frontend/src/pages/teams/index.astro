@@ -3,10 +3,7 @@ import TeamsLayout from "@layouts/TeamsLayout.astro";
 import { ArrowLeft } from "@lucide/astro";
 import TeamTab from "@components/teams/TeamTab.astro";
 import LeaderboardTab from "@components/teams/LeaderboardTab.astro";
-import "@styles/challenges.css";
-import "@styles/challenges-table.css";
-import "@styles/teams.css";
-import { cookieOf, apiFetch } from "@lib/backend";
+import { cookieOf, apiFetch } from "@library/backend";
 
 const cookie = cookieOf(Astro.request);
 
@@ -16,14 +13,15 @@ let me: any = null;
 let activity: any[] = [];
 
 try {
-  const [meRes, myTeamRes, teamsRes, actRes] = await Promise.all([
-    apiFetch(cookie, "/api/auth/me"),
+  const meRes = await apiFetch(cookie, "/api/auth/me");
+  if (!meRes.ok) throw null;
+  me = await meRes.json();
+
+  const [myTeamRes, teamsRes, actRes] = await Promise.all([
     apiFetch(cookie, "/api/teams/my"),
     apiFetch("",     "/api/teams"),
     apiFetch(cookie, "/api/teams/activity"),
   ]);
-  if (!meRes.ok) throw null;
-  me = await meRes.json();
   if (myTeamRes.ok) myTeam = await myTeamRes.json();
   if (teamsRes.ok)  teams  = await teamsRes.json();
   if (actRes.ok)    activity = await actRes.json();
@@ -38,10 +36,20 @@ const pageData      = JSON.stringify({ teams, inspectMemberId }).replace(/</g, "
 ---
 
 <TeamsLayout pageTitle="Teams - OpenCTF">
-  <div class="tm-page">
-    <div class="tm-tabbar">
-      <button class="tm-tab active" data-tab="team">My Team</button>
-      <button class="tm-tab" data-tab="leaderboard">Leaderboard</button>
+  <div class="flex flex-col h-[calc(100vh-64px)] mt-16 bg-raised">
+    <div class="flex items-center bg-background border-b border-border-subtle shrink-0 px-5">
+      <button
+        data-tab="team"
+        class="tm-tab active flex items-center h-11 px-4 bg-transparent border-none border-b-2 border-transparent
+               text-text/35 text-[11px] tracking-[0.1em] cursor-pointer transition-colors duration-100
+               -mb-px hover:text-muted-text [&.active]:text-accent [&.active]:border-b-accent"
+      >My Team</button>
+      <button
+        data-tab="leaderboard"
+        class="tm-tab flex items-center h-11 px-4 bg-transparent border-none border-b-2 border-transparent
+               text-text/35 text-[11px] tracking-[0.1em] cursor-pointer transition-colors duration-100
+               -mb-px hover:text-muted-text [&.active]:text-accent [&.active]:border-b-accent"
+      >Leaderboard</button>
     </div>
 
     <TeamTab myTeam={myTeam} me={me} myRank={myRank} sortedMembers={sortedMembers} activity={activity} />
@@ -52,7 +60,7 @@ const pageData      = JSON.stringify({ teams, inspectMemberId }).replace(/</g, "
     <span data-icon="arrow-left"><ArrowLeft size={14} /></span>
   </div>
 
-  <script id="tm-data" type="application/json" set:html={pageData} />
+  <script id="tm-data" type="application/json" set:html={pageData} is:inline />
 </TeamsLayout>
 
 <script>

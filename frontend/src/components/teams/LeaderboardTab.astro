@@ -1,27 +1,35 @@
 ---
 const { teams, myTeam } = Astro.props;
+const headers = ["#", "Team", "Members", "Score"];
 ---
 
-<div class="tm-content" id="tab-leaderboard" style="display:none">
-  <div class="ch-table-wrap">
-    {teams.length === 0 ? <div class="ch-empty">No teams yet</div> : (
-      <table>
+<div class="flex-1 overflow-y-auto flex flex-col" id="tab-leaderboard" style="display:none">
+  <div class="flex-1 overflow-y-auto p-4">
+    {teams.length === 0 ? (
+      <div class="text-center py-20 text-text/18 text-[13px]">No teams yet</div>
+    ) : (
+      <table class="w-full border-separate border-spacing-x-0 border-spacing-y-0.5">
         <thead>
           <tr>
-            {["#", "Team", "Members", "Score"].map((h) => <th>{h}</th>)}
+            {headers.map((h, i) => (
+              <th class={`py-2 px-3 text-[11px] tracking-[0.12em] text-text/55 ${i >= 2 ? "text-center" : "text-left"}`}>{h}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {teams.map((t: any, i: number) =>
-            <tr class={`tm-row${t.id === myTeam?.id ? " tm-mine" : ""}`}
-                data-team={JSON.stringify(t)} data-rank={String(i + 1)}
-                style="cursor:pointer">
-              <td class="ch-num">{String(i + 1).padStart(2, "0")}</td>
-              <td class="ch-name">{t.name}</td>
-              <td class="ch-mono">{t.members.length}</td>
-              <td class="ch-pts">{t.score}</td>
+          {teams.map((t: any, i: number) => (
+            <tr
+              class={`group tm-row bg-elevated hover:bg-[color-mix(in_srgb,var(--elevated-color)_85%,white)]${t.id === myTeam?.id ? " tm-mine" : ""}`}
+              data-team={JSON.stringify(t)}
+              data-rank={String(i + 1)}
+              style="cursor:pointer"
+            >
+              <td class="py-2.5 px-3 text-[13px] text-[11px] text-text/18 w-9 group-[.tm-mine]:text-accent">{String(i + 1).padStart(2, "0")}</td>
+              <td class="py-2.5 px-3 text-[13px] text-muted-text font-medium group-[.tm-mine]:text-accent">{t.name}</td>
+              <td class="py-2.5 px-3 text-[13px] text-[12px] text-text/45 text-center">{t.members.length}</td>
+              <td class="py-2.5 px-3 text-[13px] font-bold text-pts text-center">{t.score}</td>
             </tr>
-          )}
+          ))}
         </tbody>
       </table>
     )}
