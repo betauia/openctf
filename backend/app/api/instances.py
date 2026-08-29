@@ -5,7 +5,7 @@ from app.services.instance_services import InstanceService
 from app.dependencies import get_instance_service, get_db
 from sqlalchemy.orm import Session
 
-instance_router = APIRouter(prefix="/api/instances")
+instance_router = APIRouter(prefix="/api/instances", tags=["containers"])
 
 class SpawnRequest(BaseModel):
     challenge_id: int

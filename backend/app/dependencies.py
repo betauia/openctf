@@ -12,3 +12,9 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def authenticate_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    user = get_current_user(token, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+    return user
