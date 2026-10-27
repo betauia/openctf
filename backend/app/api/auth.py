@@ -58,6 +58,15 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User | 
         return None
     return db.query(User).filter(User.id == user_id).first()
 
+def require_user(user: User | None = Depends(get_current_user)) -> User:
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return user
+
+def require_admin(user: User = Depends(require_user)) -> User:
+    if not user.is_admin:
+        raise HTTPException(status_code=403, detail="Naughty naughty, admin only")
+    return user
 
 class RegisterBody(BaseModel):
     username: str
