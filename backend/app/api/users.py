@@ -7,7 +7,7 @@ from app.db.models.challenge import Challenge
 from app.db.models.solve import Solve
 from app.db.models.team import Team
 from app.db.models.user import User
-from app.api.auth import get_current_user
+from app.api.auth import require_user
 from app.dependencies import get_db
 
 user_router = APIRouter(prefix="/api/users", tags=["users"])
@@ -24,10 +24,7 @@ class CreateBody(BaseModel):
 
 # Get my user profile
 @user_router.get("/me")
-def get_my_profile(user: User | None = Depends(get_current_user), db: Session = Depends(get_db)):
-    # Authenticate User (Not Implemented)
-    if not user:
-        raise HTTPException(status_code=401, detail="401 Unauthorized")
+def get_my_profile(user: User = Depends(require_user)):
     return user
 
 # Display specific user profile
@@ -70,11 +67,7 @@ def list_teams(db: Session = Depends(get_db)):
 
 # Get information about the current user's team
 @user_router.get("/me/team")
-def get_my_team(user: User | None = Depends(get_current_user), db: Session = Depends(get_db)):
-    # Authenticate User (Not Implemented)
-    if not user:
-        raise HTTPException(status_code=401, detail="401 Unauthorized")
-    
+def get_my_team(user: User = Depends(require_user), db: Session = Depends(get_db)):
     # Check if the user is part of a team
     team = db.query(Team).filter(Team.id == user.team_id).first()
     if not team:
@@ -84,10 +77,7 @@ def get_my_team(user: User | None = Depends(get_current_user), db: Session = Dep
 
 # Join a team using an invite code
 @user_router.put("/me/team")
-def join_team(body: JoinBody, user: User | None = Depends(get_current_user), db: Session = Depends(get_db)):
-    # Authenticate User (Not Implemented)
-    if not user:
-        raise HTTPException(status_code=401, detail="401 Unauthorized")
+def join_team(body: JoinBody, user: User = Depends(require_user), db: Session = Depends(get_db)):
     if user.team_id:
         raise HTTPException(status_code=400, detail="400 Bad Request: Already in a team")
     team = db.query(Team).filter(Team.invite_code == body.invite_code).first()
@@ -100,10 +90,7 @@ def join_team(body: JoinBody, user: User | None = Depends(get_current_user), db:
 
 # Leave the current team
 @user_router.delete("/me/team")
-def leave_team(user: User | None = Depends(get_current_user), db: Session = Depends(get_db)):
-    # Authenticate User (Not Implemented)
-    if not user:
-        raise HTTPException(status_code=401, detail="401 Unauthorized")
+def leave_team(user: User = Depends(require_user), db: Session = Depends(get_db)):
     if not user.team_id:
         raise HTTPException(status_code=400, detail="400 Bad Request: Not in a team")
     user.team_id = None
@@ -113,10 +100,7 @@ def leave_team(user: User | None = Depends(get_current_user), db: Session = Depe
 
 # Create a new team
 @user_router.post("/me/team")
-def create_team(body: CreateBody, user: User | None = Depends(get_current_user), db: Session = Depends(get_db)):
-    # Authenticate User (Not Implemented)
-    if not user:
-        raise HTTPException(status_code=401, detail="401 Unauthorized")
+def create_team(body: CreateBody, user: User = Depends(require_user), db: Session = Depends(get_db)):
     if user.team_id:
         raise HTTPException(status_code=400, detail="400 Bad Request: Already in a team")
     if not (2 <= len(body.name) <= 32):
@@ -132,10 +116,7 @@ def create_team(body: CreateBody, user: User | None = Depends(get_current_user),
 
 # Get the current user's team activity
 @user_router.get("/me/activity")
-def team_activity_private(user: User | None = Depends(get_current_user), db: Session = Depends(get_db)):
-    # Authenticate User (Not Implemented)
-    if not user:
-        raise HTTPException(status_code=401, detail="401 Unauthorized")
+def team_activity_private(user: User = Depends(require_user), db: Session = Depends(get_db)):
     if not user.team_id:
         raise HTTPException(status_code=400, detail="400 Bad Request: Not in a team")
     team = db.query(Team).filter(Team.id == user.team_id).first()
@@ -153,7 +134,7 @@ def team_activity_public(team_id: int, db: Session = Depends(get_db)):
 
 # WebSocket endpoint to provide real-time scoreboard updates
 @user_router.websocket("/teams/ws/scoreboard")
-def websocket_scoreboard(websocket: WebSocket, db: Session = Depends(get_db)):
+async def websocket_scoreboard(websocket: WebSocket, db: Session = Depends(get_db)):
     # Accept the WebSocket connection
     websocket.accept()
 
