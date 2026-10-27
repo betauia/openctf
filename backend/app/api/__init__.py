@@ -2,7 +2,6 @@ from app.api.base import base_router
 from app.api.auth import auth_router
 from app.api.instances import instance_router
 from app.api.challenge import challenge_router
-from app.api.teams import teams_router
 from app.api.users import user_router
 
 def include_routers(app):
