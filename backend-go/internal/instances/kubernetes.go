@@ -5,7 +5,7 @@ import (
 	"uuid"
 )
 
-// Kubernetes is a placeholder, like the Python provider it replaces.
+// Kubernetes is a placeholder until Kubernetes support is implemented.
 type Kubernetes struct{}
 
 // Create returns ErrNotImplemented.

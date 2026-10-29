@@ -1,4 +1,4 @@
-# OpenCTF backend (Go)
+# OpenCTF backend
 
 ## Requirements
 

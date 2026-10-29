@@ -9,7 +9,7 @@ import (
 	"encoding/base64"
 )
 
-// Same scheme as the Python backend: base64(salt || PBKDF2-HMAC-SHA256(password, salt)).
+// Hashes are stored as base64(salt || PBKDF2-HMAC-SHA256(password, salt)).
 const (
 	pbkdf2Iterations = 260000
 	saltLen          = 16
@@ -27,7 +27,7 @@ func Hash(password string) (string, error) {
 	return base64.StdEncoding.EncodeToString(append(salt, key...)), nil
 }
 
-// Verify reports whether password matches a hash from Hash or the Python backend.
+// Verify reports whether password matches a hash from Hash.
 // Malformed hashes never match.
 func Verify(password, stored string) bool {
 	raw, err := base64.StdEncoding.DecodeString(stored)

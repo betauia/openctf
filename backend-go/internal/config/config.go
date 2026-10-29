@@ -1,4 +1,4 @@
-// Package config loads settings from the environment, using the same variables as the Python backend.
+// Package config loads settings from the environment.
 package config
 
 import (

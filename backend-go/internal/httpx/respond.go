@@ -16,7 +16,7 @@ func JSON(w http.ResponseWriter, status int, v any) {
 	}
 }
 
-// Error writes {"detail": detail}, the error shape FastAPI used and the frontend reads.
+// Error writes {"detail": detail}, the error shape the frontend reads.
 func Error(w http.ResponseWriter, status int, detail string) {
 	JSON(w, status, map[string]string{"detail": detail})
 }

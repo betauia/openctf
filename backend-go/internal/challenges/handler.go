@@ -170,10 +170,8 @@ func (h *Handler) submit(w http.ResponseWriter, r *http.Request, u *dbgen.User) 
 	}
 	c := cs[i]
 
-	if u == nil {
-		// Same as the Python backend: anonymous correct submissions still bump the solve count.
-		err = h.store.IncrementChallengeSolves(ctx, c.ID)
-	} else {
+	// Anonymous submissions are checked but not recorded.
+	if u != nil {
 		var solved bool
 		err = h.store.InTx(ctx, func(q *dbgen.Queries) error {
 			n, err := q.CreateSolve(ctx, dbgen.CreateSolveParams{UserID: u.ID, ChallengeID: c.ID})

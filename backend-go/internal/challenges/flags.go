@@ -49,7 +49,7 @@ func CheckFlag(submitted string, flags []byte) bool {
 	return false
 }
 
-// matchFull is Python's re.fullmatch. Go's RE2 has no backreferences or
+// matchFull reports whether pattern matches all of s. Go's RE2 has no backreferences or
 // lookarounds, so such patterns fail to compile and never match.
 func matchFull(pattern, s string, insensitive bool) bool {
 	prefix := ""

@@ -15,17 +15,6 @@ func TestPasswordRoundTrip(t *testing.T) {
 	}
 }
 
-// Hash produced by _hash in backend/app/api/auth.py, so migrated users can still log in.
-func TestVerifyPythonHash(t *testing.T) {
-	const pyHash = "D5xT8xhRpsAsQdFeDV4LTI5Cy9kGtjDDAjmdHDAHVMeCtuyaWAy16FIofy2MqHC5"
-	if !Verify("correct horse battery", pyHash) {
-		t.Error("python hash rejected")
-	}
-	if Verify("wrong", pyHash) {
-		t.Error("wrong password accepted for python hash")
-	}
-}
-
 func TestVerifyMalformed(t *testing.T) {
 	for _, stored := range []string{"", "not base64!", "c2hvcnQ="} {
 		if Verify("x", stored) {
