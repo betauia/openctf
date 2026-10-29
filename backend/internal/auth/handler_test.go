@@ -3,7 +3,9 @@ package auth_test
 import (
 	"context"
 	"net/http"
+	"net/http/cookiejar"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -220,6 +222,48 @@ func TestRefreshReplayRevokesFamily(t *testing.T) {
 	// Every token from the same login is revoked, including the legitimate newest one.
 	if resp := post(t, srv, "/api/auth/refresh", "", second); resp.StatusCode != http.StatusUnauthorized {
 		t.Errorf("newest token after replay: status = %d, want 401", resp.StatusCode)
+	}
+}
+
+// The tests above attach cookies by hand, which bypasses Path scoping. A cookie jar behaves like a browser.
+func TestLogoutRevokesRefreshTokenViaCookieJar(t *testing.T) {
+	srv, _ := testAuth(t)
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &http.Client{Jar: jar}
+	do := func(path string) int {
+		t.Helper()
+		resp, err := client.Post(srv.URL+path, "application/json", strings.NewReader(aliceBody))
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.StatusCode
+	}
+
+	if status := do("/api/auth/register"); status != http.StatusOK {
+		t.Fatalf("register: status = %d", status)
+	}
+	u, _ := url.Parse(srv.URL)
+	var refresh *http.Cookie
+	for _, c := range jar.Cookies(u) {
+		if c.Name == "refresh" {
+			refresh = c
+		}
+	}
+	if refresh == nil {
+		t.Fatal("jar has no refresh cookie after register")
+	}
+	saved := *refresh
+
+	// The jar only returns cookies whose Path matches, so the logout request carries the cookie only if the path allows it.
+	if status := do("/api/auth/logout"); status != http.StatusOK {
+		t.Fatalf("logout: status = %d, want 200", status)
+	}
+	if resp := post(t, srv, "/api/auth/refresh", "", &saved); resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("refresh after logout: status = %d, want 401", resp.StatusCode)
 	}
 }
 
