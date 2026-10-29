@@ -1,9 +1,10 @@
 package main
 
 import (
-	"log"
+	"backend/internal/api"
 	"backend/internal/config"
-	// "backend/internal/db"
+	"log"
+	"net/http"
 )
 
 func main() {
@@ -14,10 +15,13 @@ func main() {
 	}
 	log.Println("Config loaded successfully")
 
-	// Test if environment variables are set
-	log.Println("Testing environment variables...")
-	log.Printf("DATABASE_URL: %s", config.GetEnv("DATABASE_URL"))
-	log.Printf("INSTANCE_PROVIDER: %s", config.GetEnv("INSTANCE_PROVIDER"))
-	log.Printf("SECRET_KEY: %s", config.GetEnv("SECRET_KEY"))
+	// Create a new HTTP server
+	mux := api.NewMux()
+	log.Println("Routes registered")
 
+	log.Println("Starting server on :8000")
+	err = http.ListenAndServe(":8000", mux)
+	if err != nil {
+		log.Fatalf("failed to start server: %v", err)
+	}
 }
