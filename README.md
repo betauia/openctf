@@ -93,8 +93,8 @@ Here's a blank template to get started. To avoid retyping too much info, do a se
 
 * [![Astro][Astro]][Astro-url]
 * [![TypeScript][TypeScript]][TypeScript-url]
-* [![FastAPI][FastAPI]][FastAPI-url]
-* [![SQLAlchemy][SQLAlchemy]][SQLAlchemy-url]
+* [![Go][Go]][Go-url]
+* [![PostgreSQL][PostgreSQL]][PostgreSQL-url]
 * [![Docker][Docker]][Docker-url]
 * [![Kubernetes][Kubernetes]][Kubernetes-url]
 
@@ -120,14 +120,11 @@ This is an example of how to list things you need to use the software and how to
   ```sh
   git clone https://github.com/betauia/openctf.git
   ```
-2. Copy and modify .env
+2. Run docker compose. Development values are read from `.env.dev`; see `.env.example` for what each one does.
   ```sh
-  cp .env.example .env
+  docker compose up
   ```
-3. Run docker compose
-  ```sh
-  docker compose -up
-  ```
+  The frontend is served at http://localhost:4000 and the backend at http://localhost:8000.
 
 #### Kubernetes
 Will be supported in the future.
@@ -215,11 +212,11 @@ Project Link: [https://github.com/betauia/openctf](https://github.com/betauia/op
 [TypeScript]: https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white
 [TypeScript-url]: https://www.typescriptlang.org/
 
-[FastAPI]: https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white
-[FastAPI-url]: https://fastapi.tiangolo.com/
+[Go]: https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white
+[Go-url]: https://go.dev/
 
-[SQLAlchemy]: https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=sqlalchemy&logoColor=white
-[SQLAlchemy-url]: https://www.sqlalchemy.org/
+[PostgreSQL]: https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white
+[PostgreSQL-url]: https://www.postgresql.org/
 
 [Docker]: https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white
 [Docker-url]: https://www.docker.com/

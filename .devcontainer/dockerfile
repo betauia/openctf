@@ -1,10 +1,10 @@
-FROM python:3.13-alpine
+FROM golang:1.27.3-alpine
 
 RUN apk add --no-cache git openssh-client bash
 
-COPY backend/requirements.txt /tmp/requirements.txt
+COPY backend/go.mod backend/go.sum /tmp/backend/
 
-RUN pip3 install -r /tmp/requirements.txt
+RUN cd /tmp/backend && go mod download
 
 WORKDIR /workspaces
 

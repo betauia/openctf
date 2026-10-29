@@ -18,10 +18,11 @@ services:
       - backend
     networks:
       - openctf_network
+  
   backend:
     build:
       context: ./backend/
-      dockerfile: dockerfile
+      dockerfile: Dockerfile
       target: development
     ports:
       - "8000:8000"
@@ -30,8 +31,37 @@ services:
     volumes:
       - ./backend:/app
       - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      INSTANCE_PROVIDER: docker
+      HOST_DOMAIN: localhost
+      UPLOAD_DIR: /app/uploads
+      ADDR: :8000
     env_file:
       - .env.dev
+    depends_on:
+      database:
+        condition: service_healthy
+
+  database:
+    image: postgres:17-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: openctf
+      POSTGRES_DB: openctf
+    env_file:
+      - .env.dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openctf -d openctf"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - openctf_network
+
+volumes:
+  db_data:
 
 networks:
   openctf_network:
