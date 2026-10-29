@@ -1,13 +1,12 @@
-FROM python:3.12-slim AS base
-
+FROM golang:1.27-alpine AS builder
 WORKDIR /app
-COPY requirements.txt .
-
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
+COPY go.mod ./
+RUN go mod download
 COPY . .
+RUN go build -o server ./cmd/server
 
-FROM base AS development
-ENV FASTAPI_ENV=development
-CMD ["python", "server.py"]
+FROM alpine:3.18 AS development
+WORKDIR /root/
+COPY --from=builder /app/server .
+EXPOSE 8080
+CMD ["./server"]

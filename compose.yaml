@@ -24,14 +24,19 @@ services:
       dockerfile: dockerfile
       target: development
     ports:
-      - "8000:8000"
+      - "8080:8080"
     networks:
       - openctf_network
     volumes:
       - ./backend:/app
+      - backend-data:/app/data
       - /var/run/docker.sock:/var/run/docker.sock
     env_file:
       - .env.dev
+
+volumes:
+  backend-data:
+    driver: local
 
 networks:
   openctf_network:
