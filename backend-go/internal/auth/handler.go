@@ -1,8 +1,9 @@
-// Package auth handles session cookies and the /api/auth endpoints. Password
-// hashing lives in auth/passwords and token signing in auth/sessions.
+// Package auth handles session and refresh cookies and the /api/auth endpoints.
+// Password hashing lives in auth/passwords and token generation in auth/sessions.
 package auth
 
 import (
+	"context"
 	"net/http"
 	"time"
 	"unicode/utf8"
@@ -15,7 +16,11 @@ import (
 	"github.com/betauia/openctf/backend/internal/httpx"
 )
 
-const cookieName = "session"
+const (
+	cookieName        = "session"
+	refreshCookieName = "refresh"
+	refreshPath       = "/api/auth/refresh"
+)
 
 // Auth authenticates requests with signed session cookies and serves the /api/auth endpoints.
 type Auth struct {
@@ -32,6 +37,7 @@ func New(store *database.Store, secretKey string) *Auth {
 func (a *Auth) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/auth/register", a.register)
 	mux.HandleFunc("POST /api/auth/login", a.login)
+	mux.HandleFunc("POST /api/auth/refresh", a.refresh)
 	mux.HandleFunc("POST /api/auth/logout", a.logout)
 	mux.HandleFunc("GET /api/auth/me", a.Require(a.me))
 	mux.HandleFunc("GET /api/auth/solves", a.Optional(a.solves))
@@ -88,7 +94,10 @@ func (a *Auth) register(w http.ResponseWriter, r *http.Request) {
 		httpx.InternalError(w, r, err)
 		return
 	}
-	a.setSession(w, u.ID)
+	if err := a.startSession(w, r, u.ID); err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
 	httpx.JSON(w, http.StatusOK, userRef{ID: u.ID, Username: u.Username})
 }
 
@@ -109,12 +118,71 @@ func (a *Auth) login(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusUnauthorized, "Invalid username or password")
 		return
 	}
-	a.setSession(w, u.ID)
+	if err := a.startSession(w, r, u.ID); err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
 	httpx.JSON(w, http.StatusOK, userRef{ID: u.ID, Username: u.Username})
 }
 
+// refresh exchanges the refresh cookie for a new session and a rotated refresh token.
+func (a *Auth) refresh(w http.ResponseWriter, r *http.Request) {
+	c, err := r.Cookie(refreshCookieName)
+	if err != nil {
+		httpx.Error(w, http.StatusUnauthorized, "Not logged in")
+		return
+	}
+	ctx := r.Context()
+	hash := sessions.HashRefreshToken(c.Value)
+	var userID uuid.UUID
+	var token string
+	err = a.store.InTx(ctx, func(q *dbgen.Queries) error {
+		t, err := q.ConsumeRefreshToken(ctx, dbgen.ConsumeRefreshTokenParams{
+			TokenHash:  hash,
+			ReuseAfter: time.Now().Add(-sessions.RefreshReuseWindow),
+		})
+		if err != nil {
+			return err
+		}
+		userID = t.UserID
+		token, err = newRefreshToken(ctx, q, t.UserID, t.FamilyID)
+		return err
+	})
+	if database.IsNotFound(err) {
+		// Unknown, expired, revoked, or replayed after the reuse window. A replay means the
+		// token may have been stolen, so revoke every token rotated from the same login.
+		if family, err := a.store.GetRefreshTokenFamily(ctx, hash); err == nil {
+			if err := a.store.RevokeRefreshFamily(ctx, family); err != nil {
+				httpx.InternalError(w, r, err)
+				return
+			}
+		}
+		a.clearSession(w)
+		httpx.Error(w, http.StatusUnauthorized, "Session expired")
+		return
+	}
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	a.setSession(w, userID)
+	a.setRefreshCookie(w, token)
+	httpx.JSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
 func (a *Auth) logout(w http.ResponseWriter, r *http.Request) {
-	http.SetCookie(w, &http.Cookie{Name: cookieName, Path: "/", MaxAge: -1, HttpOnly: true, SameSite: http.SameSiteLaxMode})
+	if c, err := r.Cookie(refreshCookieName); err == nil {
+		ctx := r.Context()
+		family, err := a.store.GetRefreshTokenFamily(ctx, sessions.HashRefreshToken(c.Value))
+		if err == nil {
+			err = a.store.RevokeRefreshFamily(ctx, family)
+		}
+		if err != nil && !database.IsNotFound(err) {
+			httpx.InternalError(w, r, err)
+			return
+		}
+	}
+	a.clearSession(w)
 	httpx.JSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
@@ -144,6 +212,48 @@ func (a *Auth) solves(w http.ResponseWriter, r *http.Request, u *dbgen.User) {
 		}
 	}
 	httpx.JSON(w, http.StatusOK, ids)
+}
+
+// startSession sets the session cookie and a refresh token for a new login.
+func (a *Auth) startSession(w http.ResponseWriter, r *http.Request, userID uuid.UUID) error {
+	token, err := newRefreshToken(r.Context(), a.store.Queries, userID, uuid.NewV7())
+	if err != nil {
+		return err
+	}
+	a.setSession(w, userID)
+	a.setRefreshCookie(w, token)
+	return nil
+}
+
+// newRefreshToken stores a refresh token for userID in familyID and returns the cookie value.
+func newRefreshToken(ctx context.Context, q *dbgen.Queries, userID, familyID uuid.UUID) (string, error) {
+	token, hash, err := sessions.NewRefreshToken()
+	if err != nil {
+		return "", err
+	}
+	return token, q.CreateRefreshToken(ctx, dbgen.CreateRefreshTokenParams{
+		ID:        uuid.NewV7(),
+		UserID:    userID,
+		FamilyID:  familyID,
+		TokenHash: hash,
+		ExpiresAt: time.Now().Add(sessions.RefreshMaxAge),
+	})
+}
+
+func (a *Auth) setRefreshCookie(w http.ResponseWriter, token string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     refreshCookieName,
+		Value:    token,
+		Path:     refreshPath, // only sent to the refresh endpoint
+		MaxAge:   int(sessions.RefreshMaxAge.Seconds()),
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	})
+}
+
+func (a *Auth) clearSession(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{Name: cookieName, Path: "/", MaxAge: -1, HttpOnly: true, SameSite: http.SameSiteLaxMode})
+	http.SetCookie(w, &http.Cookie{Name: refreshCookieName, Path: refreshPath, MaxAge: -1, HttpOnly: true, SameSite: http.SameSiteStrictMode})
 }
 
 func (a *Auth) setSession(w http.ResponseWriter, userID uuid.UUID) {
