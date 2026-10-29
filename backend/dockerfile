@@ -1,13 +1,18 @@
-FROM python:3.12-slim AS base
-
+FROM golang:1.27.3 AS base
 WORKDIR /app
-COPY requirements.txt .
-
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
+ENV CGO_ENABLED=0
+COPY go.mod go.sum ./
+RUN go mod download
 COPY . .
 
 FROM base AS development
-ENV FASTAPI_ENV=development
-CMD ["python", "server.py"]
+CMD ["go", "run", "./cmd/server"]
+
+FROM base AS build
+RUN go build -trimpath -ldflags="-s -w" -o /out/backend ./cmd/server
+
+# Runs as root so it can use the mounted Docker socket to spawn challenge instances.
+FROM gcr.io/distroless/static-debian12 AS production
+COPY --from=build /out/backend /backend
+EXPOSE 8000
+ENTRYPOINT ["/backend"]
