@@ -17,6 +17,10 @@ import (
 	"github.com/betauia/openctf/backend/internal/instances"
 )
 
+const (
+	refreshTokenCleanupInterval = time.Hour
+)
+
 func main() {
 	if err := run(); err != nil {
 		slog.Error("fatal", "err", err)
@@ -45,8 +49,10 @@ func run() error {
 		return err
 	}
 
-	handler, sb := httpserver.New(database.NewStore(pool), cfg, provider)
+	store := database.NewStore(pool)
+	handler, sb := httpserver.New(store, cfg, provider)
 	go sb.Run(ctx)
+	go deleteExpiredRefreshTokens(ctx, store)
 
 	srv := httpserver.NewServer(cfg.Addr, handler)
 	// this goroutine will wait for the server process is killed (SIGTERM/INT) and will shutdown the server gracefully
@@ -62,4 +68,20 @@ func run() error {
 		return err
 	}
 	return nil
+}
+
+// deleteExpiredRefreshTokens prunes expired refresh tokens every hour until ctx is done.
+func deleteExpiredRefreshTokens(ctx context.Context, store *database.Store) {
+	t := time.NewTicker(refreshTokenCleanupInterval)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			if err := store.DeleteExpiredRefreshTokens(ctx); err != nil {
+				slog.Error("delete expired refresh tokens", "err", err)
+			}
+		}
+	}
 }
