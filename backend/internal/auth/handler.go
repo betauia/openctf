@@ -20,7 +20,7 @@ import (
 const (
 	cookieName        = "session"
 	refreshCookieName = "refresh"
-	refreshPath       = "/api/auth/refresh"
+	refreshPath       = "/api/auth"
 )
 
 // Auth authenticates requests with signed session cookies and serves the /api/auth endpoints.
@@ -253,7 +253,7 @@ func (a *Auth) setRefreshCookie(w http.ResponseWriter, token string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     refreshCookieName,
 		Value:    token,
-		Path:     refreshPath, // only sent to the refresh endpoint
+		Path:     refreshPath,
 		MaxAge:   int(sessions.RefreshMaxAge.Seconds()),
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
