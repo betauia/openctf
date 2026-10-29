@@ -5,6 +5,7 @@ package auth
 import (
 	"context"
 	"net/http"
+	"net/mail"
 	"time"
 	"unicode/utf8"
 	"uuid"
@@ -61,8 +62,16 @@ func (a *Auth) register(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "Username must be 2-32 characters")
 		return
 	}
-	if utf8.RuneCountInString(body.Password) < 8 {
-		httpx.Error(w, http.StatusBadRequest, "Password must be at least 8 characters")
+	if utf8.RuneCountInString(body.Password) < 12 {
+		httpx.Error(w, http.StatusBadRequest, "Password must be at least 12 characters")
+		return
+	}
+	if utf8.RuneCountInString(body.Email) < 3 || utf8.RuneCountInString(body.Email) > 255 {
+		httpx.Error(w, http.StatusBadRequest, "Email must be 3-255 characters")
+		return
+	}
+	if _, err := mail.ParseAddress(body.Email); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "Please provide a valid email address")
 		return
 	}
 	ctx := r.Context()
