@@ -49,6 +49,7 @@ func run() error {
 	go sb.Run(ctx)
 
 	srv := httpserver.NewServer(cfg.Addr, handler)
+	// this goroutine will wait for the server process is killed (SIGTERM/INT) and will shutdown the server gracefully
 	go func() {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
