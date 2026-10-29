@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 	"time"
@@ -33,5 +34,22 @@ func TestToken(t *testing.T) {
 		if _, ok := VerifyToken(secret, bad, now); ok {
 			t.Errorf("accepted malformed token %q", bad)
 		}
+	}
+}
+
+func TestRefreshToken(t *testing.T) {
+	tok, hash, err := NewRefreshToken()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(hash, HashRefreshToken(tok)) {
+		t.Error("hash doesn't match HashRefreshToken(token)")
+	}
+	if len(tok) != 43 || strings.ContainsAny(tok, "=+/") {
+		t.Errorf("token %q should be 32 bytes of unpadded base64url", tok)
+	}
+	other, _, err := NewRefreshToken()
+	if err != nil || other == tok {
+		t.Errorf("second token = %q, %v; want a different token", other, err)
 	}
 }
