@@ -52,7 +52,7 @@ func (a *Auth) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if n := utf8.RuneCountInString(body.Username); n < 2 || n > 32 {
-		httpx.Error(w, http.StatusBadRequest, "Username must be 2–32 characters")
+		httpx.Error(w, http.StatusBadRequest, "Username must be 2-32 characters")
 		return
 	}
 	if utf8.RuneCountInString(body.Password) < 8 {
