@@ -13,7 +13,7 @@ func TestToken(t *testing.T) {
 	now := time.Unix(1_800_000_000, 0)
 	tok := NewToken(secret, id, now)
 
-	if got, ok := VerifyToken(secret, tok, now.Add(time.Hour)); !ok || got != id {
+	if got, ok := VerifyToken(secret, tok, now.Add(MaxAge-time.Second)); !ok || got != id {
 		t.Fatalf("VerifyToken = %v, %v; want %v, true", got, ok, id)
 	}
 	if _, ok := VerifyToken(secret, tok, now.Add(MaxAge+time.Second)); ok {
