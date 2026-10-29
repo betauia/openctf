@@ -27,6 +27,17 @@ type Challenge struct {
 	IsVisible      bool
 }
 
+type RefreshToken struct {
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	FamilyID  uuid.UUID
+	TokenHash []byte
+	ExpiresAt time.Time
+	UsedAt    *time.Time
+	RevokedAt *time.Time
+	CreatedAt time.Time
+}
+
 type Solve struct {
 	ID          uuid.UUID
 	UserID      uuid.UUID
