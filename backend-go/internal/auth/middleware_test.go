@@ -91,8 +91,33 @@ func TestLogout(t *testing.T) {
 		t.Errorf("status = %d", w.Code)
 	}
 	cookies := w.Result().Cookies()
-	if len(cookies) != 1 || cookies[0].Name != cookieName || cookies[0].MaxAge >= 0 {
-		t.Errorf("logout cookies = %+v, want an expired session cookie", cookies)
+	if len(cookies) != 2 || cookies[0].Name != cookieName || cookies[1].Name != refreshCookieName ||
+		cookies[0].MaxAge >= 0 || cookies[1].MaxAge >= 0 || cookies[1].Path != refreshPath {
+		t.Errorf("logout cookies = %+v, want expired session and refresh cookies", cookies)
+	}
+}
+
+func TestRefreshWithoutCookie(t *testing.T) {
+	a := New(nil, "secret")
+	w := httptest.NewRecorder()
+	a.refresh(w, httptest.NewRequest("POST", refreshPath, nil))
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want 401", w.Code)
+	}
+}
+
+func TestSetRefreshCookie(t *testing.T) {
+	a := New(nil, "secret")
+	w := httptest.NewRecorder()
+	a.setRefreshCookie(w, "tok")
+	cookies := w.Result().Cookies()
+	if len(cookies) != 1 {
+		t.Fatalf("cookies = %v", cookies)
+	}
+	c := cookies[0]
+	if c.Name != refreshCookieName || c.Value != "tok" || !c.HttpOnly || c.Path != refreshPath ||
+		c.SameSite != http.SameSiteStrictMode || c.MaxAge != int(sessions.RefreshMaxAge.Seconds()) {
+		t.Errorf("cookie = %+v", c)
 	}
 }
 
