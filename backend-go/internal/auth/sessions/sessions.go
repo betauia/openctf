@@ -13,7 +13,7 @@ import (
 )
 
 // MaxAge is how long a session token stays valid after it is issued.
-const MaxAge = 30 * 24 * time.Hour
+const MaxAge = 15 * time.Minute
 
 // NewToken returns base64url("<user id>:<unix time>:<hex HMAC-SHA256 of the first two parts>").
 func NewToken(secret []byte, userID uuid.UUID, now time.Time) string {
