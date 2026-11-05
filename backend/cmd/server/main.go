@@ -11,14 +11,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/betauia/openctf/backend/internal/auth"
 	"github.com/betauia/openctf/backend/internal/config"
 	"github.com/betauia/openctf/backend/internal/database"
 	"github.com/betauia/openctf/backend/internal/httpserver"
-	"github.com/betauia/openctf/backend/internal/instances"
-)
-
-const (
-	refreshTokenCleanupInterval = time.Hour
 )
 
 func main() {
@@ -44,17 +40,11 @@ func run() error {
 	if err := database.Migrate(ctx, pool); err != nil {
 		return err
 	}
-	provider, err := instances.NewProvider(cfg.InstanceProvider, cfg.HostDomain)
-	if err != nil {
+	if err := auth.EnsureDefaultAdmin(ctx, pool, cfg.AdminPassword, cfg.AdminEmail); err != nil {
 		return err
 	}
 
-	store := database.NewStore(pool)
-	handler, sb := httpserver.New(store, cfg, provider)
-	go sb.Run(ctx)
-	go deleteExpiredRefreshTokens(ctx, store)
-
-	srv := httpserver.NewServer(cfg.Addr, handler)
+	srv := httpserver.NewServer(cfg.Addr, httpserver.NewMux(pool, cfg))
 	// this goroutine will wait for the server process is killed (SIGTERM/INT) and will shutdown the server gracefully
 	go func() {
 		<-ctx.Done()
@@ -68,20 +58,4 @@ func run() error {
 		return err
 	}
 	return nil
-}
-
-// deleteExpiredRefreshTokens prunes expired refresh tokens every hour until ctx is done.
-func deleteExpiredRefreshTokens(ctx context.Context, store *database.Store) {
-	t := time.NewTicker(refreshTokenCleanupInterval)
-	defer t.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-t.C:
-			if err := store.DeleteExpiredRefreshTokens(ctx); err != nil {
-				slog.Error("delete expired refresh tokens", "err", err)
-			}
-		}
-	}
 }

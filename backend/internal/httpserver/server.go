@@ -1,3 +1,4 @@
+// Package httpserver wires the API routes and builds the HTTP server.
 package httpserver
 
 import (
