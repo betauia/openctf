@@ -8,30 +8,34 @@ import (
 
 // Config is the server configuration.
 type Config struct {
-	DatabaseURL      string // postgres://user:pass@host:5432/db
-	SecretKey        string
-	InstanceProvider string // "docker" or "kubernetes"
-	HostDomain       string
-	UploadDir        string
-	Addr             string
+	DatabaseURL   string // postgres://user:pass@host:5432/db
+	Addr          string
+	SecretKey     string // signs session cookies
+	AdminEmail    string // email for the admin user
+	AdminPassword string // default password for the admin user
 }
 
 // Load reads the configuration from the environment, applying defaults for optional
 // variables. It returns an error if DATABASE_URL or SECRET_KEY is unset.
 func Load() (Config, error) {
 	cfg := Config{
-		DatabaseURL:      os.Getenv("DATABASE_URL"),
-		SecretKey:        os.Getenv("SECRET_KEY"),
-		InstanceProvider: env("INSTANCE_PROVIDER", "docker"),
-		HostDomain:       env("HOST_DOMAIN", "localhost"),
-		UploadDir:        env("UPLOAD_DIR", "/app/uploads"),
-		Addr:             env("ADDR", ":8000"),
+		DatabaseURL:   os.Getenv("DATABASE_URL"),
+		Addr:          env("ADDR", ":8000"),
+		SecretKey:     os.Getenv("SECRET_KEY"),
+		AdminEmail:    os.Getenv("ADMIN_EMAIL"),
+		AdminPassword: os.Getenv("ADMIN_PASSWORD"),
 	}
 	if cfg.DatabaseURL == "" {
 		return cfg, errors.New("DATABASE_URL must be set")
 	}
 	if cfg.SecretKey == "" {
 		return cfg, errors.New("SECRET_KEY must be set")
+	}
+	if cfg.AdminEmail == "" {
+		return cfg, errors.New("ADMIN_EMAIL must be set")
+	}
+	if cfg.AdminPassword == "" {
+		return cfg, errors.New("ADMIN_PASSWORD must be set")
 	}
 	return cfg, nil
 }

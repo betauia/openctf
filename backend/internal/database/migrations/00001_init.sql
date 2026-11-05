@@ -4,7 +4,9 @@
 CREATE TABLE teams (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name        TEXT NOT NULL UNIQUE,
-    invite_code TEXT UNIQUE
+    captain_id  UUID, -- foreign key added below, once users exists
+    invite_code TEXT UNIQUE,
+    banned      BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE users (
@@ -13,10 +15,14 @@ CREATE TABLE users (
     email         TEXT    NOT NULL UNIQUE,
     password_hash TEXT    NOT NULL,
     score         INTEGER NOT NULL DEFAULT 0,
-    is_admin      BOOLEAN NOT NULL DEFAULT FALSE,
-    team_id       UUID REFERENCES teams (id) ON DELETE SET NULL
+    role          TEXT    NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'maintainer', 'admin')),
+    team_id       UUID REFERENCES teams (id) ON DELETE SET NULL,
+    banned        BOOLEAN NOT NULL DEFAULT FALSE
 );
 CREATE INDEX users_team_id_idx ON users (team_id);
+
+ALTER TABLE teams
+    ADD CONSTRAINT teams_captain_id_fkey FOREIGN KEY (captain_id) REFERENCES users (id) ON DELETE SET NULL;
 
 CREATE TABLE challenges (
     id              UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -34,7 +40,8 @@ CREATE TABLE challenges (
     files           TEXT[]  NOT NULL DEFAULT '{}',
     docker_image    TEXT,
     docker_port     INTEGER DEFAULT 80,
-    is_visible      BOOLEAN NOT NULL DEFAULT FALSE
+    is_visible      BOOLEAN NOT NULL DEFAULT FALSE,
+    created_by_id   UUID REFERENCES users (id) ON DELETE SET NULL
 );
 
 CREATE TABLE solves (
@@ -46,8 +53,22 @@ CREATE TABLE solves (
 );
 CREATE INDEX solves_challenge_id_idx ON solves (challenge_id);
 
+-- Exactly one row: id is always TRUE.
+CREATE TABLE settings (
+    id              BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (id),
+    ctf_name        TEXT NOT NULL DEFAULT 'OpenCTF',
+    ctf_start       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    ctf_end         TIMESTAMPTZ NOT NULL DEFAULT now() + INTERVAL '7 days',
+    registration    BOOLEAN NOT NULL DEFAULT TRUE,
+    max_team_size   INTEGER NOT NULL DEFAULT 5,
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+INSERT INTO settings DEFAULT VALUES;
+
 -- +goose Down
+DROP TABLE settings;
 DROP TABLE solves;
 DROP TABLE challenges;
+ALTER TABLE teams DROP CONSTRAINT teams_captain_id_fkey;
 DROP TABLE users;
 DROP TABLE teams;

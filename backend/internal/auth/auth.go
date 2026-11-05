@@ -10,10 +10,12 @@ import (
 	"unicode/utf8"
 	"uuid"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/betauia/openctf/backend/internal/auth/passwords"
 	"github.com/betauia/openctf/backend/internal/auth/sessions"
 	"github.com/betauia/openctf/backend/internal/database"
-	"github.com/betauia/openctf/backend/internal/database/dbgen"
 	"github.com/betauia/openctf/backend/internal/httpx"
 )
 
@@ -25,13 +27,13 @@ const (
 
 // Auth authenticates requests with signed session cookies and serves the /api/auth endpoints.
 type Auth struct {
-	store  *database.Store
+	pool   *pgxpool.Pool
 	secret []byte
 }
 
-// New returns an Auth that loads users from store and signs session tokens with secretKey.
-func New(store *database.Store, secretKey string) *Auth {
-	return &Auth{store: store, secret: []byte(secretKey)}
+// New returns an Auth that loads users from pool and signs session tokens with secretKey.
+func New(pool *pgxpool.Pool, secretKey string) *Auth {
+	return &Auth{pool: pool, secret: []byte(secretKey)}
 }
 
 // Register adds the /api/auth routes to mux.
@@ -41,6 +43,7 @@ func (a *Auth) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/auth/refresh", a.refresh)
 	mux.HandleFunc("POST /api/auth/logout", a.logout)
 	mux.HandleFunc("GET /api/auth/me", a.Require(a.me))
+	mux.HandleFunc("PUT /api/auth/password", a.Require(a.changePassword))
 	mux.HandleFunc("GET /api/auth/solves", a.Optional(a.solves))
 }
 
@@ -58,16 +61,16 @@ func (a *Auth) register(w http.ResponseWriter, r *http.Request) {
 	if !httpx.Decode(w, r, &body) {
 		return
 	}
-	if n := utf8.RuneCountInString(body.Username); n < 2 || n > 32 {
-		httpx.Error(w, http.StatusBadRequest, "Username must be 2-32 characters")
+	if n := utf8.RuneCountInString(body.Username); n < 5 || n > 32 {
+		httpx.Error(w, http.StatusBadRequest, "Username must be 5-32 characters")
 		return
 	}
 	if utf8.RuneCountInString(body.Password) < 12 {
 		httpx.Error(w, http.StatusBadRequest, "Password must be at least 12 characters")
 		return
 	}
-	if utf8.RuneCountInString(body.Email) < 3 || utf8.RuneCountInString(body.Email) > 255 {
-		httpx.Error(w, http.StatusBadRequest, "Email must be 3-255 characters")
+	if n := utf8.RuneCountInString(body.Email); n < 5 || n > 255 {
+		httpx.Error(w, http.StatusBadRequest, "Email must be 5-255 characters")
 		return
 	}
 	if _, err := mail.ParseAddress(body.Email); err != nil {
@@ -75,7 +78,7 @@ func (a *Auth) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
-	taken, err := a.store.UserExists(ctx, dbgen.UserExistsParams{Username: body.Username, Email: body.Email})
+	taken, err := userExists(ctx, a.pool, body.Username, body.Email)
 	if err != nil {
 		httpx.InternalError(w, r, err)
 		return
@@ -89,12 +92,7 @@ func (a *Auth) register(w http.ResponseWriter, r *http.Request) {
 		httpx.InternalError(w, r, err)
 		return
 	}
-	u, err := a.store.CreateUser(ctx, dbgen.CreateUserParams{
-		ID:           uuid.NewV7(),
-		Username:     body.Username,
-		Email:        body.Email,
-		PasswordHash: hash,
-	})
+	u, err := createUser(ctx, a.pool, uuid.NewV7(), body.Username, body.Email, hash)
 	if database.IsUniqueViolation(err) { // lost a race with another registration
 		httpx.Error(w, http.StatusBadRequest, "Username or email already taken")
 		return
@@ -118,7 +116,7 @@ func (a *Auth) login(w http.ResponseWriter, r *http.Request) {
 	if !httpx.Decode(w, r, &body) {
 		return
 	}
-	u, err := a.store.GetUserByUsername(r.Context(), body.Username)
+	u, err := getUserByUsername(r.Context(), a.pool, body.Username)
 	if err != nil && !database.IsNotFound(err) {
 		httpx.InternalError(w, r, err)
 		return
@@ -145,23 +143,20 @@ func (a *Auth) refresh(w http.ResponseWriter, r *http.Request) {
 	hash := sessions.HashRefreshToken(c.Value)
 	var userID uuid.UUID
 	var token string
-	err = a.store.InTx(ctx, func(q *dbgen.Queries) error {
-		t, err := q.ConsumeRefreshToken(ctx, dbgen.ConsumeRefreshTokenParams{
-			TokenHash:  hash,
-			ReuseAfter: time.Now().Add(-sessions.RefreshReuseWindow),
-		})
+	err = pgx.BeginFunc(ctx, a.pool, func(tx pgx.Tx) error {
+		uid, family, err := consumeRefreshToken(ctx, tx, hash, time.Now().Add(-sessions.RefreshReuseWindow))
 		if err != nil {
 			return err
 		}
-		userID = t.UserID
-		token, err = newRefreshToken(ctx, q, t.UserID, t.FamilyID)
+		userID = uid
+		token, err = newRefreshToken(ctx, tx, uid, family)
 		return err
 	})
 	if database.IsNotFound(err) {
 		// Unknown, expired, revoked, or replayed after the reuse window. A replay means the
 		// token may have been stolen, so revoke every token rotated from the same login.
-		if family, err := a.store.GetRefreshTokenFamily(ctx, hash); err == nil {
-			if err := a.store.RevokeRefreshFamily(ctx, family); err != nil {
+		if family, err := getRefreshTokenFamily(ctx, a.pool, hash); err == nil {
+			if err := revokeRefreshFamily(ctx, a.pool, family); err != nil {
 				httpx.InternalError(w, r, err)
 				return
 			}
@@ -182,9 +177,9 @@ func (a *Auth) refresh(w http.ResponseWriter, r *http.Request) {
 func (a *Auth) logout(w http.ResponseWriter, r *http.Request) {
 	if c, err := r.Cookie(refreshCookieName); err == nil {
 		ctx := r.Context()
-		family, err := a.store.GetRefreshTokenFamily(ctx, sessions.HashRefreshToken(c.Value))
+		family, err := getRefreshTokenFamily(ctx, a.pool, sessions.HashRefreshToken(c.Value))
 		if err == nil {
-			err = a.store.RevokeRefreshFamily(ctx, family)
+			err = revokeRefreshFamily(ctx, a.pool, family)
 		}
 		if err != nil && !database.IsNotFound(err) {
 			httpx.InternalError(w, r, err)
@@ -195,8 +190,8 @@ func (a *Auth) logout(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-func (a *Auth) me(w http.ResponseWriter, r *http.Request, u dbgen.User) {
-	rank, err := a.store.UserRank(r.Context(), u.Score)
+func (a *Auth) me(w http.ResponseWriter, r *http.Request, u User) {
+	rank, err := userRank(r.Context(), a.pool, u.Score)
 	if err != nil {
 		httpx.InternalError(w, r, err)
 		return
@@ -205,17 +200,59 @@ func (a *Auth) me(w http.ResponseWriter, r *http.Request, u dbgen.User) {
 		ID       uuid.UUID `json:"id"`
 		Username string    `json:"username"`
 		Score    int32     `json:"score"`
-		IsAdmin  bool      `json:"is_admin"`
+		Role     string    `json:"role"`
 		Rank     int32     `json:"rank"`
-	}{u.ID, u.Username, u.Score, u.IsAdmin, rank})
+	}{u.ID, u.Username, u.Score, u.Role, rank})
+}
+
+// changePassword replaces the user's password after checking the current one. Every other
+// device is logged out: their refresh tokens are revoked, and their session cookies expire
+// within sessions.MaxAge. The caller gets a fresh session.
+func (a *Auth) changePassword(w http.ResponseWriter, r *http.Request, u User) {
+	var body struct {
+		CurrentPassword string `json:"current_password"`
+		NewPassword     string `json:"new_password"`
+	}
+	if !httpx.Decode(w, r, &body) {
+		return
+	}
+	if !passwords.Verify(body.CurrentPassword, u.PasswordHash) {
+		httpx.Error(w, http.StatusBadRequest, "Current password is incorrect")
+		return
+	}
+	if utf8.RuneCountInString(body.NewPassword) < 12 {
+		httpx.Error(w, http.StatusBadRequest, "Password must be at least 12 characters")
+		return
+	}
+	hash, err := passwords.Hash(body.NewPassword)
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	ctx := r.Context()
+	err = pgx.BeginFunc(ctx, a.pool, func(tx pgx.Tx) error {
+		if err := updatePasswordHash(ctx, tx, u.ID, hash); err != nil {
+			return err
+		}
+		return revokeUserRefreshTokens(ctx, tx, u.ID)
+	})
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	if err := a.startSession(w, r, u.ID); err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
 // solves lists the ids of challenges the user solved; empty when not logged in.
-func (a *Auth) solves(w http.ResponseWriter, r *http.Request, u *dbgen.User) {
+func (a *Auth) solves(w http.ResponseWriter, r *http.Request, u *User) {
 	ids := []uuid.UUID{}
 	if u != nil {
 		var err error
-		if ids, err = a.store.ListSolvedChallengeIDs(r.Context(), u.ID); err != nil {
+		if ids, err = listSolvedChallengeIDs(r.Context(), a.pool, u.ID); err != nil {
 			httpx.InternalError(w, r, err)
 			return
 		}
@@ -225,7 +262,7 @@ func (a *Auth) solves(w http.ResponseWriter, r *http.Request, u *dbgen.User) {
 
 // startSession sets the session cookie and a refresh token for a new login.
 func (a *Auth) startSession(w http.ResponseWriter, r *http.Request, userID uuid.UUID) error {
-	token, err := newRefreshToken(r.Context(), a.store.Queries, userID, uuid.NewV7())
+	token, err := newRefreshToken(r.Context(), a.pool, userID, uuid.NewV7())
 	if err != nil {
 		return err
 	}
@@ -235,18 +272,12 @@ func (a *Auth) startSession(w http.ResponseWriter, r *http.Request, userID uuid.
 }
 
 // newRefreshToken stores a refresh token for userID in familyID and returns the cookie value.
-func newRefreshToken(ctx context.Context, q *dbgen.Queries, userID, familyID uuid.UUID) (string, error) {
+func newRefreshToken(ctx context.Context, q database.Querier, userID, familyID uuid.UUID) (string, error) {
 	token, hash, err := sessions.NewRefreshToken()
 	if err != nil {
 		return "", err
 	}
-	return token, q.CreateRefreshToken(ctx, dbgen.CreateRefreshTokenParams{
-		ID:        uuid.NewV7(),
-		UserID:    userID,
-		FamilyID:  familyID,
-		TokenHash: hash,
-		ExpiresAt: time.Now().Add(sessions.RefreshMaxAge),
-	})
+	return token, createRefreshToken(ctx, q, userID, familyID, hash, time.Now().Add(sessions.RefreshMaxAge))
 }
 
 func (a *Auth) setRefreshCookie(w http.ResponseWriter, token string) {
