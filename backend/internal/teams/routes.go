@@ -2,7 +2,10 @@ package teams
 
 import (
 	"crypto/rand"
+	"fmt"
+	"math"
 	"net/http"
+	"strconv"
 	"unicode/utf8"
 	"uuid"
 
@@ -19,15 +22,56 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	// Player
 	mux.HandleFunc("GET /api/teams/{id}", h.a.Optional(h.get))
 	mux.HandleFunc("POST /api/teams", h.a.Authorise(authz.TeamCreate, h.create))
+	mux.HandleFunc("GET /api/teams", h.a.Authorise(authz.TeamReadPublic, h.getTeams))
 	mux.HandleFunc("GET /api/teams/mine", h.a.Require(h.mine))
 	mux.HandleFunc("POST /api/teams/join", h.a.Require(h.join))
 	mux.HandleFunc("POST /api/teams/mine/leave", h.a.Require(h.leave))
 	mux.HandleFunc("DELETE /api/teams/mine/members/{uid}", h.a.Require(h.kick))
 	mux.HandleFunc("PUT /api/teams/mine/captain", h.a.Require(h.transferCaptain))
+	mux.HandleFunc("PATCH /api/teams/mine", h.a.Authorise(authz.TeamUpdate, h.updateTeam))
 
 	// Admins
 	mux.HandleFunc("PATCH /api/admin/teams/{id}", h.a.Optional(h.adminUpdate))
 	mux.HandleFunc("DELETE /api/admin/teams/{id}", h.a.Optional(h.adminDelete))
+}
+
+func (h *Handler) getTeams(w http.ResponseWriter, r *http.Request, u *auth.User) {
+	limit, ok := queryInt(w, r, "limit", 50, 1, 100)
+	if !ok {
+		return
+	}
+	offset, ok := queryInt(w, r, "offset", 0, 0, math.MaxInt32)
+	if !ok {
+		return
+	}
+
+	teams, err := listTeams(r.Context(), h.pool, limit, offset)
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+
+	for i := range teams {
+		teams[i].InviteCode = nil
+	}
+	httpx.JSON(w, http.StatusOK, teams)
+}
+
+func queryInt(w http.ResponseWriter, r *http.Request, key string, def, min, max int) (int, bool) {
+	s := r.URL.Query().Get(key)
+	if s == "" {
+		return def, true
+	}
+	n, err := strconv.Atoi(s)
+	if err != nil || n < min || n > max {
+		httpx.Error(w, http.StatusBadRequest, fmt.Sprintf("%s must be an integer between %d and %d", key, min, max))
+		return 0, false
+	}
+	return n, true
+}
+
+func (h *Handler) updateTeam(w http.ResponseWriter, r *http.Request, u *auth.User) {
+	// To be implemented
 }
 
 // get returns a team's public profile. The invite code is never included.

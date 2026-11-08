@@ -62,3 +62,13 @@ func listMembers(ctx context.Context, q database.Querier, teamID uuid.UUID) ([]m
 		return m, err
 	})
 }
+
+func listTeams(ctx context.Context, q database.Querier, limit, offset int) ([]team, error) {
+	rows, err := q.Query(ctx, "SELECT"+teamColumns+" FROM teams t ORDER BY t.name ASC LIMIT $1 OFFSET $2", limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (team, error) {
+		return scanTeam(row)
+	})
+}
