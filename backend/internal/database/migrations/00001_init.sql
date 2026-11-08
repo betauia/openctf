@@ -32,16 +32,20 @@ CREATE TABLE challenges (
     points          INTEGER NOT NULL,
     category        TEXT    NOT NULL,
     difficulty      TEXT    NOT NULL DEFAULT 'Easy',
-    solves          INTEGER NOT NULL DEFAULT 0,
+    solves          INT NOT NULL DEFAULT 0,
     connection_info TEXT,
-    -- Array of plain strings or {"type": "static"|"regex", "content": ..., "data": "case_insensitive"?}
-    flags           JSONB   NOT NULL DEFAULT '[]',
-    -- Filenames in the upload dir
-    files           TEXT[]  NOT NULL DEFAULT '{}',
     docker_image    TEXT,
     docker_port     INTEGER DEFAULT 80,
     is_visible      BOOLEAN NOT NULL DEFAULT FALSE,
-    created_by_id   UUID REFERENCES users (id) ON DELETE SET NULL
+    created_by_id   UUID REFERENCES users (id) ON DELETE SET NULL,
+    uploaded_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TABLE challenge_files (
+    id              UUID PRIMARY KEY,
+    challenge_id    UUID NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
+    filename        TEXT NOT NULL, 
+    filepath        TEXT NOT NULL,
+    uploaded_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE solves (
