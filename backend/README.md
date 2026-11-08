@@ -77,7 +77,7 @@ A team object is `{"id","name","captain_id","banned","member_count"}`. `captain_
 
 | Status | Method   | Path                              | Who                   | Request → Response                                                                         |
 | ------ | -------- | --------------------------------- | --------------------- | ------------------------------------------------------------------------------------------ |
-| 📝     | `GET`    | `/api/teams`                      | team:read_public      | List and search all visible teams                                                          |
+| ✅     | `GET`    | `/api/teams`                      | team:read_public      | `?limit` (1-100, default 50) and `?offset` → array of team objects sorted by name. No invite codes |
 | ✅     | `GET`    | `/api/teams/{id}`                 | team:read_public      | Team object. The invite code is never included                                             |
 | ✅     | `POST`   | `/api/teams`                      | team:create           | `{"name"}` → `{"id"}`. The creator becomes captain                                         |
 | ✅     | `GET`    | `/api/teams/mine`                 | team:read_private     | Team object plus `"invite_code"` and `"members": [{"id","username","score"}]`. `404` when not in a team |
