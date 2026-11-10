@@ -13,6 +13,7 @@ type Config struct {
 	SecretKey     string // signs session cookies
 	AdminEmail    string // email for the admin user
 	AdminPassword string // default password for the admin user
+	PolicyFile    string // PBAC policy JSON, relative to the working directory
 }
 
 // Load reads the configuration from the environment, applying defaults for optional
@@ -24,6 +25,7 @@ func Load() (Config, error) {
 		SecretKey:     os.Getenv("SECRET_KEY"),
 		AdminEmail:    os.Getenv("ADMIN_EMAIL"),
 		AdminPassword: os.Getenv("ADMIN_PASSWORD"),
+		PolicyFile:    env("POLICY_FILE", "internal/policies/default.json"),
 	}
 	if cfg.DatabaseURL == "" {
 		return cfg, errors.New("DATABASE_URL must be set")

@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/betauia/openctf/backend/internal/auth/sessions"
-	"github.com/betauia/openctf/backend/internal/authz"
 	"github.com/betauia/openctf/backend/internal/database"
 	"github.com/betauia/openctf/backend/internal/httpx"
+	"github.com/betauia/openctf/backend/internal/policy"
 )
 
 // CurrentUser returns the user from the session cookie, or nil if there is no valid session.
@@ -31,42 +31,70 @@ func (a *Auth) CurrentUser(r *http.Request) (*User, error) {
 	return &u, nil
 }
 
-// Subject returns the authz.Subject for the given user, or an empty subject if u is nil.
-func (a *Auth) Subject(ctx context.Context, u *User) (authz.Subject, error) {
-	// No role: only EveryonePolicies and SystemPolicies apply.
-	if u == nil {
-		return authz.Subject{}, nil
+// Subject returns the policy subject for u. A visitor (u == nil) has no ID and no roles, so
+// only statements for "*" apply. Every attribute is always set, because a missing attribute
+// makes a condition fail and a deny statement reading it not apply.
+func (a *Auth) Subject(ctx context.Context, u *User) (policy.Subject, error) {
+	attrs := map[string]any{
+		"role":        "",
+		"banned":      false,
+		"has_team":    false,
+		"team_id":     "",
+		"is_captain":  false,
+		"team_banned": false,
 	}
-	s := authz.Subject{ID: u.ID, Role: authz.Role(u.Role), Banned: u.Banned}
+	if u == nil {
+		return policy.Subject{Attributes: attrs}, nil
+	}
+	attrs["role"] = u.Role
+	attrs["banned"] = u.Banned
 	if u.TeamID != nil {
-		s.TeamID = *u.TeamID
+		var isCaptain, teamBanned bool
 		// COALESCE: captain_id is NULL when the team has no captain.
 		err := a.pool.QueryRow(ctx,
 			`SELECT COALESCE(captain_id = $2, false), banned FROM teams WHERE id = $1`, *u.TeamID, u.ID,
-		).Scan(&s.IsCaptain, &s.TeamBanned)
+		).Scan(&isCaptain, &teamBanned)
 		if err != nil {
-			return authz.Subject{}, err
+			return policy.Subject{}, err
 		}
+		attrs["has_team"] = true
+		attrs["team_id"] = u.TeamID.String()
+		attrs["is_captain"] = isCaptain
+		attrs["team_banned"] = teamBanned
 	}
-	return s, nil
+	return policy.Subject{ID: u.ID.String(), Roles: []string{u.Role}, Attributes: attrs}, nil
 }
 
-// Env returns the current environment: CTF start/end times, max team size and admin count.
-func (a *Auth) Env(ctx context.Context) (authz.Env, error) {
-	env := authz.Env{Now: time.Now()}
-	var start, end *time.Time
+// Env returns the request context the policies read: the CTF phase ("not_started", "running"
+// or "ended"), its start and end as Unix seconds, the current time, the max team size and the
+// number of admins.
+func (a *Auth) Env(ctx context.Context) (map[string]any, error) {
+	var start, end time.Time
+	var maxTeamSize, adminCount int
 	err := a.pool.QueryRow(ctx, `
 		SELECT ctf_start, ctf_end, max_team_size,
 		       (SELECT COUNT(*) FROM users WHERE role = 'admin')
 		FROM settings`,
-	).Scan(&start, &end, &env.MaxTeamSize, &env.AdminCount)
-	if start != nil {
-		env.CTFStart = *start
+	).Scan(&start, &end, &maxTeamSize, &adminCount)
+	if err != nil {
+		return nil, err
 	}
-	if end != nil {
-		env.CTFEnd = *end
+	now := time.Now()
+	phase := "running"
+	switch {
+	case now.Before(start):
+		phase = "not_started"
+	case !now.Before(end):
+		phase = "ended"
 	}
-	return env, err
+	return map[string]any{
+		"ctf_phase":     phase,
+		"ctf_start":     start.Unix(),
+		"ctf_end":       end.Unix(),
+		"now":           now.Unix(),
+		"max_team_size": maxTeamSize,
+		"admin_count":   adminCount,
+	}, nil
 }
 
 // Optional passes the current user to h, or nil when not logged in.

@@ -17,6 +17,7 @@ import (
 	"github.com/betauia/openctf/backend/internal/auth/sessions"
 	"github.com/betauia/openctf/backend/internal/database"
 	"github.com/betauia/openctf/backend/internal/httpx"
+	"github.com/betauia/openctf/backend/internal/policy"
 )
 
 const (
@@ -27,13 +28,15 @@ const (
 
 // Auth authenticates requests with signed session cookies and serves the /api/auth endpoints.
 type Auth struct {
-	pool   *pgxpool.Pool
-	secret []byte
+	pool     *pgxpool.Pool
+	secret   []byte
+	policies *policy.Engine
 }
 
-// New returns an Auth that loads users from pool and signs session tokens with secretKey.
-func New(pool *pgxpool.Pool, secretKey string) *Auth {
-	return &Auth{pool: pool, secret: []byte(secretKey)}
+// New returns an Auth that loads users from pool, signs session tokens with secretKey and
+// authorises requests with policies.
+func New(pool *pgxpool.Pool, secretKey string, policies *policy.Engine) *Auth {
+	return &Auth{pool: pool, secret: []byte(secretKey), policies: policies}
 }
 
 // Register adds the /api/auth routes to mux.

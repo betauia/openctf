@@ -14,6 +14,7 @@
 | `SECRET_KEY`   | _(required)_ | Signs session cookies               |
 | `ADMIN_EMAIL`    | _(required)_ | Email of the default `admin` user, created on first start |
 | `ADMIN_PASSWORD` | _(required)_ | Password of the default `admin` user                      |
+| `POLICY_FILE`    | `internal/policies/default.json` | PBAC policy JSON, relative to the working directory. The production image sets `/policies/default.json` |
 
 ## Running
 
@@ -73,7 +74,7 @@ Every route lives under `/api/`, except the `/health` probe. Admin-only routes l
 
 ### Teams
 
-A team object is `{"id","name","captain_id","banned","member_count"}`. `captain_id` is `null` when the captain's account was deleted. Team names are 3-32 characters and unique.
+A team object is `{"id","name","captain_id","banned","hidden","member_count"}`. `captain_id` is `null` when the captain's account was deleted. Team names have surrounding whitespace trimmed, must be 3-32 characters without control characters, and are unique regardless of case. Hidden teams are left out of `GET /api/teams` and answer `404` on `GET /api/teams/{id}`, but their members can still read and manage them, and admins see them.
 
 | Status | Method   | Path                              | Who                   | Request → Response                                                                         |
 | ------ | -------- | --------------------------------- | --------------------- | ------------------------------------------------------------------------------------------ |
@@ -81,13 +82,15 @@ A team object is `{"id","name","captain_id","banned","member_count"}`. `captain_
 | ✅     | `GET`    | `/api/teams/{id}`                 | team:read_public      | Team object. The invite code is never included                                             |
 | ✅     | `POST`   | `/api/teams`                      | team:create           | `{"name"}` → `{"id"}`. The creator becomes captain                                         |
 | ✅     | `GET`    | `/api/teams/mine`                 | team:read_private     | Team object plus `"invite_code"` and `"members": [{"id","username","score"}]`. `404` when not in a team |
-| 📝     | `PATCH`  | `/api/teams/mine`                 | team:update           | Rename the team, edit team fields                                                          |
+| ✅     | `PATCH`  | `/api/teams/mine`                 | team:update           | `{"name"?,"regenerate_invite"?}` → `{"ok":true}`, plus the new `"invite_code"` when one was generated. Captain only. Fields left out are unchanged; `400` when neither is given |
 | ✅     | `POST`   | `/api/teams/join`                 | team:join             | `{"invite_code"}` → `{"ok":true}`. Refused when the team is full or banned                 |
 | ✅     | `POST`   | `/api/teams/mine/leave`           | team:leave            | `{"ok":true}`. A captain with other members must transfer first. The last member leaving deletes the team |
 | ✅     | `DELETE` | `/api/teams/mine/members/{uid}`   | team:kick             | `{"ok":true}`. Captain only. Use leave to remove yourself                                  |
 | ✅     | `PUT`    | `/api/teams/mine/captain`         | team:transfer_captain | `{"user_id"}` → `{"ok":true}`. The new captain must be a member                            |
 
 Joining, leaving and kicking are refused for non-admins after the CTF has ended (`RosterFrozen`).
+
+Members of a banned team can still read their team (`GET /api/teams/mine`), but every other team action is refused: update, kick, transfer captain, leave and delete (`DenyBannedTeam`). Only an admin can unban the team through `PATCH /api/admin/teams/{id}`.
 
 ### Challenges
 
@@ -130,10 +133,10 @@ A settings object is `{"ctf_name","ctf_start","ctf_end","registration","max_team
 | 📝     | `PATCH`  | `/api/admin/users/{id}`                        | user:update + user:ban | Edit or ban a user                                            |
 | 📝     | `PUT`    | `/api/admin/users/{id}/role`                   | user:set_role          | Change role                                                   |
 | 📝     | `DELETE` | `/api/admin/users/{id}`                        | user:delete            | Delete a user                                                 |
-| 📝     | `GET`    | `/api/admin/teams`                             | team:read_private      | List and search teams                                         |
-| 📝     | `GET`    | `/api/admin/teams/{id}`                        | team:read_private      | Full details about a team                                     |
-| ✅     | `PATCH`  | `/api/admin/teams/{id}`                        | team:update + team:ban | `{"name"?,"banned"?}` → `{"ok":true}`. Setting `banned` also needs team:ban |
-| 📝     | `DELETE` | `/api/admin/teams/{id}/members/{uid}`          | team:kick              | Remove a member from a team                                   |
+| ✅     | `GET`    | `/api/admin/teams`                             | team:read_private      | `?limit` (1-100, default 50), `?offset` and `?q` (name contains, ignoring case, at most 32 characters) → array of team objects sorted by name, including hidden teams and `"invite_code"` |
+| ✅     | `GET`    | `/api/admin/teams/{id}`                        | team:read_private      | Team object plus `"invite_code"` and `"members": [{"id","username","score"}]`, hidden teams included |
+| ✅     | `PATCH`  | `/api/admin/teams/{id}`                        | team:update (+ team:ban, team:transfer_captain) | `{"name"?,"banned"?,"hidden"?,"captain_id"?}` → `{"ok":true}`. Fields left out are unchanged; `400` when none is given. Setting `banned` also needs team:ban, `captain_id` also needs team:transfer_captain and must be a member |
+| ✅     | `DELETE` | `/api/admin/teams/{id}/members/{uid}`          | team:kick              | `{"ok":true}`. Kicking the last member deletes the team. Kicking the captain makes the oldest remaining account captain. `404` when the user isn't a member |
 | ✅     | `DELETE` | `/api/admin/teams/{id}`                        | team:delete            | `{"ok":true}`. Members are left without a team                |
 | 📝     | `GET`    | `/api/admin/instances`                         | instance:read          | List all running instances                                    |
 | 📝     | `DELETE` | `/api/admin/instances/{id}`                    | instance:stop          | Kill any instance                                             |
@@ -142,8 +145,8 @@ A settings object is `{"ctf_name","ctf_start","ctf_end","registration","max_team
 | 📝     | `POST`   | `/api/admin/announcements`                     | announcement:create    | Create an announcement                                        |
 | 📝     | `DELETE` | `/api/admin/announcements/{id}`                | announcement:delete    | Delete an announcement                                        |
 | 📝     | `GET`    | `/api/admin/audit-log`                         | audit:read             | View audit logs                                               |
-| 🚧     | `GET`    | `/api/admin/settings`                          | settings:read          | Settings object                                               |
-| 🚧     | `PUT`    | `/api/admin/settings`                          | settings:update        | Any of `{"ctf_name","ctf_start","ctf_end","registration","max_team_size"}` → settings object. Fields left out are unchanged. Name 1-64 characters, team size at least 1, start before end |
+| ✅     | `GET`    | `/api/admin/settings`                          | settings:read          | Settings object                                               |
+| ✅     | `PUT`    | `/api/admin/settings`                          | settings:update        | Any of `{"ctf_name","ctf_start","ctf_end","registration","max_team_size"}` → settings object. Fields left out are unchanged. Name 1-64 characters, team size at least 1, start before end |
 | 📝     | `POST`   | `/api/admin/challenges`                        | challenge:create       | Create a challenge                                            |
 | 📝     | `PATCH`  | `/api/admin/challenges/{cid}`                  | challenge:update       | Edit a challenge                                              |
 | 📝     | `DELETE` | `/api/admin/challenges/{cid}`                  | challenge:delete       | Delete a challenge                                            |
@@ -165,9 +168,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/betauia/openctf/backend/internal/auth"
-	"github.com/betauia/openctf/backend/internal/authz"
 	"github.com/betauia/openctf/backend/internal/database"
 	"github.com/betauia/openctf/backend/internal/httpx"
+	"github.com/betauia/openctf/backend/internal/policy"
 )
 
 type Handler struct {
@@ -182,7 +185,7 @@ func New(pool *pgxpool.Pool, a *auth.Auth) *Handler {
 func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/users/{id}", h.get)                                        // public
 	mux.HandleFunc("PATCH /api/users/me", h.auth.Require(h.update))                     // logged in only
-	mux.HandleFunc("GET /api/admin/users", h.auth.Authorise(authz.UserList, h.list))    // permission, no resource
+	mux.HandleFunc("GET /api/admin/users", h.auth.Authorise(policy.UserList, h.list))   // permission, no resource
 	mux.HandleFunc("PATCH /api/admin/users/{id}", h.auth.Optional(h.ban))               // permission on a resource
 }
 
@@ -219,7 +222,7 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	// ...
 }
 
-// ban loads the target first, because the policies depend on it (is_self, target_is_last_admin).
+// ban loads the target first, because the policies depend on it (NoSelfRoleChange, KeepLastAdmin).
 func (h *Handler) ban(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	id, ok := httpx.PathID(w, r, "id")
 	if !ok {
@@ -235,7 +238,10 @@ func (h *Handler) ban(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		httpx.InternalError(w, r, err)
 		return
 	}
-	allowed, err := h.auth.IsAllowed(r.Context(), u, authz.UserBan, authz.Resource{ID: id, Role: authz.Role(role)})
+	allowed, err := h.auth.IsAllowed(r, u, policy.UserBan, policy.Resource{
+		ID:         id.String(),
+		Attributes: map[string]any{"role": role},
+	})
 	if err != nil {
 		httpx.InternalError(w, r, err)
 		return
@@ -262,9 +268,10 @@ That's all. The route is logged by the request middleware automatically.
 - **Login:** wrap handlers with `a.Require` (401 when logged out) or `a.Optional` (user may be `nil`). The handler gets the user as its third argument.
 - **Permissions:** never check `u.Role` directly; ask PBAC (see [PBAC](#pbac)).
   - The action doesn't depend on a resource (`challenge:create`, `user:list`, `settings:*`): wrap the route in `a.Authorise(action, h)`.
-  - It depends on one resource: wrap in `a.Optional`, load the row, then call `a.IsAllowed(ctx, u, action, resource)` and `auth.Deny(w, u)` when refused.
-  - Filtering a list: call `check, err := a.Checker(ctx, u)` once and `check(action, resource)` per row, so the subject and env are loaded only once.
-  - The check must agree with a write: get `check` before the transaction, lock the row inside `pgx.BeginFunc` (`SELECT ... FOR UPDATE`), call `check` on the locked row and return `auth.ErrDenied` when refused. Then answer the error with `auth.Fail(w, r, u, err, "Team not found")`, which maps a missing row to `404`, `ErrDenied` to `401`/`403` and anything else to `500`. [`internal/teams`](internal/teams/routes.go) does this for join, leave and kick.
+  - It depends on one resource: wrap in `a.Optional`, load the row, then call `a.IsAllowed(r, u, action, resource)` and `auth.Deny(w, u)` when refused.
+  - Filtering a list: call `check, err := a.Checker(r, u)` once and `check(action, resource)` per row, so the subject and env are loaded only once.
+  - A new route also needs a statement in [`internal/policies/default.json`](internal/policies/default.json) whose `resources` cover its path, or every request is refused.
+  - The check must agree with a write: get `check` before the transaction, lock the row inside `pgx.BeginFunc` (`SELECT ... FOR UPDATE`), call `check` on the locked row and return `auth.ErrDenied` when refused. Then answer the error with `auth.Fail(w, r, u, err, "Team not found")`, which maps a missing row to `404`, `ErrDenied` to `401`/`403` and anything else to `500`. [`internal/teams`](internal/teams/routes.go) does this for join, leave, kick, transfer captain and update.
   - Answer `404` when the user may not even read the resource, so hidden challenges can't be discovered.
 - **Request bodies:** `httpx.Decode` caps them at 1 MiB and responds `422` itself when the JSON is invalid.
 - **Responses:** `httpx.JSON` for success, `httpx.Error` for client errors, `httpx.InternalError` for unexpected errors. It logs the error and hides it from the client.
@@ -272,59 +279,79 @@ That's all. The route is logged by the request middleware automatically.
 
 ## PBAC
 
-Authorisation is policy based. The rules live in [`internal/authz/pbac.go`](internal/authz/pbac.go), which is pure Go with no database or HTTP, and are tested in [`pbac_test.go`](internal/authz/pbac_test.go). [`internal/auth`](internal/auth/authorise.go) collects the facts a check needs and connects it to HTTP.
+Authorisation is policy based. The rules are JSON in [`internal/policies/default.json`](internal/policies/default.json), which `main` loads at startup from `POLICY_FILE`. A missing or invalid file stops the server. [`internal/policy`](internal/policy/engine.go) is the engine, which is pure Go with no database or HTTP. [`internal/auth`](internal/auth/authorise.go) collects the attributes a check needs and connects it to HTTP.
 
 ### How a check works
 
 ```
-a.Authorise(action, h) / a.IsAllowed(ctx, u, action, resource)
-  └─ a.Checker(ctx, u)
-       ├─ a.Subject(ctx, u)   who: id, role, banned, team, captain, team banned   (users + teams)
-       ├─ a.Env(ctx)          when: ctf_start, ctf_end, max_team_size, admin count (settings + users)
-       └─ authz.IsActionAllowed(subject, action, resource, env)
-            1. take SystemPolicies + EveryonePolicies + the policies of the subject's role
-            2. a policy matches when it lists the action and all its conditions hold
-            3. any matching deny policy  → refused
-            4. any matching allow policy → allowed, otherwise refused
+a.Authorise(action, h) / a.IsAllowed(r, u, action, resource)
+  └─ a.Checker(r, u)
+       ├─ a.Subject(ctx, u)   who: id, role, banned, team, captain, team banned    (users + teams)
+       ├─ a.Env(ctx)          context: ctf_phase, max_team_size, admin_count, ...  (settings + users)
+       └─ engine.Evaluate(request)
+            1. a statement matches when its subjects, actions and resources patterns match
+               and all of its conditions hold
+            2. any matching deny statement  → refused
+            3. any matching allow statement → allowed, otherwise refused
 ```
 
-A logged out visitor is an empty `Subject` with no role, so only the public and system policies apply. A refusal is `401` for visitors and `403` for logged-in users (`auth.Deny`).
+A resource's `Path` defaults to the request path (`r.URL.Path`), so statements' `resources` are API paths. A logged out visitor has no ID and no roles, so only statements for `"*"` apply. A refusal is `401` for visitors and `403` for logged-in users (`auth.Deny`). Refusals are logged at debug level with the deciding policy and statement.
 
-The handler builds the `authz.Resource` from the row it loaded. **Every field a deny policy reads must be set**, because an empty field makes that policy not apply: `Role` for users (`KeepLastAdmin`), and `MemberCount` and `Banned` for teams (`TeamFull`, `CaptainMustTransfer`, `NoJoinBannedTeam`).
+The handler builds the `policy.Resource` (ID and attributes) from the row it loaded. **Every attribute a deny statement reads must be set**, because a missing attribute makes the condition fail and the deny not apply: `role` for users (`KeepLastAdmin`), and `member_count` and `banned` for teams (`CaptainMustTransfer`, `NoJoinBannedTeam`, `TeamJoinNotFull`). See `team.resource()` in [`internal/teams/store.go`](internal/teams/store.go).
 
-### Conditions
+### Policy file
 
-| Condition      | True when                            |
-|----------------|--------------------------------------|
-| always         | always                               |
-| is_self        | resource.id == subject.id            |
-| is_owner       | resource.created_by_id == subject.id |
-| has_team       | subject.team_id is set               |
-| no_team        | subject.team_id is not set           |
-| is_member      | subject.team_id == resource.id       |
-| is_captain     | subject.is_captain and is_member     |
-| same_team      | resource.team_id == subject.team_id  |
-| published      | not resource.hidden                  |
-| needs_instance | the challenge has a docker_image     |
-| ctf_started    | now >= ctf_start                     |
-| ctf_running    | ctf_start <= now < ctf_end           |
-| ctf_ended      | now >= ctf_end                       |
+```json
+[
+  {
+    "id": "player",
+    "statements": [
+      {
+        "sid": "TeamCaptain",
+        "effect": "allow",
+        "subjects": ["role:user", "role:maintainer", "role:admin"],
+        "actions": ["team:update", "team:kick", "team:transfer_captain"],
+        "resources": ["/api/teams/mine", "/api/teams/mine/*"],
+        "conditions": [
+          { "operator": "Equals", "key": "subject.is_captain", "value": true },
+          { "operator": "Equals", "key": "resource.id", "value": "${subject.team_id}" }
+        ]
+      }
+    ]
+  }
+]
+```
 
-A zero subject ID or team ID never matches, so a visitor is never `is_self`, `is_owner` or a team member. A condition on `ctf_start` or `ctf_end` fails when that time isn't set. Unknown conditions fail.
+- **subjects:** `role:<role>`, `user:<id>` or `*`. Roles don't inherit, so list every role a statement applies to.
+- **actions:** see [Actions](#actions). `*` and `team:*` work too.
+- **resources:** API paths. `*` matches any characters including `/`, so `/api/teams/*` doesn't match `/api/teams` itself; list both when needed.
+- **conditions:** all must hold. Operators are `Equals`, `NotEquals`, `In` and `NotIn` (value is a list), `LessThan` and `GreaterThan`. A value `"${scope.attr}"` compares against another attribute. A condition on a missing attribute fails.
 
-Used by the system (deny) policies:
+The loader rejects unknown fields, effects, operators, condition keys and actions at startup, so a typo can't silently disable a rule. [`internal/teams/routes_pbac_test.go`](internal/teams/routes_pbac_test.go) calls every route as every kind of user; add the new routes there when you change a rule.
 
-| Condition            | True when                                         |
-|----------------------|---------------------------------------------------|
-| subject_banned       | subject.banned                                    |
-| team_banned          | the subject's team is banned                      |
-| target_banned        | the resource itself is banned (teams)             |
-| target_is_last_admin | resource.role is admin and there is at most one admin |
-| team_has_others      | resource.member_count > 1                         |
-| team_full            | max_team_size > 0 and member_count >= max_team_size |
-| not_admin            | the subject's role isn't admin                    |
+### Attributes
+
+| Key                     | Type   | Notes                                                       |
+|-------------------------|--------|-------------------------------------------------------------|
+| `subject.id`            | string | empty for a visitor                                         |
+| `subject.role`          | string | `user`, `maintainer`, `admin`, or empty for a visitor       |
+| `subject.banned`        | bool   |                                                             |
+| `subject.has_team`      | bool   |                                                             |
+| `subject.team_id`       | string | empty when not in a team                                    |
+| `subject.is_captain`    | bool   | captain of `subject.team_id`                                |
+| `subject.team_banned`   | bool   | `subject.team_id` is banned                                 |
+| `resource.id`           | string | the loaded row's ID                                         |
+| `resource.path`         | string | the request path                                            |
+| `resource.*`            | any    | set by the handler, e.g. `member_count`, `banned`, `hidden` (teams), `visible`, `needs_instance`, `owner_id` (challenges), `team_id` (instances), `role` (users) |
+| `context.ctf_phase`     | string | `not_started`, `running` or `ended`                         |
+| `context.ctf_start`, `context.ctf_end`, `context.now` | number | Unix seconds                  |
+| `context.max_team_size` | number |                                                             |
+| `context.admin_count`   | number | users with role `admin`                                     |
+| `request.action`        | string | the action being checked                                    |
 
 ### Actions
+
+The constants live in [`internal/policy/actions.go`](internal/policy/actions.go). Add new actions there before using them in the policy file.
 
 | Resource     | Actions                                                                                       |
 |--------------|-----------------------------------------------------------------------------------------------|
@@ -337,74 +364,34 @@ Used by the system (deny) policies:
 | settings     | read, update                                                                                  |
 | audit        | read                                                                                          |
 
-### Allow policies
+### Default policies
 
-#### Player Policies
+| Policy       | Applies to                 | Statements                                                                 |
+|--------------|----------------------------|----------------------------------------------------------------------------|
+| `system-deny`| everyone                   | DenyBanned, DenyBannedTeam, NoJoinBannedTeam, NoSelfRoleChange, KeepLastAdmin, CaptainMustTransfer, RosterFrozen |
+| `public`     | everyone, also visitors    | PublicRead                                                                 |
+| `player`     | user, maintainer, admin    | PlayerChallengeRead, PlayerSubmit, TeamInstanceStart, TeamInstanceControl, SelfAccount, TeamCreate, TeamJoinUnlimited, TeamJoinNotFull, TeamMember, TeamCaptain |
+| `maintainer` | maintainer, admin          | ChallengeAuthoring, ChallengeOwner, ChallengeReadAll, InstanceOperator     |
+| `admin`      | admin                      | ChallengeAdmin, InstanceAdmin, UserAdmin, TeamAdmin, SubmissionAdmin, EventAdmin |
 
-| Policy              | Action                                                        | Resource  | Conditions                                       |
-|---------------------|---------------------------------------------------------------|-----------|--------------------------------------------------|
-| PlayerChallengeRead | challenge:read, challenge:download, challenge:view_solves     | Challenge | published, ctf_started                           |
-| PlayerSubmit        | challenge:submit                                              | Challenge | published, has_team, ctf_running                 |
-| TeamInstanceStart   | instance:start                                                | Challenge | published, needs_instance, has_team, ctf_running |
-| TeamInstanceControl | instance:read, instance:reset, instance:extend, instance:stop | Instance  | same_team, ctf_running                           |
-| SelfAccount         | user:read_private, user:update, user:manage_keys, user:list_keys, user:revoke_keys | User | is_self                             |
-| TeamFounding        | team:create, team:join                                        | Team      | no_team                                          |
-| TeamMember          | team:read_private, team:leave                                 | Team      | is_member                                        |
-| TeamCaptain         | team:update, team:kick, team:transfer_captain, team:delete   | Team      | is_captain                                       |
+The deny statements:
 
-#### Admin policies
+| Statement           | Actions                                                       | Denies when                                           |
+|---------------------|---------------------------------------------------------------|-------------------------------------------------------|
+| DenyBanned          | * except user:read_public, team:read_public                   | the subject is banned                                 |
+| DenyBannedTeam      | challenge:submit, instance:start, team:update, team:kick, team:transfer_captain, team:leave, team:delete | the subject's team is banned (player routes only) |
+| NoJoinBannedTeam    | team:join                                                     | the team being joined is banned                       |
+| NoSelfRoleChange    | user:set_role, user:ban, user:delete                          | the target user is the subject                        |
+| KeepLastAdmin       | user:set_role, user:ban, user:delete                          | the target is an admin and there is only one          |
+| CaptainMustTransfer | team:leave                                                    | the subject is captain and the team has other members |
+| RosterFrozen        | team:join, team:leave, team:kick                              | the CTF has ended and the subject isn't an admin      |
 
-| Policy             | Action                                                                                                 | Resource   | Conditions |
-|--------------------|--------------------------------------------------------------------------------------------------------|------------|------------|
-| ChallengeAuthoring | challenge:create                                                                                       | Challenge  | always     |
-| ChallengeOwner     | challenge:update, challenge:read_secrets, challenge:manage_files                                       | Challenge  | is_owner   |
-| ChallengeReadAll   | challenge:read, challenge:download, challenge:view_solves                                              | Challenge  | always     |
-| InstanceOperator   | instance:read, instance:stop                                                                           | Instance   | always     |
-| ChallengeAdmin     | challenge:update, challenge:read_secrets, challenge:manage_files, challenge:delete                     | Challenge  | always     |
-| InstanceAdmin      | instance:read, instance:reset, instance:stop, instance:extend                                           | Instance   | always     |
-| UserAdmin          | user:list, user:read_private, user:create, user:update, user:ban, user:set_role, user:revoke_keys, user:delete | User       | always     |
-| TeamAdmin          | team:read_private, team:update, team:ban, team:kick, team:delete                                      | Team       | always     |
-| SubmissionAdmin    | submission:read, submission:delete                                                                     | Submission | always     |
-| EventAdmin         | settings:read, settings:update, announcement:create, announcement:delete, audit:read               | -          | always     |
-
-#### Public policy
-
-Applies to everyone, also logged out visitors.
-
-| Policy     | Action                          | Resource   | Conditions |
-|------------|---------------------------------|------------|------------|
-| PublicRead | user:read_public, team:read_public | User, Team | always     |
-
-#### Role Mapping
-
-Each role inherits every policy of the role above it in the table, so everyone can play. A role not listed here gets only the public and system policies.
-
-| Role       | Inherits   | Attached policies                                                                                                              |
-|------------|------------|--------------------------------------------------------------------------------------------------------------------------------|
-| user       | -          | PlayerChallengeRead, PlayerSubmit, TeamInstanceStart, TeamInstanceControl, SelfAccount, TeamFounding, TeamMember, TeamCaptain |
-| maintainer | user       | ChallengeAuthoring, ChallengeOwner, ChallengeReadAll, InstanceOperator                                                        |
-| admin      | maintainer | ChallengeAdmin, InstanceAdmin, UserAdmin, TeamAdmin, SubmissionAdmin, EventAdmin                                              |
-
-#### System Policies (always active)
-
-These apply to every subject, whatever its role, and a match always refuses.
-
-| Policy              | Effect | Action                               | Denies when                                           |
-|---------------------|--------|--------------------------------------|-------------------------------------------------------|
-| DenyBanned          | Deny   | *                                    | subject.banned                                        |
-| DenyBannedTeam      | Deny   | challenge:submit, instance:start, team:kick | the subject's team is banned                   |
-| NoJoinBannedTeam    | Deny   | team:join                            | the team being joined is banned                       |
-| NoSelfRoleChange    | Deny   | user:set_role                        | the target user is the subject                        |
-| NoSelfDestruct      | Deny   | user:ban, user:delete                | the target user is the subject                        |
-| KeepLastAdmin       | Deny   | user:set_role, user:ban, user:delete | the target is the only admin                          |
-| CaptainMustTransfer | Deny   | team:leave                           | the subject is captain and the team has other members |
-| TeamFull            | Deny   | team:join                            | member_count >= settings.max_team_size                |
-| RosterFrozen        | Deny   | team:join, team:leave, team:kick     | ctf_ended, and the subject isn't an admin             |
+A full team is handled on the allow side instead: `team:join` is allowed by `TeamJoinUnlimited` (`max_team_size` is 0) or `TeamJoinNotFull` (`member_count < max_team_size`), because the operators have no `>=`.
 
 ## Layout
 
 ```
-cmd/server/            entrypoint: config, database, default admin, server lifecycle
+cmd/server/            entrypoint: config, database, default admin, policies, server lifecycle
 internal/config/       environment configuration
 internal/database/     connection pool and migrations
   migrations/          goose migrations, embedded in the binary
@@ -415,9 +402,10 @@ internal/auth/         /api/auth endpoints, session cookies, Require/Optional, d
                        PBAC glue: Subject/Env, Checker/IsAllowed/Authorise/Deny/Fail
   passwords/           password hashing
   sessions/            session and refresh tokens
-internal/authz/        PBAC: actions, conditions, policies, roles, IsActionAllowed
+internal/policy/       PBAC engine: policy model, JSON loader, matching, conditions, action constants
+internal/policies/     default.json (the PBAC rules, loaded by main) and its tests
 internal/teams/        /api/teams and /api/admin/teams endpoints
-internal/settings/     /api/admin/settings endpoints (not registered in app.go yet)
+internal/settings/     /api/admin/settings endpoints
 ```
 
 ## Docker
