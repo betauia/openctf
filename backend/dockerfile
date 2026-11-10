@@ -13,5 +13,7 @@ RUN go build -trimpath -ldflags="-s -w" -o /out/backend ./cmd/server
 
 FROM gcr.io/distroless/static-debian12 AS production
 COPY --from=build /out/backend /backend
+COPY --from=build /app/internal/policies/default.json /policies/default.json
+ENV POLICY_FILE=/policies/default.json
 EXPOSE 8000
 ENTRYPOINT ["/backend"]

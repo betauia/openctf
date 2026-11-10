@@ -8,13 +8,13 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/betauia/openctf/backend/internal/auth"
-	"github.com/betauia/openctf/backend/internal/authz"
 	"github.com/betauia/openctf/backend/internal/httpx"
+	"github.com/betauia/openctf/backend/internal/policy"
 )
 
 func (h *Handler) Register(mux *http.ServeMux) {
-	mux.HandleFunc("GET /api/admin/settings", h.a.Authorise(authz.SettingsRead, h.getSettings))
-	mux.HandleFunc("PUT /api/admin/settings", h.a.Authorise(authz.SettingsUpdate, h.updateSettings))
+	mux.HandleFunc("GET /api/admin/settings", h.a.Authorise(policy.SettingsRead, h.getSettings))
+	mux.HandleFunc("PUT /api/admin/settings", h.a.Authorise(policy.SettingsUpdate, h.updateSettings))
 }
 
 func (h *Handler) getSettings(w http.ResponseWriter, r *http.Request, u *auth.User) {
