@@ -1,0 +1,332 @@
+[
+  {
+    "id": "system-deny",
+    "description": "Guard rails that apply to every subject. Any matching deny overrides every allow.",
+    "statements": [
+      {
+        "sid": "DenyBanned",
+        "effect": "deny",
+        "subjects": ["*"],
+        "actions": ["*"],
+        "resources": ["*"],
+        "conditions": [
+          { "operator": "Equals", "key": "subject.banned", "value": true },
+          { "operator": "NotIn", "key": "request.action", "value": ["user:read_public", "team:read_public"] }
+        ]
+      },
+      {
+        "sid": "DenyBannedTeam",
+        "effect": "deny",
+        "subjects": ["*"],
+        "actions": ["challenge:submit", "instance:start", "team:update", "team:kick", "team:transfer_captain", "team:leave", "team:delete"],
+        "resources": ["/api/challenges/*", "/api/teams/mine", "/api/teams/mine/*"],
+        "conditions": [
+          { "operator": "Equals", "key": "subject.team_banned", "value": true }
+        ]
+      },
+      {
+        "sid": "NoJoinBannedTeam",
+        "effect": "deny",
+        "subjects": ["*"],
+        "actions": ["team:join"],
+        "resources": ["/api/teams/join"],
+        "conditions": [
+          { "operator": "Equals", "key": "resource.banned", "value": true }
+        ]
+      },
+      {
+        "sid": "NoSelfRoleChange",
+        "effect": "deny",
+        "subjects": ["*"],
+        "actions": ["user:set_role", "user:ban", "user:delete"],
+        "resources": ["/api/admin/users/*"],
+        "conditions": [
+          {
+            "operator": "Equals",
+            "key": "resource.id",
+            "value": "${subject.id}"
+          }
+        ]
+      },
+      {
+        "sid": "KeepLastAdmin",
+        "effect": "deny",
+        "subjects": ["*"],
+        "actions": ["user:set_role", "user:ban", "user:delete"],
+        "resources": ["/api/admin/users/*"],
+        "conditions": [
+          { "operator": "Equals", "key": "resource.role", "value": "admin" },
+          { "operator": "LessThan", "key": "context.admin_count", "value": 2 }
+        ]
+      },
+      {
+        "sid": "CaptainMustTransfer",
+        "effect": "deny",
+        "subjects": ["*"],
+        "actions": ["team:leave"],
+        "resources": ["/api/teams/mine/leave"],
+        "conditions": [
+          { "operator": "Equals", "key": "subject.is_captain", "value": true },
+          {
+            "operator": "Equals",
+            "key": "resource.id",
+            "value": "${subject.team_id}"
+          },
+          { "operator": "GreaterThan", "key": "resource.member_count", "value": 1 }
+        ]
+      },
+      {
+        "sid": "RosterFrozen",
+        "effect": "deny",
+        "subjects": ["*"],
+        "actions": ["team:join", "team:leave", "team:kick"],
+        "resources": ["/api/teams/join", "/api/teams/mine/*", "/api/admin/teams/*/members/*"],
+        "conditions": [
+          { "operator": "Equals", "key": "context.ctf_phase", "value": "ended" },
+          { "operator": "NotEquals", "key": "subject.role", "value": "admin" }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "public",
+    "description": "Applies to everyone, including logged out visitors.",
+    "statements": [
+      {
+        "sid": "PublicRead",
+        "effect": "allow",
+        "subjects": ["*"],
+        "actions": ["user:read_public", "team:read_public"],
+        "resources": ["/api/users/*", "/api/teams", "/api/teams/*"]
+      }
+    ]
+  },
+  {
+    "id": "player",
+    "description": "Baseline permissions for every logged in user.",
+    "statements": [
+      {
+        "sid": "PlayerChallengeRead",
+        "effect": "allow",
+        "subjects": ["role:user", "role:maintainer", "role:admin"],
+        "actions": ["challenge:read", "challenge:download", "challenge:view_solves"],
+        "resources": ["/api/challenges", "/api/challenges/*"],
+        "conditions": [
+          { "operator": "Equals", "key": "resource.visible", "value": true },
+          { "operator": "In", "key": "context.ctf_phase", "value": ["running", "ended"] }
+        ]
+      },
+      {
+        "sid": "PlayerSubmit",
+        "effect": "allow",
+        "subjects": ["role:user", "role:maintainer", "role:admin"],
+        "actions": ["challenge:submit"],
+        "resources": ["/api/challenges/submit", "/api/challenges/*/submit"],
+        "conditions": [
+          { "operator": "Equals", "key": "resource.visible", "value": true },
+          { "operator": "Equals", "key": "subject.has_team", "value": true },
+          { "operator": "Equals", "key": "context.ctf_phase", "value": "running" }
+        ]
+      },
+      {
+        "sid": "TeamInstanceStart",
+        "effect": "allow",
+        "subjects": ["role:user", "role:maintainer", "role:admin"],
+        "actions": ["instance:start"],
+        "resources": ["/api/challenges/*/instance"],
+        "conditions": [
+          { "operator": "Equals", "key": "resource.visible", "value": true },
+          { "operator": "Equals", "key": "resource.needs_instance", "value": true },
+          { "operator": "Equals", "key": "subject.has_team", "value": true },
+          { "operator": "Equals", "key": "context.ctf_phase", "value": "running" }
+        ]
+      },
+      {
+        "sid": "TeamInstanceControl",
+        "effect": "allow",
+        "subjects": ["role:user", "role:maintainer", "role:admin"],
+        "actions": ["instance:read", "instance:reset", "instance:extend", "instance:stop"],
+        "resources": ["/api/challenges/*/instance", "/api/challenges/*/instance/*"],
+        "conditions": [
+          { "operator": "Equals", "key": "subject.has_team", "value": true },
+          {
+            "operator": "Equals",
+            "key": "resource.team_id",
+            "value": "${subject.team_id}"
+          },
+          { "operator": "Equals", "key": "context.ctf_phase", "value": "running" }
+        ]
+      },
+      {
+        "sid": "SelfAccount",
+        "effect": "allow",
+        "subjects": ["role:user", "role:maintainer", "role:admin"],
+        "actions": ["user:read_private", "user:update", "user:manage_keys", "user:list_keys", "user:revoke_keys"],
+        "resources": ["/api/users/me", "/api/users/me/*"],
+        "conditions": [
+          {
+            "operator": "Equals",
+            "key": "resource.id",
+            "value": "${subject.id}"
+          }
+        ]
+      },
+      {
+        "sid": "TeamCreate",
+        "effect": "allow",
+        "subjects": ["role:user", "role:maintainer", "role:admin"],
+        "actions": ["team:create"],
+        "resources": ["/api/teams"],
+        "conditions": [
+          { "operator": "Equals", "key": "subject.has_team", "value": false }
+        ]
+      },
+      {
+        "sid": "TeamJoinUnlimited",
+        "effect": "allow",
+        "subjects": ["role:user", "role:maintainer", "role:admin"],
+        "actions": ["team:join"],
+        "resources": ["/api/teams/join"],
+        "conditions": [
+          { "operator": "Equals", "key": "subject.has_team", "value": false },
+          { "operator": "Equals", "key": "context.max_team_size", "value": 0 }
+        ]
+      },
+      {
+        "sid": "TeamJoinNotFull",
+        "effect": "allow",
+        "subjects": ["role:user", "role:maintainer", "role:admin"],
+        "actions": ["team:join"],
+        "resources": ["/api/teams/join"],
+        "conditions": [
+          { "operator": "Equals", "key": "subject.has_team", "value": false },
+          {
+            "operator": "LessThan",
+            "key": "resource.member_count",
+            "value": "${context.max_team_size}"
+          }
+        ]
+      },
+      {
+        "sid": "TeamMember",
+        "effect": "allow",
+        "subjects": ["role:user", "role:maintainer", "role:admin"],
+        "actions": ["team:read_private", "team:leave"],
+        "resources": ["/api/teams/mine", "/api/teams/mine/leave"],
+        "conditions": [
+          { "operator": "Equals", "key": "subject.has_team", "value": true },
+          {
+            "operator": "Equals",
+            "key": "resource.id",
+            "value": "${subject.team_id}"
+          }
+        ]
+      },
+      {
+        "sid": "TeamCaptain",
+        "effect": "allow",
+        "subjects": ["role:user", "role:maintainer", "role:admin"],
+        "actions": ["team:update", "team:kick", "team:transfer_captain", "team:delete"],
+        "resources": ["/api/teams/mine", "/api/teams/mine/*"],
+        "conditions": [
+          { "operator": "Equals", "key": "subject.has_team", "value": true },
+          { "operator": "Equals", "key": "subject.is_captain", "value": true },
+          {
+            "operator": "Equals",
+            "key": "resource.id",
+            "value": "${subject.team_id}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "maintainer",
+    "description": "Challenge authors. Admins get these too.",
+    "statements": [
+      {
+        "sid": "ChallengeAuthoring",
+        "effect": "allow",
+        "subjects": ["role:maintainer", "role:admin"],
+        "actions": ["challenge:create"],
+        "resources": ["/api/admin/challenges"]
+      },
+      {
+        "sid": "ChallengeOwner",
+        "effect": "allow",
+        "subjects": ["role:maintainer", "role:admin"],
+        "actions": ["challenge:update", "challenge:read_secrets", "challenge:manage_files"],
+        "resources": ["/api/admin/challenges/*"],
+        "conditions": [
+          {
+            "operator": "Equals",
+            "key": "resource.owner_id",
+            "value": "${subject.id}"
+          }
+        ]
+      },
+      {
+        "sid": "ChallengeReadAll",
+        "effect": "allow",
+        "subjects": ["role:maintainer", "role:admin"],
+        "actions": ["challenge:read", "challenge:download", "challenge:view_solves"],
+        "resources": ["/api/challenges", "/api/challenges/*"]
+      },
+      {
+        "sid": "InstanceOperator",
+        "effect": "allow",
+        "subjects": ["role:maintainer", "role:admin"],
+        "actions": ["instance:read", "instance:stop"],
+        "resources": ["/api/admin/instances", "/api/admin/instances/*"]
+      }
+    ]
+  },
+  {
+    "id": "admin",
+    "description": "Full control over the event. Still subject to the system-deny guard rails.",
+    "statements": [
+      {
+        "sid": "ChallengeAdmin",
+        "effect": "allow",
+        "subjects": ["role:admin"],
+        "actions": ["challenge:update", "challenge:read_secrets", "challenge:manage_files", "challenge:delete"],
+        "resources": ["/api/admin/challenges/*"]
+      },
+      {
+        "sid": "InstanceAdmin",
+        "effect": "allow",
+        "subjects": ["role:admin"],
+        "actions": ["instance:read", "instance:reset", "instance:stop", "instance:extend"],
+        "resources": ["/api/admin/instances", "/api/admin/instances/*"]
+      },
+      {
+        "sid": "UserAdmin",
+        "effect": "allow",
+        "subjects": ["role:admin"],
+        "actions": ["user:list", "user:read_private", "user:create", "user:update", "user:ban", "user:set_role", "user:revoke_keys", "user:delete"],
+        "resources": ["/api/admin/users", "/api/admin/users/*"]
+      },
+      {
+        "sid": "TeamAdmin",
+        "effect": "allow",
+        "subjects": ["role:admin"],
+        "actions": ["team:read_private", "team:update", "team:ban", "team:transfer_captain", "team:kick", "team:delete"],
+        "resources": ["/api/admin/teams", "/api/admin/teams/*"]
+      },
+      {
+        "sid": "SubmissionAdmin",
+        "effect": "allow",
+        "subjects": ["role:admin"],
+        "actions": ["submission:read", "submission:delete"],
+        "resources": ["/api/admin/submissions", "/api/admin/submissions/*"]
+      },
+      {
+        "sid": "EventAdmin",
+        "effect": "allow",
+        "subjects": ["role:admin"],
+        "actions": ["settings:read", "settings:update", "announcement:create", "announcement:delete", "audit:read"],
+        "resources": ["/api/admin/settings", "/api/admin/announcements", "/api/admin/announcements/*", "/api/admin/audit-log"]
+      }
+    ]
+  }
+]

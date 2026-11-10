@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"github.com/betauia/openctf/backend/internal/config"
 	"github.com/betauia/openctf/backend/internal/database"
 	"github.com/betauia/openctf/backend/internal/httpserver"
+	"github.com/betauia/openctf/backend/internal/policy"
 )
 
 func main() {
@@ -44,7 +46,13 @@ func run() error {
 		return err
 	}
 
-	srv := httpserver.NewServer(cfg.Addr, httpserver.NewMux(pool, cfg))
+	ps, err := policy.LoadFile(cfg.PolicyFile)
+	if err != nil {
+		return fmt.Errorf("load policies from %s: %w", cfg.PolicyFile, err)
+	}
+	slog.Info("loaded policies", "file", cfg.PolicyFile, "count", len(ps))
+
+	srv := httpserver.NewServer(cfg.Addr, httpserver.NewMux(pool, cfg, policy.NewEngine(ps)))
 	// this goroutine will wait for the server process is killed (SIGTERM/INT) and will shutdown the server gracefully
 	go func() {
 		<-ctx.Done()

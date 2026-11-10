@@ -3,10 +3,11 @@
 -- +goose Up
 CREATE TABLE teams (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name        TEXT NOT NULL UNIQUE,
+    name        TEXT NOT NULL, -- unique regardless of case, see teams_name_lower_key
     captain_id  UUID, -- foreign key added below, once users exists
     invite_code TEXT UNIQUE,
-    banned      BOOLEAN NOT NULL DEFAULT FALSE
+    banned      BOOLEAN NOT NULL DEFAULT FALSE,
+    hidden      BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE users (
@@ -23,6 +24,9 @@ CREATE INDEX users_team_id_idx ON users (team_id);
 
 ALTER TABLE teams
     ADD CONSTRAINT teams_captain_id_fkey FOREIGN KEY (captain_id) REFERENCES users (id) ON DELETE SET NULL;
+
+-- Team names are unique regardless of case, so "Hackers" and "hackers" can't both exist.
+CREATE UNIQUE INDEX teams_name_lower_key ON teams (lower(name));
 
 CREATE TABLE challenges (
     id              UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
