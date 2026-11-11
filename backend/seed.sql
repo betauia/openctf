@@ -1,0 +1,27 @@
+-- Seed challenges. Titles that already exist are skipped.
+-- Usage: cat backend/seed.sql | docker compose exec -T database psql -U openctf -d openctf
+
+INSERT INTO challenges (title, category, points, difficulty, description, connection_info, files, flags, author, is_visible)
+SELECT v.*, 'arch', TRUE FROM (VALUES
+    ('SQL Safari',       'web',       100, 'Easy',   'Basic SQL injection challenge.',                                                                  NULL,                        ARRAY[]::text[], to_jsonb(ARRAY['CTF{sql_safari_flag}']::text[])),
+    ('XSS Labyrinth',    'web',       250, 'Medium', 'Stored XSS in a comment field.',                                                                  NULL,                        ARRAY[]::text[], to_jsonb(ARRAY['CTF{xss_labyrinth_flag}']::text[])),
+    ('SSRF Descent',     'web',       400, 'Hard',   'Bypass SSRF protections to reach internal services.',                                              NULL,                        ARRAY[]::text[], to_jsonb(ARRAY['CTF{ssrf_descent_flag}']::text[])),
+    ('ret2libc Classic', 'pwn',       150, 'Easy',   'Classic return-to-libc exploit.',                                                                  'nc pwn.openctf.local 1337', ARRAY[]::text[], to_jsonb(ARRAY['CTF{ret2libc_classic_flag}']::text[])),
+    ('Heap Havoc',       'pwn',       350, 'Hard',   'Exploit a use-after-free vulnerability.',                                                          'nc pwn.openctf.local 1338', ARRAY[]::text[], to_jsonb(ARRAY['CTF{heap_havoc_flag}']::text[])),
+    ('Stack Siege',      'pwn',       200, 'Medium', 'Exploit a classic stack buffer overflow. Download the binary and connect to the remote service.',  'nc pwn.openctf.local 1339', ARRAY['stack_siege']::text[], to_jsonb(ARRAY['CTF{stack_siege_flag}']::text[])),
+    ('RSA Baby Steps',   'crypto',     75, 'Easy',   'Small exponent RSA attack.',                                                                      NULL,                        ARRAY[]::text[], to_jsonb(ARRAY['CTF{rsa_baby_steps_flag}']::text[])),
+    ('AES-CBC Oracle',   'crypto',    300, 'Medium', 'Padding oracle attack on AES-CBC.',                                                               NULL,                        ARRAY[]::text[], to_jsonb(ARRAY['CTF{aes_cbc_oracle_flag}']::text[])),
+    ('Crackme 001',      'rev',       100, 'Easy',   'Simple x86 crackme.',                                                                             NULL,                        ARRAY[]::text[], to_jsonb(ARRAY['CTF{crackme_001_flag}']::text[])),
+    ('VM Escape',        'rev',       450, 'Hard',   'Reverse a custom bytecode VM and escape it.',                                                     NULL,                        ARRAY[]::text[], to_jsonb(ARRAY['CTF{vm_escape_flag}']::text[])),
+    ('Unpack Me',        'rev',       200, 'Medium', 'A packed binary conceals its secrets. Unpack and reverse it.',                                    NULL,                        ARRAY[]::text[], to_jsonb(ARRAY['CTF{unpack_me_flag}']::text[])),
+    ('JTAG Whisper',     'hardware',  200, 'Medium', 'Extract firmware over JTAG.',                                                                     NULL,                        ARRAY[]::text[], to_jsonb(ARRAY['CTF{jtag_whisper_flag}']::text[])),
+    ('Steg & Destroy',   'misc',      125, 'Easy',   'Find the hidden message in the image.',                                                           NULL,                        ARRAY[]::text[], to_jsonb(ARRAY['CTF{steg_destroy_flag}']::text[])),
+    ('Forensics Fiend',  'misc',      275, 'Medium', 'Memory dump analysis.',                                                                           NULL,                        ARRAY[]::text[], to_jsonb(ARRAY['CTF{forensics_fiend_flag}']::text[])),
+    ('Hello World',      'beginner',   10, 'Easy',   'Just read the flag. Welcome to the CTF!',                                                         NULL,                        ARRAY[]::text[], to_jsonb(ARRAY['CTF{welcome_to_the_ctf}']::text[])),
+    ('Idle No More',     'afk',        50, 'Easy',   'Submit the flag. Yes, really.',                                                                   NULL,                        ARRAY[]::text[], to_jsonb(ARRAY['CTF{you_came_back}']::text[])),
+    ('Fix My Script',    'coding',    150, 'Easy',   'A broken Python script hides the flag. Fix it and run it.',                                       NULL,                        ARRAY[]::text[], to_jsonb(ARRAY['CTF{fix_my_script_flag}']::text[])),
+    ('Log Digger',       'forensics', 175, 'Easy',   'Dig through the access logs and find the suspicious request.',                                    NULL,                        ARRAY[]::text[], to_jsonb(ARRAY['CTF{log_digger_flag}']::text[])),
+    ('Insta Stalker',    'osint',     125, 'Easy',   'Find the flag hidden in a public social media profile.',                                          NULL,                        ARRAY[]::text[], to_jsonb(ARRAY['CTF{insta_stalker_flag}']::text[])),
+    ('Pixel Secrets',    'stego',     100, 'Easy',   'Something is hidden in this image. Can you find it?',                                             NULL,                        ARRAY[]::text[], to_jsonb(ARRAY['CTF{pixel_secrets_flag}']::text[]))
+) AS v (title, category, points, difficulty, description, connection_info, files, flags)
+WHERE NOT EXISTS (SELECT 1 FROM challenges c WHERE c.title = v.title);
