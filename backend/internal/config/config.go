@@ -13,8 +13,8 @@ type Config struct {
 	SecretKey     string // signs session cookies
 	AdminEmail    string // email for the admin user
 	AdminPassword string // default password for the admin user
-	PolicyFile    string
-	FilesDir      string
+	FilesDir      string // directory challenge files are stored in
+	PolicyFile    string // PBAC policy JSON, relative to the working directory
 }
 
 // Load reads the configuration from the environment, applying defaults for optional
