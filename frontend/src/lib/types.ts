@@ -4,13 +4,14 @@ export type User = {
   score: number;
   role: "user" | "maintainer" | "admin";
   rank: number;
+  avatar_url?: string | null;
 };
 
 export type Member = {
   id: string;
   username: string;
   score: number;
-  solves?: number;
+  solves: number;
 };
 
 export type Team = {
@@ -36,7 +37,10 @@ export type PublicSettings = {
   registration: boolean;
   max_team_size: number;
   rules: string;
+  theme: ThemeId;
 };
+
+export type ThemeId = "uiactf" | "betauia";
 
 export type Challenge = {
   id: string;
@@ -48,10 +52,14 @@ export type Challenge = {
   difficulty: string;
   solves: number;
   connection_info: string | null;
-  files: string[];
   docker_image: string | null;
   docker_port: number | null;
   is_visible: boolean;
+};
+
+export type ChallengeFile = {
+  id: string;
+  filename: string;
 };
 
 export type SubmitResult = {
@@ -68,6 +76,7 @@ export type Solve = {
 };
 
 export type ActivityEntry = {
+  challenge_id: string;
   username: string;
   challenge: string;
   category: string;
@@ -79,7 +88,7 @@ export type MemberDetail = {
   id: string;
   username: string;
   score: number;
-  solves: { challenge: string; category: string; points: number; solved_at: string | null }[];
+  solves: { challenge_id: string; challenge: string; category: string; points: number; solved_at: string | null }[];
 };
 
 export type Instance = {
@@ -91,4 +100,21 @@ export type Instance = {
   created_at: string;
   host_ip: string | null;
   host_port: string | null;
+};
+
+export type ScoreSeries = {
+  team_id: string;
+  team_name: string;
+  points: { at: string; score: number }[];
+};
+
+export type Progress = {
+  total: number;
+  solved: number;
+  categories: { category: string; total: number; solved: number }[];
+};
+
+export type Comparison = {
+  categories: { category: string; total: number; them: number; us: number }[];
+  missing: { id: string; title: string; category: string; points: number }[];
 };

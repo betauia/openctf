@@ -4,5 +4,5 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [tailwindcss(), sveltekit()],
-  server: { port: 4000, host: '0.0.0.0' },
+  server: { port: 4000, host: '0.0.0.0', watch: { usePolling: true, interval: 300 } },
 });

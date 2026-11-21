@@ -1,10 +1,12 @@
 <script lang="ts">
   import { browser } from "$app/environment";
-  import { invalidateAll } from "$app/navigation";
+  import { invalidateAll, replaceState } from "$app/navigation";
+  import { page } from "$app/state";
   import ChallengeModal from "@components/challenges/ChallengeModal.svelte";
   import ChallengeTable from "@components/challenges/ChallengeTable.svelte";
   import Sidebar from "@components/challenges/Sidebar.svelte";
   import * as api from "@library/api";
+  import { ArrowRight } from "lucide-svelte";
   import type { Challenge } from "@library/types";
   import type { PageProps } from "./$types";
 
@@ -13,9 +15,9 @@
   let { data }: PageProps = $props();
 
   let search = $state("");
-  let activeCat = $state("all");
+  let activeCat = $state(page.url.searchParams.get("cat") ?? "all");
   let collapsed = $state(browser && localStorage.getItem(COLLAPSE_KEY) === "true");
-  let open = $state<Challenge | null>(null);
+  let open = $state<Challenge | null>(data.challenges.find((c) => c.id === page.url.searchParams.get("open")) ?? null);
   let flagValue = $state("");
   let flagMessage = $state("");
   let flagOk = $state<boolean | null>(null);
@@ -62,26 +64,30 @@
 
 <svelte:head><title>Challenges - OpenCTF</title></svelte:head>
 
-<div class="flex h-[calc(100vh-48px)] mt-12 text-muted-text">
+<div class="flex flex-col md:flex-row h-[calc(100vh-3rem)] mt-12 text-muted-text">
   <Sidebar challenges={data.challenges} {solved} bind:activeCat />
 
-  <main class="flex-1 flex flex-col overflow-hidden bg-raised">
-    <div class="flex border-b border-text/6 bg-elevated shrink-0">
+  <main class="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden bg-raised">
+    <div class="grid grid-cols-3 lg:grid-cols-6 gap-px bg-text/5 border-b border-text/6 shrink-0">
       {#each [{ label: "Challenges", value: challenges.length }, { label: "Personal score", value: data.user.score }, { label: "Personal rank", value: data.user.rank }, { label: "Team", value: data.myTeam?.name ?? null }, { label: "Team score", value: data.myTeam?.score ?? null }, { label: "Team rank", value: data.myTeam?.rank ?? null }] as { label, value } (label)}
-        <div class="flex-1 py-3 px-5 border-r border-text/5 flex flex-col items-center gap-1 last:border-r-0">
-          <span class="text-[11px] tracking-[0.14em] text-text/55">{label}</span>
-          <span class="text-[18px] font-bold text-text">{value ?? "—"}</span>
+        <div class="min-w-0 bg-elevated py-3 px-3 flex flex-col items-center gap-1">
+          <span
+            class="max-w-full truncate whitespace-nowrap text-[0.625rem] sm:text-[0.6875rem] tracking-[0.12em] text-text/55"
+          >
+            {label}
+          </span>
+          <span class="max-w-full truncate text-[1rem] sm:text-[1.125rem] font-bold text-text">{value ?? "—"}</span>
         </div>
       {/each}
     </div>
 
-    <div class="flex items-center gap-3 py-2.5 px-4 bg-elevated border-b border-text/6 shrink-0">
+    <div class="flex flex-wrap items-center gap-3 py-2.5 px-4 bg-elevated border-b border-text/6 shrink-0">
       <input
         type="text"
         placeholder="Search challenges..."
         bind:value={search}
-        class="bg-background border border-text/10 text-muted-text py-1.5 px-2.5 text-[12px]
-          outline-none w-55 focus:border-accent"
+        class="bg-background border border-text/10 rounded-md text-muted-text py-1.5 px-3 text-[0.75rem]
+          outline-none w-full sm:w-55 transition-colors duration-100 focus:border-accent/60"
       />
 
       <form
@@ -90,7 +96,7 @@
           if (flagValue.trim()) submitFlag(flagValue.trim());
         }}
         data-form-type="other"
-        class="flex m-0"
+        class="flex m-0 flex-1 min-w-0 sm:flex-none"
       >
         <input
           type="text"
@@ -98,20 +104,22 @@
           autocomplete="off"
           data-lpignore="true"
           bind:value={flagValue}
-          class="bg-background border border-text/10 border-r-0 text-muted-text py-1.5 px-2.5 text-[12px]
-            outline-none w-65 focus:border-accent/40"
+          class="bg-background border border-text/10 border-r-0 rounded-l-md text-muted-text py-1.5 px-3
+            font-mono text-[0.75rem] outline-none flex-1 min-w-0 sm:flex-none sm:w-65 transition-colors
+            duration-100 focus:border-accent/60"
         />
         <button
           type="submit"
-          class="border-none text-white py-1.5 px-4 text-[11px] tracking-[0.1em] cursor-pointer font-bold
-            transition-colors duration-150
+          class="inline-flex items-center gap-1.5 border-none rounded-r-md text-white py-1.5 pl-3.5 pr-3
+            text-[0.75rem] font-semibold cursor-pointer transition-colors duration-150
             {flagOk === null ? 'bg-accent hover:bg-accent-dark' : flagOk ? 'bg-correct-dark' : 'bg-wrong-dark'}"
         >
           Submit
+          <ArrowRight size="0.8125rem" />
         </button>
       </form>
 
-      <span class="text-[11px]" class:text-correct={flagOk === true} class:text-wrong={flagOk === false}>
+      <span class="text-[0.6875rem]" class:text-correct={flagOk === true} class:text-wrong={flagOk === false}>
         {open ? "" : flagMessage}
       </span>
     </div>
@@ -131,7 +139,14 @@
     solved={solved.has(open.id)}
     message={flagMessage}
     ok={flagOk}
-    onclose={() => (open = null)}
+    onclose={() => {
+      open = null;
+      if (page.url.searchParams.has("open")) {
+        const url = new URL(page.url);
+        url.searchParams.delete("open");
+        replaceState(url, {});
+      }
+    }}
     onsubmit={(flag) => submitFlag(flag, open?.id)}
   />
 {/if}

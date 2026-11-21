@@ -2,9 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href="%sveltekit.assets%/favicon.svg" />
-    <link rel="icon" href="%sveltekit.assets%/favicon.ico" />
+    <link rel="icon" type="image/svg+xml" href="%sveltekit.assets%/favicon.svg?v=2" />
     <meta name="viewport" content="width=device-width" />
+    <script>
+      try {
+        const theme = localStorage.getItem("theme");
+        if (theme) document.documentElement.dataset.theme = theme;
+      } catch {}
+    </script>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">

@@ -7,8 +7,8 @@
 <svelte:head><title>Container: {data.instance?.id ?? "unknown"}</title></svelte:head>
 
 <div class="bg-raised text-text pt-12 min-h-screen flex flex-col items-center">
-  <div class="max-w-[75rem] w-full px-12 flex-1 flex flex-col">
-    <div class="flex flex-col items-center gap-4 mt-4 border border-raised rounded-[20px] p-4 text-text">
+  <div class="max-w-[75rem] w-full px-4 sm:px-12 flex-1 flex flex-col">
+    <div class="flex flex-col items-center gap-4 mt-4 border border-raised rounded-[1.25rem] p-4 text-text">
       {#if data.instance}
         <div>
           <h3>Basic Info</h3>

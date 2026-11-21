@@ -1,12 +1,14 @@
 <script lang="ts">
   import type { Member } from "@library/types";
-  import { initial, pad2 } from "@library/utils";
-  import { X } from "lucide-svelte";
+  import { initial } from "@library/utils";
+  import { Crown, UserPlus, X } from "lucide-svelte";
 
   let {
     members,
     teamScore = null,
     meId,
+    captainId,
+    maxTeamSize = null,
     onselect,
     onkick,
     oncaptain,
@@ -14,95 +16,125 @@
     members: Member[];
     /** Team total, for the contribution column. Omit to hide that column. */
     teamScore?: number | null;
-    meId?: string;
-    onselect?: (member: Member) => void;
+    meId: string;
+    captainId: string | null;
+    maxTeamSize?: number | null;
+    onselect: (member: Member) => void;
     /** Captain-only actions. Passing either adds an actions column. */
     onkick?: (member: Member) => void;
     oncaptain?: (member: Member) => void;
   } = $props();
 
-  let hasActions = $derived(Boolean(onkick || oncaptain));
+  let openSlots = $derived(maxTeamSize ? Math.max(0, maxTeamSize - members.length) : 0);
 </script>
 
-<div class="flex-1 overflow-y-auto p-4 max-h-70 flex-none">
-  <table class="w-full table-fixed border-separate border-spacing-x-0 border-spacing-y-0.5">
-    <thead>
-      <tr>
-        <th class="th text-left w-9">#</th>
-        <th class="th text-left w-2/5">Member</th>
-        <th class="th text-center">Score</th>
-        <th class="th text-center">Solves</th>
-        {#if teamScore !== null}
-          <th class="th text-left w-1/3">Contribution</th>
-        {/if}
-        {#if hasActions}
-          <th class="th text-right w-28"></th>
-        {/if}
-      </tr>
-    </thead>
-    <tbody>
-      {#each members as member, i (member.id)}
-        <tr onclick={() => onselect?.(member)} class="trow" class:cursor-pointer={Boolean(onselect)}>
-          <td class="td text-[11px] text-text/18 w-9">{pad2(i + 1)}</td>
-          <td class="td text-[13px]">
-            <div class="flex items-center gap-2.5">
-              <div class="avatar w-7 h-7 text-[12px]">
-                {initial(member.username)}
-              </div>
-              <span class="text-muted-text font-medium">{member.username}</span>
-              {#if member.id === meId}
-                <span class="text-[9px] tracking-[0.1em] text-accent bg-accent/12 border border-accent/28 py-px px-1.5">
-                  you
-                </span>
-              {/if}
-            </div>
-          </td>
-          <td class="td text-[13px] font-bold text-pts text-center">{member.score}</td>
-          <td class="td text-[12px] text-text/45 text-center">{member.solves ?? "—"}</td>
-          {#if teamScore !== null}
-            {@const pct = teamScore > 0 ? Math.round((member.score / teamScore) * 100) : 0}
-            <td class="td">
-              <div class="flex items-center gap-2.5 min-w-35">
-                <div class="flex-1 h-0.5 bg-background overflow-hidden">
-                  <div class="h-full bg-accent" style="width: {pct}%"></div>
-                </div>
-                <span class="text-[10px] text-text/25 min-w-7 text-right">{pct}%</span>
-              </div>
-            </td>
+<section class="rounded-lg bg-elevated border border-text/6 overflow-hidden">
+  <div class="flex items-center justify-between px-5 pt-4 pb-3">
+    <div class="text-[0.8125rem] font-medium text-text/80">Members</div>
+    <div class="text-[0.6875rem] text-text/30 tabular-nums">
+      {members.length}{maxTeamSize ? ` / ${maxTeamSize}` : ""}
+    </div>
+  </div>
+
+  {#each members as member (member.id)}
+    {@const pct = teamScore ? Math.round((member.score / teamScore) * 100) : 0}
+    {@const isMe = member.id === meId}
+    <div
+      role="button"
+      tabindex="0"
+      onclick={() => onselect(member)}
+      onkeydown={(e) => e.key === "Enter" && onselect(member)}
+      class="group flex items-center gap-4 px-5 py-3 border-t border-text/5 cursor-pointer
+        transition-colors duration-100 hover:bg-text/3"
+    >
+      <div class="avatar w-9 h-9 text-[0.8125rem] rounded-md">{initial(member.username)}</div>
+
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2">
+          <span class="text-[0.8125rem] font-medium text-muted-text truncate">{member.username}</span>
+          {#if member.id === captainId}
+            <span
+              title="Captain"
+              class="inline-flex items-center gap-1 text-[0.5625rem] tracking-[0.1em] text-pts bg-pts/10
+                border border-pts/25 py-px px-1.5"
+            >
+              <Crown size="0.5625rem" />
+              captain
+            </span>
           {/if}
-          {#if hasActions}
-            <td class="td text-right whitespace-nowrap">
-              {#if member.id !== meId}
-                {#if oncaptain}
-                  <button
-                    onclick={(e) => {
-                      e.stopPropagation();
-                      oncaptain(member);
-                    }}
-                    class="bg-transparent border-none text-[10px] tracking-[0.06em] text-text/30
-                      cursor-pointer px-1 hover:text-accent"
-                  >
-                    Make captain
-                  </button>
-                {/if}
-                {#if onkick}
-                  <button
-                    onclick={(e) => {
-                      e.stopPropagation();
-                      onkick(member);
-                    }}
-                    aria-label="Remove {member.username}"
-                    class="bg-transparent border-none text-[11px] text-text/30 cursor-pointer px-1
-                      hover:text-wrong"
-                  >
-                    <X size={13} />
-                  </button>
-                {/if}
-              {/if}
-            </td>
+          {#if isMe}
+            <span
+              class="text-[0.5625rem] tracking-[0.1em] text-accent bg-accent/12 border border-accent/28 py-px px-1.5"
+            >
+              you
+            </span>
           {/if}
-        </tr>
-      {/each}
-    </tbody>
-  </table>
-</div>
+        </div>
+        <div class="text-[0.6875rem] text-text/30 mt-0.5">
+          {member.solves}
+          {member.solves === 1 ? "solve" : "solves"}
+        </div>
+      </div>
+
+      {#if teamScore !== null}
+        <div class="hidden sm:flex items-center gap-2.5 w-40">
+          <div class="flex-1 h-1 rounded-full bg-background overflow-hidden">
+            <div class="h-full rounded-full bg-accent" style="width: {pct}%"></div>
+          </div>
+          <span class="text-[0.625rem] text-text/30 w-8 text-right tabular-nums">{pct}%</span>
+        </div>
+      {/if}
+
+      <div class="w-14 text-right text-[0.8125rem] font-bold text-pts tabular-nums">{member.score}</div>
+
+      {#if (onkick || oncaptain) && members.length > 1}
+        <div class="flex items-center gap-1 w-24 justify-end">
+          {#if !isMe}
+            {#if oncaptain}
+              <button
+                onclick={(e) => {
+                  e.stopPropagation();
+                  if (confirm(`Make ${member.username} captain? You will lose captain rights.`)) oncaptain(member);
+                }}
+                title="Make captain"
+                aria-label="Make {member.username} captain"
+                class="opacity-0 group-hover:opacity-100 focus:opacity-100 flex items-center justify-center w-7 h-7
+                  rounded bg-transparent border-none text-text/40 cursor-pointer transition-all duration-100
+                  hover:text-pts hover:bg-pts/10"
+              >
+                <Crown size="0.8125rem" />
+              </button>
+            {/if}
+            {#if onkick}
+              <button
+                onclick={(e) => {
+                  e.stopPropagation();
+                  if (confirm(`Remove ${member.username} from the team?`)) onkick(member);
+                }}
+                title="Remove from team"
+                aria-label="Remove {member.username}"
+                class="opacity-0 group-hover:opacity-100 focus:opacity-100 flex items-center justify-center w-7 h-7
+                  rounded bg-transparent border-none text-text/40 cursor-pointer transition-all duration-100
+                  hover:text-wrong hover:bg-wrong/10"
+              >
+                <X size="0.875rem" />
+              </button>
+            {/if}
+          {/if}
+        </div>
+      {/if}
+    </div>
+  {/each}
+
+  {#each { length: openSlots } as _, i (i)}
+    <div class="flex items-center gap-4 px-5 py-3 border-t border-text/5">
+      <div
+        class="w-9 h-9 rounded-md border border-dashed border-text/15 flex items-center justify-center
+          text-text/20 shrink-0"
+      >
+        <UserPlus size="0.875rem" />
+      </div>
+      <span class="text-[0.75rem] text-text/25">Open slot</span>
+    </div>
+  {/each}
+</section>

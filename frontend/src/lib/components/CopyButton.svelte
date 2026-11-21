@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Check, Copy } from "lucide-svelte";
 
-  type Props = { text: string; size?: number; title?: string; class?: string };
-  let { text, size = 14, title = "Copy", class: className = "" }: Props = $props();
+  type Props = { text: string; size?: string; title?: string; class?: string };
+  let { text, size = "0.875rem", title = "Copy", class: className = "" }: Props = $props();
 
   let copied = $state(false);
   let timer: ReturnType<typeof setTimeout>;

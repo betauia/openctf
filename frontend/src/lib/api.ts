@@ -1,10 +1,14 @@
 import type {
   ActivityEntry,
   Challenge,
+  ChallengeFile,
+  Comparison,
   Instance,
   MemberDetail,
   MyTeam,
+  Progress,
   PublicSettings,
+  ScoreSeries,
   Solve,
   SubmitResult,
   Team,
@@ -58,10 +62,7 @@ async function send(path: string, method: string, body: unknown) {
   });
 }
 
-async function request<T>(
-  path: string,
-  { method = "GET", body }: { method?: string; body?: unknown } = {},
-): Promise<T> {
+async function authed(path: string, method: string, body: unknown) {
   let response = await send(path, method, body);
   storeTokens(response);
 
@@ -81,7 +82,14 @@ async function request<T>(
       body.detail ?? body.error ?? `${method} /api${path} failed with ${response.status}`,
     );
   }
+  return response;
+}
 
+async function request<T>(
+  path: string,
+  { method = "GET", body }: { method?: string; body?: unknown } = {},
+): Promise<T> {
+  const response = await authed(path, method, body);
   return response.status === 204 ? (undefined as T) : response.json();
 }
 
@@ -103,7 +111,7 @@ export const me = () => request<User>("/auth/me");
 
 export const mySolves = () => request<string[]>("/auth/solves");
 
-export const listTeams = () => request<Team[]>("/teams");
+export const listTeams = () => request<Team[]>("/teams?limit=100");
 
 export const myTeam = () => request<MyTeam>("/teams/mine");
 
@@ -121,20 +129,20 @@ export const transferCaptain = (user_id: string) =>
 
 export const kickMember = (uid: string) => request<Ok>(`/teams/mine/members/${uid}`, { method: "DELETE" });
 
-export const memberDetail = (id: string) => request<MemberDetail>(`/teams/members/${id}`);
+export const memberDetail = (id: string) => request<MemberDetail>(`/users/${id}`);
 
 export const teamActivity = (teamId: string) => request<ActivityEntry[]>(`/teams/${teamId}/activity`);
 
+export const teamProgress = (teamId: string) => request<Progress>(`/teams/${teamId}/progress`);
+
+export const compareTeam = (teamId: string) => request<Comparison>(`/teams/${teamId}/compare`);
+
 export const settings = () => request<PublicSettings>("/settings");
 
-export type ScoreEvent = {
-  team_id: string;
-  team_name: string;
-  points: number;
-  solved_at: string;
-};
+export const updateSettings = (body: Partial<PublicSettings>) =>
+  request<PublicSettings>("/admin/settings", { method: "PUT", body });
 
-export const scoreboard = () => request<ScoreEvent[]>("/scoreboard");
+export const scoreboard = () => request<ScoreSeries[]>("/scoreboard");
 
 export const listChallenges = () => request<Challenge[]>("/challenges");
 
@@ -143,8 +151,15 @@ export const challengeSolves = (id: string) => request<Solve[]>(`/challenges/${i
 export const submitFlag = (flag: string, challenge_id?: string) =>
   request<SubmitResult>("/challenges/submit", { method: "POST", body: { flag, challenge_id } });
 
-export const fileUrl = (challengeId: string, filename: string) =>
-  `/api/challenges/${challengeId}/files/${encodeURIComponent(filename)}`;
+export const challengeFiles = (challengeId: string) => request<ChallengeFile[]>(`/challenges/${challengeId}/files`);
+
+export async function downloadFile(challengeId: string, file: ChallengeFile) {
+  const response = await authed(`/challenges/${challengeId}/files/${file.id}`, "GET", undefined);
+  const url = URL.createObjectURL(await response.blob());
+  const link = Object.assign(document.createElement("a"), { href: url, download: file.filename });
+  link.click();
+  URL.revokeObjectURL(url);
+}
 
 export const listInstances = () => request<Instance[]>("/instances");
 

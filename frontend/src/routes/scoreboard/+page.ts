@@ -8,11 +8,11 @@ export const load: PageLoad = async ({ parent, url }) => {
   const { user, signedOutBy } = await parent();
   if (!user) redirect(302, loginFor(url.pathname, signedOutBy ?? undefined));
 
-  const [teams, myTeam, events] = await Promise.all([
+  const [teams, myTeam, series] = await Promise.all([
     required(api.listTeams()),
     optional(api.myTeam()),
     required(api.scoreboard()),
   ]);
 
-  return { user, teams, myTeam, events };
+  return { user, teams, myTeam, series };
 };

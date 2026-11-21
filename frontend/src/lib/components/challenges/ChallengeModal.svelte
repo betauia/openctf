@@ -2,7 +2,7 @@
   import CopyButton from "@components/CopyButton.svelte";
   import * as api from "@library/api";
   import { CAT_ICON } from "@library/categories";
-  import type { Challenge, Solve } from "@library/types";
+  import type { Challenge, ChallengeFile, Solve } from "@library/types";
   import { fmt, pad2, timeAgo } from "@library/utils";
   import { ArrowRight, ChevronDown, ChevronUp, Download, File, Play, Square, X } from "lucide-svelte";
 
@@ -32,6 +32,27 @@
   let connError = $state("");
 
   let solves = $state<Solve[] | null>(null);
+  let files = $state<ChallengeFile[]>([]);
+  let fileError = $state("");
+
+  $effect(() => {
+    const id = challenge.id;
+    files = [];
+    fileError = "";
+    api
+      .challengeFiles(id)
+      .then((f) => (files = f))
+      .catch(() => (files = []));
+  });
+
+  async function download(file: ChallengeFile) {
+    fileError = "";
+    try {
+      await api.downloadFile(challenge.id, file);
+    } catch (e) {
+      fileError = e instanceof Error ? e.message : "Download failed.";
+    }
+  }
   let solvesError = $state("");
 
   // Reset per-challenge state whenever a different challenge is opened.
@@ -63,9 +84,20 @@
     }
   }
 
+  function parseConnection(info: string) {
+    const parts = info.trim().split(/\s+/);
+    const port = parts.findLast((p) => /^\d+$/.test(p)) ?? "—";
+    const host = parts.findLast((p) => p !== port && !/^(nc|ncat|telnet)$/i.test(p)) ?? info;
+    return { host, port };
+  }
+
   async function startInstance() {
-    connBusy = true;
     connError = "";
+    if (!challenge.docker_image) {
+      conn = parseConnection(challenge.connection_info ?? "");
+      return;
+    }
+    connBusy = true;
     try {
       const instance = await api.createInstance(challenge.id);
       instanceId = instance.id;
@@ -99,7 +131,7 @@
     {#if solved}
       <div
         class="absolute top-0 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none
-          py-0.75 px-2.5 text-[13px] font-bold tracking-widest
+          py-0.75 px-2.5 text-[0.8125rem] font-bold tracking-widest
           border border-correct/18 bg-correct/6 text-correct"
       >
         Solved
@@ -112,7 +144,7 @@
     >
       <div class="shrink-0 pt-4.5 px-5 pb-4 border-b border-border-subtle bg-elevated">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-[10px] tracking-[0.14em] text-text/28">CHALLENGE NAME</span>
+          <span class="text-[0.625rem] tracking-[0.14em] text-text/28">CHALLENGE NAME</span>
           <div class="flex items-center gap-2">
             <div
               class="w-9 h-9 flex items-center justify-center border"
@@ -120,14 +152,14 @@
                 background:color-mix(in srgb, {catColor} 12%, transparent);
                 border-color:color-mix(in srgb, {catColor} 25%, transparent)"
             >
-              {#if CatIcon}<CatIcon size={20} />{/if}
+              {#if CatIcon}<CatIcon size="1.25rem" />{/if}
             </div>
             <button
               onclick={onclose}
               aria-label="Close"
-              class="p-0 leading-none text-[13px] cursor-pointer text-text/22 hover:text-text/70"
+              class="p-0 leading-none text-[0.8125rem] cursor-pointer text-text/22 hover:text-text/70"
             >
-              <X size={16} />
+              <X size="1rem" />
             </button>
           </div>
         </div>
@@ -160,7 +192,7 @@
         <div class="flex-1 flex flex-col gap-3.5 overflow-y-auto p-5">
           <div class="relative">
             <p
-              class="m-0 whitespace-pre-wrap text-[13px] leading-[1.75] text-text/70"
+              class="m-0 whitespace-pre-wrap text-[0.8125rem] leading-[1.75] text-text/70"
               class:max-h-23={collapsed}
               class:overflow-hidden={collapsed}
             >
@@ -175,13 +207,13 @@
             {#if descLong}
               <button
                 onclick={() => (descExpanded = !descExpanded)}
-                class="inline-flex items-center gap-1 pt-1 px-0 pb-0 text-[11px] tracking-[0.04em]
+                class="inline-flex items-center gap-1 pt-1 px-0 pb-0 text-[0.6875rem] tracking-[0.04em]
                   cursor-pointer text-accent hover:underline"
               >
                 {#if descExpanded}
-                  <ChevronUp size={16} /> Show less
+                  <ChevronUp size="1rem" /> Show less
                 {:else}
-                  <ChevronDown size={16} /> Show more
+                  <ChevronDown size="1rem" /> Show more
                 {/if}
               </button>
             {/if}
@@ -211,68 +243,59 @@
                 transition-colors duration-150
                 {ok === null ? 'bg-accent hover:bg-accent-dark' : ok ? 'bg-correct-dark' : 'bg-wrong-dark'}"
             >
-              <ArrowRight size={16} />
+              <ArrowRight size="1rem" />
             </button>
           </form>
 
-          <div class="-mt-2 min-h-3.5 text-[11px]" class:text-correct={ok === true} class:text-wrong={ok === false}>
+          <div
+            class="-mt-2 min-h-3.5 text-[0.6875rem]"
+            class:text-correct={ok === true}
+            class:text-wrong={ok === false}
+          >
             {message}
           </div>
 
-          {#if challenge.connection_info}
-            <div
-              class="flex items-center justify-between gap-3 overflow-hidden rounded
-                border border-border-subtle bg-elevated py-3 px-3.5"
-            >
-              <div class="min-w-0">
-                <div class="font-mono text-[13px] text-muted-text truncate">
-                  {challenge.connection_info}
-                </div>
-                <div class="mt-0.5 text-[9px] tracking-[0.12em] uppercase text-text/28">CONNECTION</div>
-              </div>
-              <CopyButton text={challenge.connection_info} class="icon-btn shrink-0" />
-            </div>
-          {/if}
-
-          {#if challenge.docker_image}
+          {#if challenge.connection_info || challenge.docker_image}
             <div class="overflow-hidden rounded border border-border-subtle bg-elevated">
               {#if conn}
                 <div class="flex items-center gap-2 py-2.5 px-3.5 border-b border-correct/20 bg-correct/12">
                   <span class="w-2 h-2 shrink-0 rounded-full bg-correct"></span>
-                  <span class="text-[10px] font-bold tracking-widest text-correct">RUNNING</span>
+                  <span class="text-[0.625rem] font-bold tracking-widest text-correct">RUNNING</span>
                 </div>
                 <div class="flex items-center pr-3.5 border-b border-border-subtle">
                   <div class="flex-1 p-3.5">
-                    <div class="mb-1 font-mono text-[14px] font-semibold text-muted-text">
+                    <div class="mb-1 font-mono text-[0.875rem] font-semibold text-muted-text">
                       {conn.host}
                     </div>
-                    <div class="text-[9px] tracking-[0.12em] uppercase text-text/28">HOST</div>
+                    <div class="text-[0.5625rem] tracking-[0.12em] uppercase text-text/28">HOST</div>
                   </div>
                   <div class="flex-1 p-3.5">
-                    <div class="mb-1 font-mono text-[14px] font-semibold text-muted-text">
+                    <div class="mb-1 font-mono text-[0.875rem] font-semibold text-muted-text">
                       {conn.port}
                     </div>
-                    <div class="text-[9px] tracking-[0.12em] uppercase text-text/28">PORT</div>
+                    <div class="text-[0.5625rem] tracking-[0.12em] uppercase text-text/28">PORT</div>
                   </div>
                   <div class="shrink-0 flex items-center gap-1.5 pr-3.5">
-                    <CopyButton text="nc {conn.host} {conn.port}" class="icon-btn" />
+                    <CopyButton
+                      text={instanceId ? `nc ${conn.host} ${conn.port}` : (challenge.connection_info ?? "")}
+                      class="icon-btn"
+                    />
                     <button
                       onclick={stopInstance}
                       title="Stop"
                       aria-label="Stop instance"
-                      class="w-7 h-7 flex items-center justify-center rounded border border-accent/30
-                        text-[10px] cursor-pointer text-wrong bg-accent/15 transition-colors duration-150
-                        hover:bg-accent/28"
+                      class="w-7 h-7 flex items-center justify-center rounded border border-wrong/30 text-[0.625rem]
+                        cursor-pointer text-wrong bg-wrong/12 transition-colors duration-150 hover:bg-wrong/25"
                     >
-                      <Square size={14} />
+                      <Square size="0.875rem" />
                     </button>
                   </div>
                 </div>
               {:else}
                 <div class="flex items-center justify-between py-3 px-3.5">
                   <div>
-                    <div class="text-[13px] font-bold text-text">Create Instance</div>
-                    <div class="mt-0.5 text-[11px] text-text/32">Creates for all team members</div>
+                    <div class="text-[0.8125rem] font-bold text-text">Create Instance</div>
+                    <div class="mt-0.5 text-[0.6875rem] text-text/32">Creates for all team members</div>
                   </div>
                   <button
                     onclick={startInstance}
@@ -280,49 +303,51 @@
                     title="Start"
                     aria-label="Start instance"
                     class="shrink-0 w-7.5 h-7.5 flex items-center justify-center rounded-full
-                      border border-text/10 text-[11px] cursor-pointer text-muted-text bg-text/8
+                      border border-text/10 text-[0.6875rem] cursor-pointer text-muted-text bg-text/8
                       transition-colors duration-150 hover:enabled:bg-text/14
                       disabled:opacity-50 disabled:cursor-default"
                   >
-                    <Play size={16} />
+                    <Play size="1rem" />
                   </button>
                 </div>
               {/if}
 
               {#if connError}
-                <div class="py-2 px-3.5 text-[11px] text-wrong border-t border-border-subtle">
+                <div class="py-2 px-3.5 text-[0.6875rem] text-wrong border-t border-border-subtle">
                   {connError}
                 </div>
               {/if}
             </div>
           {/if}
 
-          {#if challenge.files.length > 0}
+          {#if files.length > 0}
             <div class="overflow-hidden rounded border border-border-subtle bg-elevated">
               <div class="py-3 px-3.5">
-                <div class="text-[13px] font-semibold text-muted-text">Files</div>
-                <div class="mt-0.5 text-[11px] text-text/32">Required files for this challenge</div>
+                <div class="text-[0.8125rem] font-semibold text-muted-text">Files</div>
+                <div class="mt-0.5 text-[0.6875rem] text-text/32">Required files for this challenge</div>
               </div>
               <div class="flex flex-col gap-1 px-3.5 pb-3">
-                {#each challenge.files as filename (filename)}
-                  <a
-                    href={api.fileUrl(challenge.id, filename)}
-                    download
-                    class="group flex items-center justify-between rounded py-1.75 px-2.5 text-xs no-underline
+                {#each files as file (file.id)}
+                  <button
+                    onclick={() => download(file)}
+                    class="group flex items-center justify-between rounded py-1.75 px-2.5 text-xs cursor-pointer
                       border border-border-subtle bg-text/4 text-text/60 transition-colors duration-150
                       hover:bg-text/8 hover:text-text/90"
                   >
                     <span class="inline-flex items-center gap-1.5 font-mono">
-                      <File size={13} />
-                      {filename}
+                      <File size="0.8125rem" />
+                      {file.filename}
                     </span>
                     <span
                       class="flex items-center text-text/30 transition-colors duration-150 group-hover:text-text/70"
                     >
-                      <Download size={13} />
+                      <Download size="0.8125rem" />
                     </span>
-                  </a>
+                  </button>
                 {/each}
+                {#if fileError}
+                  <div class="text-[0.6875rem] text-wrong">{fileError}</div>
+                {/if}
               </div>
             </div>
           {/if}
@@ -333,8 +358,8 @@
                 class="p-4 text-center bg-elevated border-r border-b border-border-subtle
                   [&:nth-child(even)]:border-r-0 [&:nth-last-child(-n+2)]:border-b-0"
               >
-                <div class="mb-1 text-[17px] font-bold" style="color:{color}">{value}</div>
-                <div class="text-[9px] tracking-[0.14em] uppercase text-text/28">{label}</div>
+                <div class="mb-1 text-[1.0625rem] font-bold" style="color:{color}">{value}</div>
+                <div class="text-[0.5625rem] tracking-[0.14em] uppercase text-text/28">{label}</div>
               </div>
             {/each}
           </div>
@@ -342,27 +367,27 @@
       {:else}
         <div class="flex-1 flex flex-col overflow-y-auto p-5">
           {#if solvesError}
-            <div class="text-center py-12 text-[13px] text-text/22">{solvesError}</div>
+            <div class="text-center py-12 text-[0.8125rem] text-text/22">{solvesError}</div>
           {:else if !solves}
-            <div class="text-center py-12 text-[13px] text-text/22">Loading...</div>
+            <div class="text-center py-12 text-[0.8125rem] text-text/22">Loading...</div>
           {:else if solves.length === 0}
-            <div class="text-center py-12 text-[13px] text-text/22">No solves yet.</div>
+            <div class="text-center py-12 text-[0.8125rem] text-text/22">No solves yet.</div>
           {:else}
             {#each solves as solve, i (solve.uid)}
               <div class="flex items-center gap-3 py-2 px-1 border-b border-border-subtle last:border-b-0">
-                <span class="text-[11px] text-text/18 w-6">{pad2(i + 1)}</span>
+                <span class="text-[0.6875rem] text-text/18 w-6">{pad2(i + 1)}</span>
                 <div class="flex-1 flex items-center gap-2">
                   <a
                     href="/teams?member={solve.uid}"
-                    class="text-[13px] text-muted-text font-medium no-underline hover:text-accent"
+                    class="text-[0.8125rem] text-muted-text font-medium no-underline hover:text-accent"
                   >
                     {solve.username}
                   </a>
                   {#if solve.team}
-                    <span class="text-[11px] text-text/30">{solve.team}</span>
+                    <span class="text-[0.6875rem] text-text/30">{solve.team}</span>
                   {/if}
                 </div>
-                <span class="text-[11px] text-text/25">{timeAgo(solve.solved_at)}</span>
+                <span class="text-[0.6875rem] text-text/25">{timeAgo(solve.solved_at)}</span>
               </div>
             {/each}
           {/if}

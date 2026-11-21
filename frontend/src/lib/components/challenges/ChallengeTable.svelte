@@ -18,15 +18,15 @@
   } = $props();
 </script>
 
-<div class="flex-1 overflow-y-auto p-4">
+<div class="flex-1 min-h-0 overflow-auto p-2 sm:p-4">
   {#if unsolved.length === 0 && solved.length === 0}
     <div class="empty">No challenges available</div>
   {:else}
-    <table class="w-full border-separate border-spacing-x-0 border-spacing-y-0.5">
+    <table class="w-full min-w-[40rem] border-separate border-spacing-x-0 border-spacing-y-0.5">
       <thead>
         <tr class="border-b border-border-subtle">
           {#each ["#", "Challenges", "Category", "Solves", "Points", "Difficulty"] as header, i (header)}
-            <th class="th {i >= 2 ? 'text-center' : 'text-left'}">
+            <th class="th {i >= 2 ? 'text-center' : 'text-left'} {i === 1 ? 'w-[40%]' : ''}">
               {header}
             </th>
           {/each}
@@ -41,23 +41,23 @@
             class="trow transition-colors duration-100 cursor-pointer"
             class:opacity-50={isSolved}
           >
-            <td class="td text-[11px] w-9 {isSolved ? 'text-[var(--diff-easy)]' : 'text-text/18'}">
+            <td class="td text-[0.6875rem] w-9 {isSolved ? 'text-[var(--diff-easy)]' : 'text-text/18'}">
               {pad2(c.n)}
             </td>
-            <td class="td text-[13px] text-muted-text font-medium">{c.title}</td>
+            <td class="td text-[0.8125rem] text-muted-text font-medium">{c.title}</td>
             <td class="td text-center">
               <span
-                class="inline-flex items-center gap-1 py-0.5 px-1.75 text-[10px] tracking-[0.07em] cat-{c.category}"
+                class="inline-flex items-center gap-1 py-0.5 px-1.75 text-[0.625rem] tracking-[0.07em] cat-{c.category}"
               >
-                {#if Icon}<Icon size={11} />{/if}
+                {#if Icon}<Icon size="0.6875rem" />{/if}
                 {fmt(c.category)}
               </span>
             </td>
-            <td class="td text-[12px] text-text/45 text-center">{c.solves}</td>
-            <td class="td text-[13px] font-bold text-pts text-center">{c.points}</td>
+            <td class="td text-[0.75rem] text-text/45 text-center">{c.solves}</td>
+            <td class="td text-[0.8125rem] font-bold text-pts text-center">{c.points}</td>
             <td class="td text-center">
               <span
-                class="inline-flex items-center gap-1 py-0.5 px-1.75 text-[10px] tracking-[0.07em]
+                class="inline-flex items-center gap-1 py-0.5 px-1.75 text-[0.625rem] tracking-[0.07em]
                   diff-{c.difficulty.toLowerCase()}"
               >
                 {fmt(c.difficulty)}
@@ -77,9 +77,9 @@
                 onclick={() => (collapsed = !collapsed)}
                 style="color: var(--diff-easy)"
                 class="flex items-center gap-1.5 bg-transparent border-none cursor-pointer
-                  text-[10px] tracking-[0.1em] py-1.5 px-3 w-full"
+                  text-[0.625rem] tracking-[0.1em] py-1.5 px-3 w-full"
               >
-                <span class="text-[8px] inline-flex transition-transform duration-150" class:-rotate-90={collapsed}>
+                <span class="text-[0.5rem] inline-flex transition-transform duration-150" class:-rotate-90={collapsed}>
                   ▼
                 </span>
                 Solved

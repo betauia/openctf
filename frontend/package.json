@@ -9,7 +9,9 @@
     "dev": "svelte-kit sync && vite dev",
     "build": "svelte-kit sync && vite build",
     "preview": "vite preview",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "test:layout": "playwright test",
+    "test:layout:docker": "docker run --rm --network host -e OCTF_USER -e OCTF_PASS -e OCTF_URL -v \"$PWD\":/app -w /app mcr.microsoft.com/playwright:v1.49.1-noble npx playwright test"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.0",
@@ -17,9 +19,11 @@
     "tailwindcss": "^4.1.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.49.1",
     "@sveltejs/adapter-node": "^5.2.0",
     "@sveltejs/kit": "^2.8.0",
     "@sveltejs/vite-plugin-svelte": "^6.0.0",
+    "@types/node": "^22.20.5",
     "prettier": "^3.10.1",
     "prettier-plugin-svelte": "^4.2.0",
     "svelte": "^5.57.0",

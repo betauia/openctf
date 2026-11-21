@@ -1,58 +1,73 @@
 <script lang="ts">
+  import { CAT_ICON } from "@library/categories";
   import type { MemberDetail } from "@library/types";
-  import { initial, pad2, timeAgo } from "@library/utils";
-  import { ArrowLeft } from "lucide-svelte";
+  import { fmt, initial, timeAgo } from "@library/utils";
+  import { ArrowLeft, ArrowRight } from "lucide-svelte";
 
   let { member, backLabel, onback }: { member: MemberDetail; backLabel: string; onback: () => void } = $props();
 </script>
 
-<div class="flex items-center gap-3.5 py-4.5 px-6 bg-elevated border-b border-border-subtle shrink-0">
-  <button onclick={onback} class="back-btn">
-    <ArrowLeft size={14} />
+<div class="w-full p-6 flex flex-col gap-4">
+  <button onclick={onback} class="back-btn self-start">
+    <ArrowLeft size="0.875rem" />
     {backLabel}
   </button>
-  <div class="avatar w-10 h-10 text-base">
-    {initial(member.username)}
-  </div>
-  <div>
-    <div class="text-base font-bold text-text">{member.username}</div>
-    <div class="text-[11px] text-text/35 mt-0.75">
-      {member.score} pts · {member.solves.length} solved
-    </div>
-  </div>
-</div>
 
-{#if member.solves.length === 0}
-  <div class="empty">No solves yet</div>
-{:else}
-  <div class="flex-1 overflow-y-auto p-4">
-    <table class="w-full border-separate border-spacing-x-0 border-spacing-y-0.5">
-      <thead>
-        <tr>
-          {#each ["#", "Challenge", "Category", "Points", "Solved"] as header, i (header)}
-            <th class="th {i >= 2 ? 'text-center' : 'text-left'}">
-              {header}
-            </th>
-          {/each}
-        </tr>
-      </thead>
-      <tbody>
-        {#each member.solves as solve, i (solve.challenge)}
-          <tr>
-            <td class="td text-[11px] text-text/18 w-9">{pad2(i + 1)}</td>
-            <td class="td text-[13px] text-muted-text font-medium">{solve.challenge}</td>
-            <td class="td text-center">
-              <span
-                class="inline-flex items-center gap-1 py-0.5 px-1.75 text-[10px] tracking-[0.07em] cat-{solve.category}"
-              >
-                {solve.category}
-              </span>
-            </td>
-            <td class="td text-[13px] font-bold text-pts text-center">{solve.points}</td>
-            <td class="td text-[12px] text-text/45 text-center">{timeAgo(solve.solved_at)}</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-  </div>
-{/if}
+  <section class="rounded-lg bg-elevated border border-text/6 p-6 flex items-center gap-5">
+    <div class="avatar w-16 h-16 text-2xl rounded-lg">{initial(member.username)}</div>
+    <div class="flex-1 min-w-0">
+      <h1 class="m-0 text-2xl font-bold text-text truncate">{member.username}</h1>
+      <div class="flex flex-wrap items-center gap-2 mt-2.5">
+        <span
+          class="inline-flex items-center text-[0.6875rem] font-bold text-pts bg-pts/8 border border-pts/20 rounded-full
+            py-1 px-2.5 tabular-nums"
+        >
+          {member.score} pts
+        </span>
+        <span
+          class="inline-flex items-center text-[0.6875rem] text-text/60 bg-text/5 border border-text/8 rounded-full
+            py-1 px-2.5"
+        >
+          {member.solves.length}
+          {member.solves.length === 1 ? "solve" : "solves"}
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <section class="rounded-lg bg-elevated border border-text/6 overflow-hidden">
+    <div class="px-5 pt-4 pb-3 text-[0.8125rem] font-medium text-text/80">Solves</div>
+    {#if member.solves.length === 0}
+      <div class="text-center py-10 text-[0.75rem] text-text/25 border-t border-text/5">No solves yet</div>
+    {:else}
+      {#each member.solves as solve (solve.challenge_id)}
+        {@const Icon = CAT_ICON[solve.category]}
+        <a
+          href="/challenges?open={solve.challenge_id}"
+          title="Open {solve.challenge}"
+          class="group flex items-center gap-4 px-5 py-3 border-t border-text/5 no-underline
+            transition-colors duration-100 hover:bg-text/4"
+        >
+          <span
+            class="flex items-center justify-center w-8 h-8 rounded-md shrink-0 cat-{solve.category}"
+            title={fmt(solve.category)}
+          >
+            {#if Icon}<Icon size="0.875rem" />{/if}
+          </span>
+          <div class="flex-1 min-w-0">
+            <div class="text-[0.8125rem] font-medium text-muted-text truncate group-hover:text-text">
+              {solve.challenge}
+            </div>
+            <div class="text-[0.6875rem] text-text/30 mt-0.5">{fmt(solve.category)}</div>
+          </div>
+          <span class="text-[0.8125rem] font-bold text-pts tabular-nums">+{solve.points}</span>
+          <span class="w-16 text-right text-[0.6875rem] text-text/30 shrink-0">{timeAgo(solve.solved_at)}</span>
+          <ArrowRight
+            size="0.8125rem"
+            class="text-text/15 shrink-0 transition-colors duration-100 group-hover:text-accent"
+          />
+        </a>
+      {/each}
+    {/if}
+  </section>
+</div>

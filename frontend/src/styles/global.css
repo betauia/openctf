@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./themes/uiactf.css";
+@import "./themes/betauia.css";
 @import "./themes/special.css";
 
 @theme inline {
@@ -25,6 +26,10 @@ button,
 select,
 textarea {
   font-family: Arial, Helvetica, sans-serif;
+}
+
+html {
+  font-size: clamp(16px, min(8px + 1.25vh, 10px + 0.9vw), 26px);
 }
 
 html,
@@ -130,7 +135,7 @@ body {
 }
 
 .th {
-  @apply py-2 px-3 text-[11px] tracking-[0.12em] text-text/55;
+  @apply py-2 px-3 text-[0.6875rem] tracking-[0.12em] text-text/55;
 }
 
 .td {
@@ -146,16 +151,16 @@ body {
 }
 
 .empty {
-  @apply text-center py-20 text-text/18 text-[13px];
+  @apply text-center py-20 text-text/18 text-[0.8125rem];
 }
 
 .back-btn {
-  @apply flex items-center gap-1.25 bg-transparent border-none text-text/30 text-[11px]
+  @apply flex items-center gap-1.25 bg-transparent border-none text-text/30 text-[0.6875rem]
     tracking-[0.06em] cursor-pointer p-0 mr-1.5 transition-colors duration-100 hover:text-muted-text;
 }
 
 .icon-btn {
-  @apply inline-flex items-center rounded border border-text/8 py-1.25 px-2.25 text-[13px]
+  @apply inline-flex items-center rounded border border-text/8 py-1.25 px-2.25 text-[0.8125rem]
     cursor-pointer text-text/45 bg-text/5 transition-colors duration-150
     hover:bg-text/10 hover:text-text/80;
 }
@@ -166,7 +171,7 @@ body {
 }
 
 .btn-primary {
-  @apply w-full bg-accent border-none text-white p-2.75 text-[13px] font-bold tracking-[0.08em]
+  @apply w-full bg-accent border-none text-white p-2.75 text-[0.8125rem] font-bold tracking-[0.08em]
     cursor-pointer transition-colors hover:enabled:bg-accent-dark
     disabled:cursor-default disabled:opacity-60;
 }

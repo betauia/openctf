@@ -37,7 +37,7 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"astro-build.astro-vscode",
+				"svelte.svelte-vscode",
 				"anthropic.claude-code",
 				"golang.go"
 			]

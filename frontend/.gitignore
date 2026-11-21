@@ -27,3 +27,8 @@ pnpm-debug.log*
 
 # prettier stuff
 .prettierrc
+
+# playwright
+tests/.auth.json
+test-results/
+playwright-report/

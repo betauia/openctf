@@ -1,0 +1,11 @@
+:root[data-theme="betauia"] {
+  --background-color: #0e1218;
+  --raised-color: #141922;
+  --elevated-color: #1c222c;
+  --text-color: #fdfdfd;
+  --muted-text: #b4bcc8;
+  --accent-color: #0085ff;
+  --accent-dark: #006acc;
+  --accent-secondary: #14b8a6;
+  --border-subtle: rgba(160, 170, 185, 0.1);
+}

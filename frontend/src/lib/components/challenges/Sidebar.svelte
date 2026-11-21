@@ -25,36 +25,41 @@
   );
 </script>
 
-<aside class="w-40 shrink-0 bg-background border-r border-text/7 flex flex-col overflow-y-auto py-3">
-  <div class="px-3.5 pb-3 text-base font-bold text-text text-center border-b border-border-subtle mb-1.5">
+<aside
+  class="shrink-0 bg-background border-b md:border-b-0 md:border-r border-text/7 flex md:flex-col md:w-40
+    overflow-x-auto md:overflow-x-hidden md:overflow-y-auto px-2 md:px-0 py-2 md:py-3 [scrollbar-width:none]"
+>
+  <div
+    class="hidden md:block px-3.5 pb-3 text-base font-bold text-text text-center border-b border-border-subtle mb-1.5"
+  >
     {challenges.filter((c) => solved.has(c.id)).length}
-    <span class="text-[12px] font-normal text-muted-text opacity-40">/ {challenges.length} solved</span>
+    <span class="text-[0.75rem] font-normal text-muted-text opacity-40">/ {challenges.length} solved</span>
   </div>
 
   {#each entries as { cat, label, total, pct, Icon } (cat)}
     <button
       onclick={() => (activeCat = cat)}
-      class="group flex flex-col py-2.5 px-3 border-none bg-transparent text-text/45 cursor-pointer
-        text-left w-full transition-colors duration-100 hover:bg-text/3"
+      class="group flex flex-col shrink-0 py-1.5 md:py-2.5 px-2 md:px-3 rounded-md md:rounded-none border-none
+        bg-transparent text-text/45 cursor-pointer text-left md:w-full transition-colors duration-100 hover:bg-text/3"
       class:active={activeCat === cat}
     >
-      <div class="flex items-center gap-2.5 mb-2">
+      <div class="flex items-center gap-2 md:gap-2.5 md:mb-2 whitespace-nowrap">
         <div
           class="w-7.5 h-7.5 bg-elevated rounded-md flex items-center justify-center shrink-0
             text-text/40 transition-colors duration-100
             group-[.active]:bg-[color-mix(in_srgb,var(--accent-color)_18%,var(--elevated-color))]
             group-[.active]:text-accent"
         >
-          {#if Icon}<Icon size={13} />{/if}
+          {#if Icon}<Icon size="0.8125rem" />{/if}
         </div>
         <span
-          class="text-[13px] tracking-[0.03em] text-text/55 transition-colors duration-100
+          class="text-[0.8125rem] tracking-[0.03em] text-text/55 transition-colors duration-100
             group-hover:text-text/80 group-[.active]:text-text/90"
         >
-          {label} <em class="not-italic text-[10px] text-text/20 ml-1">{total}</em>
+          {label} <em class="not-italic text-[0.625rem] text-text/20 ml-1">{total}</em>
         </span>
       </div>
-      <div class="h-0.5 bg-elevated ml-10 overflow-hidden">
+      <div class="hidden md:block h-0.5 bg-elevated ml-10 overflow-hidden">
         <div class="h-full bg-accent transition-[width] duration-300 ease-out" style="width: {pct}%"></div>
       </div>
     </button>
