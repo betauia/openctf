@@ -194,7 +194,7 @@ Project Link: [https://github.com/betauia/openctf](https://github.com/betauia/op
 [license-url]: https://github.com/betauia/openctf/blob/master/LICENSE
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://no.linkedin.com/company/betauia
-[product-screenshot]: images/challenges.png
+[product-screenshot]: images/Challenges.png
 
 <!-- Shields.io badges. You can a comprehensive list with many more badges at: https://github.com/inttter/md-badges -->
 

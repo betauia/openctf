@@ -24,11 +24,7 @@
     localStorage.setItem(COLLAPSE_KEY, String(collapsed));
   });
 
-  // Held as state, not derived, so a push channel can patch rows in place
-  // instead of forcing a full reload. The effect re-seeds when the load re-runs.
-  // svelte-ignore state_referenced_locally -- seeded on purpose, re-seeded below
   let challenges = $state(data.challenges);
-  // svelte-ignore state_referenced_locally
   let solved = $state(new Set(data.solvedIds));
 
   $effect(() => {
