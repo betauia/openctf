@@ -18,11 +18,17 @@
   --color-wrong-dark: var(--color-wrong-dark);
 }
 
-html, body, input, button, select, textarea {
+html,
+body,
+input,
+button,
+select,
+textarea {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   background: var(--background-color);
 }
@@ -39,22 +45,128 @@ html, body {
   }
 }
 
-.baselayout-container {
-  background: var(--background-color);
-  color: var(--text-color);
-  padding-top: 64px;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  box-sizing: border-box;
+:root {
+  --cat-web: #2979ff;
+  --cat-pwn: #ef5350;
+  --cat-crypto: #ab47bc;
+  --cat-rev: #ffa726;
+  --cat-hardware: #ff7043;
+  --cat-misc: #66bb6a;
+  --cat-afk: #78909c;
+  --cat-beginner: #26c6da;
+  --cat-coding: #42a5f5;
+  --cat-forensics: #26a69a;
+  --cat-osint: #ec407a;
+  --cat-stego: #ce93d8;
+
+  --diff-easy: #66bb6a;
+  --diff-medium: #ffa726;
+  --diff-hard: #ff7043;
+  --diff-insane: #ef5350;
 }
 
-.baselayout-content {
-  max-width: 75rem;
-  width: 100%;
-  padding: 0 3rem;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+[class*="cat-"],
+[class*="diff-"] {
+  color: var(--badge);
+  background: color-mix(in srgb, var(--badge) 12%, transparent);
+}
+
+.cat-web {
+  --badge: var(--cat-web);
+}
+.cat-pwn {
+  --badge: var(--cat-pwn);
+}
+.cat-crypto {
+  --badge: var(--cat-crypto);
+}
+.cat-rev {
+  --badge: var(--cat-rev);
+}
+.cat-hardware {
+  --badge: var(--cat-hardware);
+}
+.cat-misc {
+  --badge: var(--cat-misc);
+}
+.cat-afk {
+  --badge: var(--cat-afk);
+}
+.cat-beginner {
+  --badge: var(--cat-beginner);
+}
+.cat-coding {
+  --badge: var(--cat-coding);
+}
+.cat-forensics {
+  --badge: var(--cat-forensics);
+}
+.cat-osint {
+  --badge: var(--cat-osint);
+}
+.cat-stego {
+  --badge: var(--cat-stego);
+}
+
+.diff-easy {
+  --badge: var(--diff-easy);
+}
+.diff-medium {
+  --badge: var(--diff-medium);
+}
+.diff-hard {
+  --badge: var(--diff-hard);
+}
+.diff-insane {
+  --badge: var(--diff-insane);
+}
+
+/** Patterns repeated across components. Sizing and alignment stay inline at the
+    use site; only the shared look lives here. **/
+
+.avatar {
+  @apply bg-accent/15 border border-accent/30 flex items-center justify-center
+    font-bold text-accent shrink-0;
+}
+
+.th {
+  @apply py-2 px-3 text-[11px] tracking-[0.12em] text-text/55;
+}
+
+.td {
+  @apply py-2.5 px-3;
+}
+
+.trow {
+  @apply bg-elevated;
+}
+
+.trow:hover {
+  background: color-mix(in srgb, var(--elevated-color) 85%, white);
+}
+
+.empty {
+  @apply text-center py-20 text-text/18 text-[13px];
+}
+
+.back-btn {
+  @apply flex items-center gap-1.25 bg-transparent border-none text-text/30 text-[11px]
+    tracking-[0.06em] cursor-pointer p-0 mr-1.5 transition-colors duration-100 hover:text-muted-text;
+}
+
+.icon-btn {
+  @apply inline-flex items-center rounded border border-text/8 py-1.25 px-2.25 text-[13px]
+    cursor-pointer text-text/45 bg-text/5 transition-colors duration-150
+    hover:bg-text/10 hover:text-text/80;
+}
+
+.field {
+  @apply bg-background border border-text/10 text-muted-text py-2.5 px-3 text-sm
+    outline-none w-full box-border focus:border-accent;
+}
+
+.btn-primary {
+  @apply w-full bg-accent border-none text-white p-2.75 text-[13px] font-bold tracking-[0.08em]
+    cursor-pointer transition-colors hover:enabled:bg-accent-dark
+    disabled:cursor-default disabled:opacity-60;
 }
