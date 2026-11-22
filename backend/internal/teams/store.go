@@ -369,7 +369,7 @@ type player struct {
 }
 
 func listPlayers(ctx context.Context, q database.Querier, limit int) ([]player, error) {
-	rows, err := q.Query(ctx, `SELECT id, username, score FROM users ORDER BY score DESC, username LIMIT $1`, limit)
+	rows, err := q.Query(ctx, `SELECT u.id, u.username, u.score FROM users u LEFT JOIN teams t ON t.id = u.team_id WHERE NOT u.banned AND NOT COALESCE(t.hidden, false) ORDER BY u.score DESC, u.username LIMIT $1`, limit)
 	if err != nil {
 		return nil, err
 	}

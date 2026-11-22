@@ -202,9 +202,10 @@ func (h *Handler) submitFlag(w http.ResponseWriter, r *http.Request, u *auth.Use
 }
 
 func (h *Handler) publishSolve(ctx context.Context, c challenge, u *auth.User) {
+	var teamID *uuid.UUID
 	var team *string
 	if u.TeamID != nil {
-		_ = h.pool.QueryRow(ctx, `SELECT name FROM teams WHERE id = $1 AND NOT hidden`, *u.TeamID).Scan(&team)
+		_ = h.pool.QueryRow(ctx, `SELECT id, name FROM teams WHERE id = $1 AND NOT hidden`, *u.TeamID).Scan(&teamID, &team)
 	}
 	h.publish("solve", solveEvent{
 		ChallengeID: c.ID,
@@ -213,7 +214,7 @@ func (h *Handler) publishSolve(ctx context.Context, c challenge, u *auth.User) {
 		Points:      c.Points,
 		UserID:      u.ID,
 		Username:    u.Username,
-		TeamID:      u.TeamID,
+		TeamID:      teamID,
 		Team:        team,
 		SolvedAt:    time.Now(),
 	})
