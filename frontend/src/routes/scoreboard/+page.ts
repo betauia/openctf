@@ -1,18 +1,38 @@
-import { redirect } from "@sveltejs/kit";
 import * as api from "@library/api";
-import { loginFor } from "@library/redirect";
-import { optional, required } from "@library/load";
+import { optional, requireUser, required } from "@library/load";
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = async ({ parent, url }) => {
-  const { user, signedOutBy } = await parent();
-  if (!user) redirect(302, loginFor(url.pathname, signedOutBy ?? undefined));
+const COLORS = [
+  "--accent-color",
+  "--accent-secondary",
+  "--cat-misc",
+  "--cat-rev",
+  "--cat-crypto",
+  "--cat-beginner",
+  "--cat-osint",
+  "--cat-hardware",
+  "--cat-forensics",
+  "--cat-stego",
+];
 
-  const [teams, myTeam, series] = await Promise.all([
+export const load: PageLoad = async (event) => {
+  const { user, settings } = await requireUser(event);
+
+  const [teams, myTeam, scoreboard] = await Promise.all([
     required(api.listTeams()),
     optional(api.myTeam()),
     required(api.scoreboard()),
   ]);
 
-  return { user, teams, myTeam, series };
+  const series = scoreboard.map((s, i) => ({
+    id: s.team_id,
+    name: s.team_name,
+    color: `var(${COLORS[i % COLORS.length]})`,
+    points: s.points.map((p) => [Date.parse(p.at), p.score] as [number, number]),
+  }));
+
+  const start = settings?.ctf_start ? Date.parse(settings.ctf_start) : null;
+  const end = Math.min(Date.now(), settings?.ctf_end ? Date.parse(settings.ctf_end) : Date.now());
+
+  return { user, teams, myTeam, series, start, end };
 };

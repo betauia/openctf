@@ -8,12 +8,7 @@
 
   let { data }: PageProps = $props();
 
-  let myTeam = $derived(data.myTeam);
-  let activity = $derived(data.activity.value);
-
   let error = $state("");
-
-  let member = $derived(data.member.value);
 
   async function act(action: () => Promise<unknown>) {
     error = "";
@@ -30,23 +25,23 @@
 
 <svelte:head><title>Teams - OpenCTF</title></svelte:head>
 
-<div class="flex flex-col h-[calc(100vh-3rem)] mt-12 bg-raised text-muted-text">
+<div class="flex flex-col h-page mt-nav bg-raised text-muted-text">
   {#if data.member.error}
     <div class="flex-1 overflow-y-auto flex flex-col">
       <div class="empty text-wrong/70">{data.member.error}</div>
-      <button onclick={() => goto("/teams")} class="back-btn mx-auto">Back</button>
+      <button onclick={() => goto("/teams")} class="back-btn mx-auto"> Back </button>
     </div>
-  {:else if member}
+  {:else if data.member.value}
     <div class="flex-1 overflow-y-auto">
       <div class="max-w-[75rem] mx-auto flex flex-col">
-        <MemberDetail {member} backLabel="Back" onback={() => history.back()} />
+        <MemberDetail member={data.member.value} />
       </div>
     </div>
   {:else}
     <TeamTab
-      {myTeam}
+      myTeam={data.myTeam}
       me={data.user}
-      {activity}
+      activity={data.activity.value}
       activityError={data.activity.error}
       {error}
       maxTeamSize={data.maxTeamSize}

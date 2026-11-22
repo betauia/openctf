@@ -30,12 +30,12 @@
 
 <svelte:head><title>Admin: Config</title></svelte:head>
 
-<div class="min-h-[calc(100vh-3rem)] mt-12 bg-raised text-text flex justify-center">
+<div class="min-h-page mt-nav bg-raised text-text flex justify-center">
   <div class="w-full max-w-[48rem] py-10 px-6 flex flex-col gap-6">
     <h1 class="text-2xl font-bold text-text/92 m-0">Config</h1>
 
-    <section class="rounded-lg bg-elevated border border-text/6 p-5">
-      <div class="text-[0.8125rem] font-medium text-text/80 mb-4">Theme</div>
+    <section class="card p-5">
+      <div class="card-title mb-4">Theme</div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {#each THEMES as t (t.id)}
@@ -50,7 +50,9 @@
           >
             <div class="h-6 flex items-center mb-3" style="color: {t.swatches[3]}">
               {#if t.id === "betauia"}
-                <span class="block h-full [&>svg]:h-full [&>svg]:w-auto">{@html betaLogo}</span>
+                <span class="block h-full [&>svg]:h-full [&>svg]:w-auto">
+                  {@html betaLogo}
+                </span>
               {:else}
                 <img src={logo} alt="" class="h-full w-auto block" />
               {/if}
@@ -68,14 +70,14 @@
                 <Check size="0.75rem" />
               </span>
             {:else if saving === t.id}
-              <span class="absolute top-3 right-3 text-[0.6875rem] text-text/40">Saving...</span>
+              <span class="absolute top-3 right-3 text-label text-text/40"> Saving... </span>
             {/if}
           </button>
         {/each}
       </div>
 
       {#if error}
-        <div class="mt-3 text-[0.75rem] text-wrong">{error}</div>
+        <div class="mt-3 text-xs text-wrong">{error}</div>
       {/if}
     </section>
   </div>

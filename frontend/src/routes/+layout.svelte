@@ -8,7 +8,7 @@
   import type { SolveEvent } from "@library/types";
   import { initial } from "@library/utils";
   import { fly } from "svelte/transition";
-  import { LogOut } from "lucide-svelte";
+  import { LogIn, LogOut } from "lucide-svelte";
   import "@styles/global.css";
 
   let { children, data } = $props();
@@ -18,7 +18,7 @@
   $effect(() => applyTheme(theme));
 
   let userId = $derived(user?.id);
-  let toasts = $state<(SolveEvent & { key: number; mine: boolean })[]>([]);
+  let toasts = $state<(SolveEvent & { key: number })[]>([]);
   let refreshTimer: ReturnType<typeof setTimeout> | undefined;
   let staleWhileHidden = false;
 
@@ -33,44 +33,39 @@
 
   let nextToast = 0;
 
-  function showToast(solve: SolveEvent, me: string) {
+  function showToast(solve: SolveEvent) {
     const key = nextToast++;
-    toasts = [...toasts.slice(-3), { ...solve, key, mine: solve.user_id === me }];
+    toasts = [...toasts.slice(-3), { ...solve, key }];
     setTimeout(() => (toasts = toasts.filter((t) => t.key !== key)), 6000);
   }
 
   $effect(() => {
-    const me = userId;
-    if (!me) return;
+    if (!userId) return;
     const controller = new AbortController();
     api.listen((event, data) => {
       if (event !== "solve") return;
-      showToast(data as SolveEvent, me);
+      showToast(data as SolveEvent);
       refresh();
     }, controller.signal);
     return () => controller.abort();
   });
 
-  let isAdmin = $derived(user?.role === "admin");
-
-  let mainLinks = $derived([
+  const mainLinks = [
     { name: "Challenges", href: "/challenges" },
     { name: "Teams", href: "/teams" },
     { name: "Scoreboard", href: "/scoreboard" },
     { name: "Rules", href: "/rules" },
-  ]);
-
-  let onAdmin = $derived(page.url.pathname.startsWith("/admin"));
+  ];
 
   let adminLinks = $derived(
-    isAdmin
-      ? onAdmin
+    user?.role !== "admin"
+      ? []
+      : page.url.pathname.startsWith("/admin")
         ? [
             { name: "Status", href: "/admin/status" },
             { name: "Config", href: "/admin/config" },
           ]
-        : [{ name: "Admin", href: "/admin/status" }]
-      : [],
+        : [{ name: "Admin", href: "/admin/status" }],
   );
 
   async function logout() {
@@ -88,11 +83,24 @@
   }}
 />
 
-<nav class="fixed top-0 left-0 w-full h-12 bg-background border-b border-text/7 z-50">
+{#snippet navLink(link: { name: string; href: string })}
+  <a
+    href={link.href}
+    class="flex items-center shrink-0 px-3 py-1 rounded-full no-underline text-label tracking-[0.1em]
+      transition-colors duration-100
+      {page.url.pathname.startsWith(link.href) ? 'text-text bg-accent/15' : 'text-text/35 hover:text-text/60'}"
+  >
+    {link.name}
+  </a>
+{/snippet}
+
+<nav class="fixed top-0 left-0 w-full h-nav bg-background border-b border-text/7 z-50">
   <div class="h-full flex items-stretch">
     <a href="/" class="flex items-center pl-4 pr-3 sm:pl-5 sm:pr-6 shrink-0">
       {#if theme === "betauia"}
-        <span class="block h-5 text-accent [&>svg]:h-full [&>svg]:w-auto">{@html betaLogo}</span>
+        <span class="block h-5 text-accent [&>svg]:h-full [&>svg]:w-auto">
+          {@html betaLogo}
+        </span>
       {:else}
         <img src={logo} alt="OpenCTF" width="242" height="56" class="h-5 w-auto block opacity-90" />
       {/if}
@@ -100,28 +108,12 @@
 
     <div class="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto [scrollbar-width:none]">
       {#each mainLinks as link (link.href)}
-        {@const active = page.url.pathname.startsWith(link.href)}
-        <a
-          href={link.href}
-          class="flex items-center shrink-0 px-3 py-1 rounded-full no-underline text-[0.6875rem] tracking-[0.1em]
-            transition-colors duration-100
-            {active ? 'text-text bg-accent/15' : 'text-text/35 hover:text-text/60'}"
-        >
-          {link.name}
-        </a>
+        {@render navLink(link)}
       {/each}
       {#if adminLinks.length > 0}
         <div class="w-px h-4 shrink-0 bg-text/10 mx-1.5"></div>
         {#each adminLinks as link (link.href)}
-          {@const active = page.url.pathname.startsWith(link.href)}
-          <a
-            href={link.href}
-            class="flex items-center shrink-0 px-3 py-1 rounded-full no-underline text-[0.6875rem] tracking-[0.1em]
-              transition-colors duration-100
-              {active ? 'text-text bg-accent/15' : 'text-text/35 hover:text-text/60'}"
-          >
-            {link.name}
-          </a>
+          {@render navLink(link)}
         {/each}
       {/if}
     </div>
@@ -130,14 +122,12 @@
       {#if user}
         <div class="flex items-center h-8 border border-text/8 rounded-md bg-text/3">
           <div class="flex items-center gap-2 pl-1 pr-1 sm:pr-3">
-            {#if user.avatar_url}
-              <img src={user.avatar_url} alt="" class="w-6 h-6 rounded object-cover shrink-0" />
-            {:else}
-              <div class="avatar w-6 h-6 text-[0.625rem] rounded">
-                {user.username[0].toUpperCase()}
-              </div>
-            {/if}
-            <span class="hidden sm:inline text-[0.75rem] text-muted-text">{user.username}</span>
+            <div class="avatar w-6 h-6 text-2xs rounded">
+              {initial(user.username)}
+            </div>
+            <span class="hidden sm:inline text-xs text-muted-text">
+              {user.username}
+            </span>
           </div>
           <button
             onclick={logout}
@@ -151,13 +141,14 @@
           </button>
         </div>
       {:else}
-        <a
-          href="/login"
-          class="inline-flex items-center h-7 text-[0.6875rem] tracking-[0.08em] text-accent
-            bg-transparent border border-accent/30 rounded-sm px-3.5 cursor-pointer no-underline
-            transition-colors hover:bg-accent/10 hover:border-accent/50"
-        >
-          Login
+        <a href="/login" class="group flex items-center h-8 border border-text/8 rounded-md bg-text/3 no-underline">
+          <span class="px-3 text-xs text-muted-text">Login</span>
+          <span
+            class="flex items-center justify-center h-full px-2.5 border-l border-text/8 text-text/35 rounded-r-md
+              transition-colors duration-100 group-hover:text-accent group-hover:bg-accent/10"
+          >
+            <LogIn size="0.8125rem" />
+          </span>
         </a>
       {/if}
     </div>
@@ -168,25 +159,32 @@
 
 <div class="fixed bottom-4 right-4 z-[60] flex flex-col gap-2 w-[20rem] max-w-[calc(100vw-2rem)] pointer-events-none">
   {#each toasts as toast (toast.key)}
+    {@const mine = toast.user_id === userId}
     <a
       href="/challenges?open={toast.challenge_id}"
       in:fly={{ x: 24, duration: 200 }}
       out:fly={{ x: 24, duration: 200 }}
       class="pointer-events-auto flex items-center gap-3 rounded-lg bg-elevated border py-2.5 px-3 no-underline
-        {toast.mine ? 'border-accent/50' : 'border-text/10'}"
+        {mine ? 'border-accent/50' : 'border-text/10'}"
     >
-      <div class="avatar w-8 h-8 text-[0.75rem] rounded-md">{initial(toast.username)}</div>
+      <div class="avatar w-8 h-8 text-xs rounded-md">
+        {initial(toast.username)}
+      </div>
       <div class="flex-1 min-w-0">
-        <div class="text-[0.75rem] text-muted-text truncate">
-          <span class="font-semibold text-text">{toast.mine ? "You" : toast.username}</span>
+        <div class="text-xs text-muted-text truncate">
+          <span class="font-semibold text-text">
+            {mine ? "You" : toast.username}
+          </span>
           solved
           <span class="cat-{toast.category} px-1">{toast.challenge}</span>
         </div>
         {#if toast.team}
-          <div class="text-[0.6875rem] text-text/40 truncate">{toast.team}</div>
+          <div class="text-label text-text/40 truncate">{toast.team}</div>
         {/if}
       </div>
-      <span class="text-[0.75rem] font-bold text-pts tabular-nums shrink-0">+{toast.points}</span>
+      <span class="text-xs font-bold text-pts tabular-nums shrink-0">
+        +{toast.points}
+      </span>
     </a>
   {/each}
 </div>

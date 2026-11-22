@@ -56,12 +56,7 @@ async function send(path: string, method: string, body: unknown, signal?: AbortS
   if (s) headers["x-session"] = s;
   if (r) headers["x-refresh"] = r;
 
-  return fetch(`/api${path}`, {
-    method,
-    headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
-    signal,
-  });
+  return fetch(`/api${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), signal });
 }
 
 async function authed(path: string, method: string, body: unknown, signal?: AbortSignal) {
@@ -141,7 +136,7 @@ export const compareTeam = (teamId: string) => request<Comparison>(`/teams/${tea
 
 export const settings = () => request<PublicSettings>("/settings");
 
-export const updateSettings = (body: Partial<PublicSettings>) =>
+export const updateSettings = (body: Partial<Omit<PublicSettings, "updated_at">>) =>
   request<PublicSettings>("/admin/settings", { method: "PUT", body });
 
 export const scoreboard = () => request<ScoreSeries[]>("/scoreboard");
@@ -165,7 +160,7 @@ export async function downloadFile(challengeId: string, file: ChallengeFile) {
   URL.revokeObjectURL(url);
 }
 
-export const listInstances = () => request<Instance[]>("/instances");
+export const listInstances = () => request<Instance[]>("/admin/instances");
 
 export const createInstance = (challenge_id: string) =>
   request<Instance>("/instances", { method: "POST", body: { challenge_id } });
