@@ -4,8 +4,10 @@ import (
 	"net/http"
 
 	"github.com/betauia/openctf/backend/internal/auth"
+	"github.com/betauia/openctf/backend/internal/challenges"
 	"github.com/betauia/openctf/backend/internal/config"
 	"github.com/betauia/openctf/backend/internal/health"
+	"github.com/betauia/openctf/backend/internal/live"
 	"github.com/betauia/openctf/backend/internal/policy"
 	"github.com/betauia/openctf/backend/internal/settings"
 	"github.com/betauia/openctf/backend/internal/teams"
@@ -26,6 +28,9 @@ func NewMux(pool *pgxpool.Pool, cfg config.Config, policies *policy.Engine) *htt
 	a.Register(mux)
 	teams.New(pool, a).Register(mux)
 	settings.New(pool, a).Register(mux)
+	hub := live.New(a)
+	hub.Register(mux)
+	challenges.New(pool, a, cfg.FilesDir, hub.Publish).Register(mux)
 
 	return mux
 }

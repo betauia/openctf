@@ -38,6 +38,7 @@ CREATE TABLE challenges (
     difficulty      TEXT    NOT NULL DEFAULT 'Easy',
     solves          INT NOT NULL DEFAULT 0,
     connection_info TEXT,
+    flags           JSONB   NOT NULL DEFAULT '[]',
     docker_image    TEXT,
     docker_port     INTEGER DEFAULT 80,
     is_visible      BOOLEAN NOT NULL DEFAULT FALSE,

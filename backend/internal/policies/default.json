@@ -256,7 +256,7 @@
         "effect": "allow",
         "subjects": ["role:maintainer", "role:admin"],
         "actions": ["challenge:update", "challenge:read_secrets", "challenge:manage_files"],
-        "resources": ["/api/admin/challenges/*"],
+        "resources": ["/api/admin/challenges", "/api/admin/challenges/*"],
         "conditions": [
           {
             "operator": "Equals",
@@ -290,7 +290,7 @@
         "effect": "allow",
         "subjects": ["role:admin"],
         "actions": ["challenge:update", "challenge:read_secrets", "challenge:manage_files", "challenge:delete"],
-        "resources": ["/api/admin/challenges/*"]
+        "resources": ["/api/admin/challenges", "/api/admin/challenges/*"]
       },
       {
         "sid": "InstanceAdmin",

@@ -13,6 +13,8 @@ type Settings struct {
 	CTFEnd       *time.Time `json:"ctf_end"`
 	Registration bool       `json:"registration"`
 	MaxTeamSize  int        `json:"max_team_size"`
+	Rules        string     `json:"rules"`
+	Theme        string     `json:"theme"`
 	UpdatedAt    time.Time  `json:"updated_at"`
 }
 
@@ -24,3 +26,5 @@ func load(ctx context.Context, q database.Querier) (Settings, error) {
 		&s.CTFName, &s.CTFStart, &s.CTFEnd, &s.Registration, &s.MaxTeamSize, &s.UpdatedAt)
 	return s, err
 }
+
+var Themes = []string{"uiactf", "betauia"}
