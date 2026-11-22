@@ -17,11 +17,11 @@ func (a *Auth) CurrentUser(r *http.Request) (*User, error) {
 	if err != nil {
 		return nil, nil
 	}
-	id, ok := sessions.VerifyToken(a.secret, c.Value, time.Now())
+	id, family, ok := sessions.VerifyToken(a.secret, c.Value, time.Now())
 	if !ok {
 		return nil, nil
 	}
-	u, err := getUserByID(r.Context(), a.pool, id)
+	u, err := getSessionUser(r.Context(), a.pool, id, family)
 	if database.IsNotFound(err) {
 		return nil, nil
 	}

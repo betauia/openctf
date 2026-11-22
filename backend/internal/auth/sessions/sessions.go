@@ -24,35 +24,33 @@ const RefreshMaxAge = 14 * 24 * time.Hour
 // concurrent refreshes from several tabs, or a lost response, aren't mistaken for theft.
 const RefreshReuseWindow = 10 * time.Second
 
-// NewToken returns base64url("<user id>:<unix time>:<hex HMAC-SHA256 of the first two parts>").
-func NewToken(secret []byte, userID uuid.UUID, now time.Time) string {
-	payload := userID.String() + ":" + strconv.FormatInt(now.Unix(), 10)
+// NewToken returns base64url("<user id>:<refresh family id>:<unix time>:<hex HMAC-SHA256 of the first three parts>").
+func NewToken(secret []byte, userID, familyID uuid.UUID, now time.Time) string {
+	payload := userID.String() + ":" + familyID.String() + ":" + strconv.FormatInt(now.Unix(), 10)
 	return base64.RawURLEncoding.EncodeToString([]byte(payload + ":" + sign(secret, payload)))
 }
 
-// VerifyToken returns the user id in token if its signature is valid and it hasn't expired.
-func VerifyToken(secret []byte, token string, now time.Time) (uuid.UUID, bool) {
+// VerifyToken returns the user and refresh family ids in token if its signature is valid and it hasn't expired.
+func VerifyToken(secret []byte, token string, now time.Time) (userID, familyID uuid.UUID, ok bool) {
 	raw, err := base64.RawURLEncoding.DecodeString(token)
 	if err != nil {
-		return uuid.UUID{}, false
+		return userID, familyID, false
 	}
 	parts := strings.Split(string(raw), ":")
-	if len(parts) != 3 {
-		return uuid.UUID{}, false
+	if len(parts) != 4 {
+		return userID, familyID, false
 	}
-	payload := parts[0] + ":" + parts[1]
-	if !hmac.Equal([]byte(parts[2]), []byte(sign(secret, payload))) {
-		return uuid.UUID{}, false
+	payload := strings.Join(parts[:3], ":")
+	if !hmac.Equal([]byte(parts[3]), []byte(sign(secret, payload))) {
+		return userID, familyID, false
 	}
-	issued, err := strconv.ParseInt(parts[1], 10, 64)
+	issued, err := strconv.ParseInt(parts[2], 10, 64)
 	if err != nil || now.Sub(time.Unix(issued, 0)) > MaxAge {
-		return uuid.UUID{}, false
+		return userID, familyID, false
 	}
-	id, err := uuid.Parse(parts[0])
-	if err != nil {
-		return uuid.UUID{}, false
-	}
-	return id, true
+	userID, err1 := uuid.Parse(parts[0])
+	familyID, err2 := uuid.Parse(parts[1])
+	return userID, familyID, err1 == nil && err2 == nil
 }
 
 // NewRefreshToken returns a random token for the cookie and the hash to store in the database.

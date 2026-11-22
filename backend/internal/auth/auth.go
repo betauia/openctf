@@ -150,14 +150,14 @@ func (a *Auth) refresh(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 	hash := sessions.HashRefreshToken(c.Value)
-	var userID uuid.UUID
+	var userID, familyID uuid.UUID
 	var token string
 	err = pgx.BeginFunc(ctx, a.pool, func(tx pgx.Tx) error {
 		uid, family, err := consumeRefreshToken(ctx, tx, hash, time.Now().Add(-sessions.RefreshReuseWindow))
 		if err != nil {
 			return err
 		}
-		userID = uid
+		userID, familyID = uid, family
 		token, err = newRefreshToken(ctx, tx, uid, family)
 		return err
 	})
@@ -178,7 +178,7 @@ func (a *Auth) refresh(w http.ResponseWriter, r *http.Request) {
 		httpx.InternalError(w, r, err)
 		return
 	}
-	a.setSession(w, userID)
+	a.setSession(w, userID, familyID)
 	a.setRefreshCookie(w, token)
 	httpx.JSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
@@ -215,8 +215,8 @@ func (a *Auth) me(w http.ResponseWriter, r *http.Request, u User) {
 }
 
 // changePassword replaces the user's password after checking the current one. Every other
-// device is logged out: their refresh tokens are revoked, and their session cookies expire
-// within sessions.MaxAge. The caller gets a fresh session.
+// device is logged out: their refresh tokens are revoked, which also ends their sessions.
+// The caller gets a fresh session.
 func (a *Auth) changePassword(w http.ResponseWriter, r *http.Request, u User) {
 	var body struct {
 		CurrentPassword string `json:"current_password"`
@@ -271,11 +271,12 @@ func (a *Auth) solves(w http.ResponseWriter, r *http.Request, u *User) {
 
 // startSession sets the session cookie and a refresh token for a new login.
 func (a *Auth) startSession(w http.ResponseWriter, r *http.Request, userID uuid.UUID) error {
-	token, err := newRefreshToken(r.Context(), a.pool, userID, uuid.NewV7())
+	family := uuid.NewV7()
+	token, err := newRefreshToken(r.Context(), a.pool, userID, family)
 	if err != nil {
 		return err
 	}
-	a.setSession(w, userID)
+	a.setSession(w, userID, family)
 	a.setRefreshCookie(w, token)
 	return nil
 }
@@ -305,10 +306,10 @@ func (a *Auth) clearSession(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{Name: refreshCookieName, Path: refreshPath, MaxAge: -1, HttpOnly: true, SameSite: http.SameSiteStrictMode})
 }
 
-func (a *Auth) setSession(w http.ResponseWriter, userID uuid.UUID) {
+func (a *Auth) setSession(w http.ResponseWriter, userID, familyID uuid.UUID) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     cookieName,
-		Value:    sessions.NewToken(a.secret, userID, time.Now()),
+		Value:    sessions.NewToken(a.secret, userID, familyID, time.Now()),
 		Path:     "/",
 		MaxAge:   int(sessions.MaxAge.Seconds()),
 		HttpOnly: true,

@@ -29,8 +29,9 @@ func scanUser(row pgx.Row) (User, error) {
 	return u, err
 }
 
-func getUserByID(ctx context.Context, q database.Querier, id uuid.UUID) (User, error) {
-	return scanUser(q.QueryRow(ctx, `SELECT `+userColumns+` FROM users WHERE id = $1`, id))
+func getSessionUser(ctx context.Context, q database.Querier, id, familyID uuid.UUID) (User, error) {
+	return scanUser(q.QueryRow(ctx, `SELECT `+userColumns+` FROM users WHERE id = $1
+		AND EXISTS (SELECT 1 FROM refresh_tokens WHERE family_id = $2 AND user_id = $1 AND revoked_at IS NULL)`, id, familyID))
 }
 
 func getUserByUsername(ctx context.Context, q database.Querier, username string) (User, error) {
