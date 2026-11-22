@@ -21,18 +21,18 @@ import (
 
 func (h *Handler) Register(mux *http.ServeMux) {
 	// Player
-	mux.HandleFunc("GET /api/challenges", h.a.Optional(h.getChallenges))
-	mux.HandleFunc("GET /api/challenges/{id}", h.a.Optional(h.getChallenge))
-	mux.HandleFunc("GET /api/challenges/{id}/solves", h.a.Optional(h.viewSolves))
-	mux.HandleFunc("GET /api/challenges/{id}/files", h.a.Optional(h.getFiles))
-	mux.HandleFunc("GET /api/challenges/{id}/files/{fid}", h.a.Optional(h.getFile))
-	mux.HandleFunc("POST /api/challenges/submit", h.a.Optional(h.submitFlag))
+	mux.HandleFunc("GET /api/challenges", h.a.Authorise(policy.ChallengeRead, h.getChallenges))
+	mux.HandleFunc("GET /api/challenges/{id}", h.a.Authorise(policy.ChallengeRead, h.getChallenge))
+	mux.HandleFunc("GET /api/challenges/{id}/solves", h.a.Authorise(policy.ChallengeViewSolves, h.viewSolves))
+	mux.HandleFunc("GET /api/challenges/{id}/files", h.a.Authorise(policy.ChallengeDownload, h.getFiles))
+	mux.HandleFunc("GET /api/challenges/{id}/files/{fid}", h.a.Authorise(policy.ChallengeDownload, h.getFile))
+	mux.HandleFunc("POST /api/challenges/submit", h.a.Authorise(policy.ChallengeSubmit, h.submitFlag))
 
 	// Admin
-	mux.HandleFunc("GET /api/admin/challenges", h.a.Optional(h.adminGetChallenges))
-	mux.HandleFunc("GET /api/admin/challenges/{id}", h.a.Optional(h.adminGetChallenge))
-	mux.HandleFunc("GET /api/admin/challenges/{id}/files", h.a.Optional(h.adminGetFiles))
-	mux.HandleFunc("GET /api/admin/challenges/{id}/files/{fid}", h.a.Optional(h.adminGetFile))
+	mux.HandleFunc("GET /api/admin/challenges", h.a.Authorise(policy.ChallengeReadSecrets, h.adminGetChallenges))
+	mux.HandleFunc("GET /api/admin/challenges/{id}", h.a.Authorise(policy.ChallengeReadSecrets, h.adminGetChallenge))
+	mux.HandleFunc("GET /api/admin/challenges/{id}/files", h.a.Authorise(policy.ChallengeManageFiles, h.adminGetFiles))
+	mux.HandleFunc("GET /api/admin/challenges/{id}/files/{fid}", h.a.Authorise(policy.ChallengeManageFiles, h.adminGetFile))
 }
 
 // Player Functions
@@ -133,6 +133,11 @@ func (h *Handler) getFiles(w http.ResponseWriter, r *http.Request, u *auth.User)
 }
 
 func (h *Handler) submitFlag(w http.ResponseWriter, r *http.Request, u *auth.User) {
+	check, err := h.a.Checker(r, u)
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
 	if u == nil {
 		auth.Deny(w, u)
 		return
@@ -160,12 +165,11 @@ func (h *Handler) submitFlag(w http.ResponseWriter, r *http.Request, u *auth.Use
 		httpx.InternalError(w, r, err)
 		return
 	}
-	allowed, err := h.a.IsAllowed(r, u, policy.ChallengeSubmit, c.resource())
-	if err != nil {
-		httpx.InternalError(w, r, err)
-		return
-	}
-	if !allowed {
+	if !check(policy.ChallengeSubmit, c.resource()) {
+		if !c.IsVisible {
+			httpx.JSON(w, http.StatusOK, submitResult{Correct: false})
+			return
+		}
 		auth.Deny(w, u)
 		return
 	}
@@ -294,16 +298,12 @@ func (h *Handler) adminGetFiles(w http.ResponseWriter, r *http.Request, u *auth.
 }
 
 func (h *Handler) allowedChallenges(w http.ResponseWriter, r *http.Request, u *auth.User, action string, includeHidden bool) ([]challenge, bool) {
-	if u == nil {
-		auth.Deny(w, u)
-		return nil, false
-	}
-	challenges, err := listChallenges(r.Context(), h.pool, includeHidden)
+	check, err := h.a.Checker(r, u)
 	if err != nil {
 		httpx.InternalError(w, r, err)
 		return nil, false
 	}
-	check, err := h.a.Checker(r, u)
+	challenges, err := listChallenges(r.Context(), h.pool, includeHidden)
 	if err != nil {
 		httpx.InternalError(w, r, err)
 		return nil, false

@@ -129,6 +129,29 @@
         ]
       },
       {
+        "sid": "PlayerChallengeRoutes",
+        "effect": "allow",
+        "subjects": ["role:user", "role:maintainer", "role:admin"],
+        "actions": ["challenge:read", "challenge:download", "challenge:view_solves"],
+        "resources": ["/api/challenges", "/api/challenges/*"],
+        "conditions": [
+          { "operator": "Equals", "key": "resource.id", "value": "" },
+          { "operator": "In", "key": "context.ctf_phase", "value": ["running", "ended"] }
+        ]
+      },
+      {
+        "sid": "PlayerSubmitRoute",
+        "effect": "allow",
+        "subjects": ["role:user", "role:maintainer", "role:admin"],
+        "actions": ["challenge:submit"],
+        "resources": ["/api/challenges/submit", "/api/challenges/*/submit"],
+        "conditions": [
+          { "operator": "Equals", "key": "resource.id", "value": "" },
+          { "operator": "Equals", "key": "subject.has_team", "value": true },
+          { "operator": "Equals", "key": "context.ctf_phase", "value": "running" }
+        ]
+      },
+      {
         "sid": "TeamInstanceStart",
         "effect": "allow",
         "subjects": ["role:user", "role:maintainer", "role:admin"],
@@ -264,6 +287,14 @@
             "value": "${subject.id}"
           }
         ]
+      },
+      {
+        "sid": "ChallengeOwnerRoutes",
+        "effect": "allow",
+        "subjects": ["role:maintainer", "role:admin"],
+        "actions": ["challenge:update", "challenge:read_secrets", "challenge:manage_files"],
+        "resources": ["/api/admin/challenges", "/api/admin/challenges/*"],
+        "conditions": [{ "operator": "Equals", "key": "resource.id", "value": "" }]
       },
       {
         "sid": "ChallengeReadAll",
