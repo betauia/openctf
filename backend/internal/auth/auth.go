@@ -28,6 +28,8 @@ const (
 	refreshPath       = "/api/auth"
 )
 
+var dummyHash, _ = passwords.Hash("dummy password")
+
 // Auth authenticates requests with signed session cookies and serves the /api/auth endpoints.
 type Auth struct {
 	pool       *pgxpool.Pool
@@ -135,7 +137,11 @@ func (a *Auth) login(w http.ResponseWriter, r *http.Request) {
 		httpx.InternalError(w, r, err)
 		return
 	}
-	if err != nil || !passwords.Verify(body.Password, u.PasswordHash) {
+	hash := dummyHash
+	if err == nil {
+		hash = u.PasswordHash
+	}
+	if !passwords.Verify(body.Password, hash) || err != nil {
 		httpx.Error(w, http.StatusUnauthorized, "Invalid username or password")
 		return
 	}
