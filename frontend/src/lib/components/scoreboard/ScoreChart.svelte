@@ -8,7 +8,7 @@
 </script>
 
 <script lang="ts">
-  import { pad2 } from "@library/utils";
+  import { pad2 } from "#library/utils.js";
 
   let { series, start, end }: { series: Series[]; start: number | null; end: number } = $props();
 

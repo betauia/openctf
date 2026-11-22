@@ -1,4 +1,4 @@
-import { ApiError, me, settings as loadSettings } from "@library/api";
+import { ApiError, me, settings as loadSettings } from "#library/api.js";
 import type { LayoutLoad } from "./$types";
 
 export const ssr = false;

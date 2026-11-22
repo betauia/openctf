@@ -1,8 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import * as api from "@library/api";
-  import { afterLogin, SIGN_IN_REASONS } from "@library/redirect";
+  import * as api from "#library/api.js";
+  import { afterLogin, SIGN_IN_REASONS } from "#library/redirect.js";
 
   let username = $state("");
   let password = $state("");
@@ -17,7 +17,7 @@
     error = "";
     try {
       await api.login({ username, password });
-      await goto(afterLogin(page.url), { invalidateAll: true });
+      await goto(afterLogin(page.url), { refreshAll: true });
     } catch (e) {
       error = e instanceof Error ? e.message : "Login failed";
       busy = false;

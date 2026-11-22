@@ -1,6 +1,6 @@
 <script lang="ts">
-  import LeaderboardTab from "@components/teams/LeaderboardTab.svelte";
-  import ScoreChart from "@components/scoreboard/ScoreChart.svelte";
+  import LeaderboardTab from "#components/teams/LeaderboardTab.svelte";
+  import ScoreChart from "#components/scoreboard/ScoreChart.svelte";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import * as api from "@library/api";
-  import { afterLogin } from "@library/redirect";
+  import * as api from "#library/api.js";
+  import { afterLogin } from "#library/redirect.js";
 
   let username = $state("");
   let email = $state("");
@@ -16,7 +16,7 @@
     error = "";
     try {
       await api.register({ username, email, password });
-      await goto(afterLogin(page.url), { invalidateAll: true });
+      await goto(afterLogin(page.url), { refreshAll: true });
     } catch (e) {
       error = e instanceof Error ? e.message : "Registration failed";
       busy = false;

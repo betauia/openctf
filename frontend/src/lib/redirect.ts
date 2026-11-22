@@ -1,6 +1,6 @@
-export function afterLogin(url: URL): string {
-  const target = url.searchParams.get("redirectTo");
-  return target?.startsWith("/") && !target.startsWith("//") && !target.includes("\\") ? target : "/";
+export function afterLogin(url: { origin: string; searchParams: { get(name: string): string | null } }): string {
+  const target = new URL(url.searchParams.get("redirectTo") ?? "/", url.origin);
+  return target.origin === url.origin ? target.pathname + target.search + target.hash : "/";
 }
 
 export function loginFor(pathname: string, reason?: string): string {

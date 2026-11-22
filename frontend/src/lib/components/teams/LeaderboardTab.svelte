@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { Team } from "@library/types";
-  import { initial } from "@library/utils";
+  import type { Team } from "#library/types.js";
+  import { initial } from "#library/utils.js";
   import { Users } from "lucide-svelte";
 
   let { teams, myTeam }: { teams: Team[]; myTeam: Team | null } = $props();

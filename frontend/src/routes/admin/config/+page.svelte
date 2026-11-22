@@ -1,10 +1,10 @@
 <script lang="ts">
   import { invalidateAll } from "$app/navigation";
-  import betaLogo from "@assets/beta.svg?raw";
-  import logo from "@assets/logo.png";
-  import * as api from "@library/api";
-  import { THEMES } from "@library/themes";
-  import type { ThemeId } from "@library/types";
+  import betaLogo from "#assets/beta.svg?raw";
+  import logo from "#assets/logo.png";
+  import * as api from "#library/api.js";
+  import { THEMES } from "#library/themes.js";
+  import type { ThemeId } from "#library/types.js";
   import { Check } from "lucide-svelte";
   import type { PageProps } from "./$types";
 

@@ -26,50 +26,24 @@ export class ApiError extends Error {
   }
 }
 
-function getToken(key: string): string | null {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-function setToken(key: string, value: string | null) {
-  try {
-    if (value) localStorage.setItem(key, value);
-    else localStorage.removeItem(key);
-  } catch {}
-}
-
-function storeTokens(response: Response) {
-  const s = response.headers.get("x-session");
-  const r = response.headers.get("x-refresh");
-  if (s) setToken("session", s);
-  if (r) setToken("refresh", r);
-}
+try {
+  localStorage.removeItem("session");
+  localStorage.removeItem("refresh");
+} catch {}
 
 async function send(path: string, method: string, body: unknown, signal?: AbortSignal) {
   const headers: Record<string, string> = {};
   if (body !== undefined) headers["Content-Type"] = "application/json";
-  const s = getToken("session");
-  const r = getToken("refresh");
-  if (s) headers["x-session"] = s;
-  if (r) headers["x-refresh"] = r;
 
   return fetch(`/api${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), signal });
 }
 
 async function authed(path: string, method: string, body: unknown, signal?: AbortSignal) {
   let response = await send(path, method, body, signal);
-  storeTokens(response);
 
   if (response.status === 401 && path !== "/auth/refresh" && path !== "/auth/login") {
     const refreshed = await send("/auth/refresh", "POST", undefined);
-    storeTokens(refreshed);
-    if (refreshed.ok) {
-      response = await send(path, method, body, signal);
-      storeTokens(response);
-    }
+    if (refreshed.ok) response = await send(path, method, body, signal);
   }
 
   if (!response.ok) {
@@ -98,11 +72,7 @@ export const login = (body: { username: string; password: string }) =>
 export const register = (body: { username: string; email: string; password: string }) =>
   request<{ id: string; username: string }>("/auth/register", { method: "POST", body });
 
-export const logout = () => {
-  setToken("session", null);
-  setToken("refresh", null);
-  return request<Ok>("/auth/logout", { method: "POST" });
-};
+export const logout = () => request<Ok>("/auth/logout", { method: "POST" });
 
 export const me = () => request<User>("/auth/me");
 

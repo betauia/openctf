@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { MyTeam, Player, PublicSettings, Team, User as UserType } from "@library/types";
-  import { pad2 } from "@library/utils";
+  import type { MyTeam, Player, PublicSettings, Team, User as UserType } from "#library/types.js";
+  import { pad2 } from "#library/utils.js";
   import { ArrowDown, ArrowRight, ArrowUp, Clock, Target, User, Users } from "lucide-svelte";
 
   let {

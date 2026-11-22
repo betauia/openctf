@@ -1,5 +1,5 @@
-import * as api from "@library/api";
-import { optional, requireUser, required } from "@library/load";
+import * as api from "#library/api.js";
+import { optional, requireUser, required } from "#library/load.js";
 import type { PageLoad } from "./$types";
 
 const COLORS = [
