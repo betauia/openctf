@@ -4,9 +4,11 @@
   import { page } from "$app/state";
   import ChallengeModal from "@components/challenges/ChallengeModal.svelte";
   import ChallengeTable from "@components/challenges/ChallengeTable.svelte";
+  import FlagField, { type FlagResult } from "@components/challenges/FlagField.svelte";
   import Sidebar from "@components/challenges/Sidebar.svelte";
+  import StatCards from "@components/challenges/StatCards.svelte";
   import * as api from "@library/api";
-  import { ArrowRight } from "lucide-svelte";
+  import { Search } from "lucide-svelte";
   import type { Challenge } from "@library/types";
   import type { PageProps } from "./$types";
 
@@ -17,22 +19,17 @@
   let search = $state("");
   let activeCat = $state(page.url.searchParams.get("cat") ?? "all");
   let collapsed = $state(browser && localStorage.getItem(COLLAPSE_KEY) === "true");
-  let open = $state<Challenge | null>(data.challenges.find((c) => c.id === page.url.searchParams.get("open")) ?? null);
-  let flagValue = $state("");
-  let flagMessage = $state("");
-  let flagOk = $state<boolean | null>(null);
+  let openId = $state(page.url.searchParams.get("open"));
 
   $effect(() => {
     localStorage.setItem(COLLAPSE_KEY, String(collapsed));
   });
 
-  let challenges = $state(data.challenges);
-  let solved = $state(new Set(data.solvedIds));
+  let challenges = $derived(data.challenges);
+  let solved = $derived(new Set(data.solvedIds));
 
-  $effect(() => {
-    challenges = data.challenges;
-    solved = new Set(data.solvedIds);
-  });
+  let open = $derived(challenges.find((c) => c.id === openId) ?? null);
+  let solvedCount = $derived(challenges.filter((c) => solved.has(c.id)).length);
 
   let matching = $derived(
     challenges
@@ -44,20 +41,14 @@
   );
 
   /** A correct flag reloads the page data, so solves and scores come from the backend. */
-  async function submitFlag(flag: string, challengeId?: string) {
-    flagMessage = "";
-    flagOk = null;
+  async function submitFlag(flag: string, challengeId?: string): Promise<FlagResult> {
     try {
       const result = await api.submitFlag(flag, challengeId);
-      flagOk = result.correct;
-      flagMessage = result.correct ? `Correct! +${result.points} points` : "Incorrect flag, try again.";
-      if (result.correct) {
-        flagValue = "";
-        await invalidateAll();
-      }
+      if (!result.correct) return { ok: false, message: "Incorrect flag, try again." };
+      await invalidateAll();
+      return { ok: true, message: result.points ? `Correct! +${result.points} points` : "Already solved" };
     } catch (e) {
-      flagOk = false;
-      flagMessage = e instanceof Error ? e.message : "Submission failed.";
+      return { ok: false, message: e instanceof Error ? e.message : "Submission failed." };
     }
   }
 </script>
@@ -68,67 +59,38 @@
   <Sidebar challenges={data.challenges} {solved} bind:activeCat />
 
   <main class="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden bg-raised">
-    <div class="grid grid-cols-3 lg:grid-cols-6 gap-px bg-text/5 border-b border-text/6 shrink-0">
-      {#each [{ label: "Challenges", value: challenges.length }, { label: "Personal score", value: data.user.score }, { label: "Personal rank", value: data.user.rank }, { label: "Team", value: data.myTeam?.name ?? null }, { label: "Team score", value: data.myTeam?.score ?? null }, { label: "Team rank", value: data.myTeam?.rank ?? null }] as { label, value } (label)}
-        <div class="min-w-0 bg-elevated py-3 px-3 flex flex-col items-center gap-1">
-          <span
-            class="max-w-full truncate whitespace-nowrap text-[0.625rem] sm:text-[0.6875rem] tracking-[0.12em] text-text/55"
-          >
-            {label}
-          </span>
-          <span class="max-w-full truncate text-[1rem] sm:text-[1.125rem] font-bold text-text">{value ?? "—"}</span>
-        </div>
-      {/each}
-    </div>
+    <StatCards
+      user={data.user}
+      myTeam={data.myTeam}
+      teams={data.teams}
+      players={data.players}
+      settings={data.settings}
+      {solvedCount}
+      total={challenges.length}
+    />
 
-    <div class="flex flex-wrap items-center gap-3 py-2.5 px-4 bg-elevated border-b border-text/6 shrink-0">
-      <input
-        type="text"
-        placeholder="Search challenges..."
-        bind:value={search}
-        class="bg-background border border-text/10 rounded-md text-muted-text py-1.5 px-3 text-[0.75rem]
-          outline-none w-full sm:w-55 transition-colors duration-100 focus:border-accent/60"
-      />
-
-      <form
-        onsubmit={(e) => {
-          e.preventDefault();
-          if (flagValue.trim()) submitFlag(flagValue.trim());
-        }}
-        data-form-type="other"
-        class="flex m-0 flex-1 min-w-0 sm:flex-none"
+    <div class="flex flex-wrap items-center gap-3 px-4 pt-3 pb-1 shrink-0">
+      <label
+        class="flex items-center gap-2 w-full sm:w-55 h-[2.125rem] px-3 rounded-md bg-background border
+          border-text/10 transition-colors duration-100 focus-within:border-accent/60 cursor-text"
       >
+        <Search size="0.8125rem" class="shrink-0 text-text/30" />
         <input
           type="text"
-          placeholder="CTF&lbrace;submit_flag_here&rbrace;"
-          autocomplete="off"
-          data-lpignore="true"
-          bind:value={flagValue}
-          class="bg-background border border-text/10 border-r-0 rounded-l-md text-muted-text py-1.5 px-3
-            font-mono text-[0.75rem] outline-none flex-1 min-w-0 sm:flex-none sm:w-65 transition-colors
-            duration-100 focus:border-accent/60"
+          placeholder="Search challenges..."
+          bind:value={search}
+          class="flex-1 min-w-0 bg-transparent border-none outline-none p-0 text-[0.75rem] text-muted-text"
         />
-        <button
-          type="submit"
-          class="inline-flex items-center gap-1.5 border-none rounded-r-md text-white py-1.5 pl-3.5 pr-3
-            text-[0.75rem] font-semibold cursor-pointer transition-colors duration-150
-            {flagOk === null ? 'bg-accent hover:bg-accent-dark' : flagOk ? 'bg-correct-dark' : 'bg-wrong-dark'}"
-        >
-          Submit
-          <ArrowRight size="0.8125rem" />
-        </button>
-      </form>
+      </label>
 
-      <span class="text-[0.6875rem]" class:text-correct={flagOk === true} class:text-wrong={flagOk === false}>
-        {open ? "" : flagMessage}
-      </span>
+      <FlagField label="Flag" placeholder="CTF&lbrace;submit_flag_here&rbrace;" onsubmit={(flag) => submitFlag(flag)} />
     </div>
 
     <ChallengeTable
       unsolved={matching.filter((c) => !solved.has(c.id))}
       solved={matching.filter((c) => solved.has(c.id))}
       bind:collapsed
-      onselect={(c) => (open = c)}
+      onselect={(c) => (openId = c.id)}
     />
   </main>
 </div>
@@ -137,10 +99,8 @@
   <ChallengeModal
     challenge={open}
     solved={solved.has(open.id)}
-    message={flagMessage}
-    ok={flagOk}
     onclose={() => {
-      open = null;
+      openId = null;
       if (page.url.searchParams.has("open")) {
         const url = new URL(page.url);
         url.searchParams.delete("open");

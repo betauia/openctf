@@ -1,18 +1,55 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
+  import { goto, invalidateAll } from "$app/navigation";
   import { page } from "$app/state";
   import betaLogo from "@assets/beta.svg?raw";
   import logo from "@assets/logo.png";
   import * as api from "@library/api";
   import { applyTheme } from "@library/themes";
+  import type { SolveEvent } from "@library/types";
+  import { initial } from "@library/utils";
+  import { fly } from "svelte/transition";
   import { LogOut } from "lucide-svelte";
   import "@styles/global.css";
 
   let { children, data } = $props();
   let user = $derived(data.user);
-  let theme = $derived(data.theme ?? "uiactf");
+  let theme = $derived(data.settings?.theme ?? "uiactf");
 
   $effect(() => applyTheme(theme));
+
+  let userId = $derived(user?.id);
+  let toasts = $state<(SolveEvent & { key: number; mine: boolean })[]>([]);
+  let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+  let staleWhileHidden = false;
+
+  function refresh() {
+    if (document.hidden) {
+      staleWhileHidden = true;
+      return;
+    }
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(() => invalidateAll(), 300);
+  }
+
+  let nextToast = 0;
+
+  function showToast(solve: SolveEvent, me: string) {
+    const key = nextToast++;
+    toasts = [...toasts.slice(-3), { ...solve, key, mine: solve.user_id === me }];
+    setTimeout(() => (toasts = toasts.filter((t) => t.key !== key)), 6000);
+  }
+
+  $effect(() => {
+    const me = userId;
+    if (!me) return;
+    const controller = new AbortController();
+    api.listen((event, data) => {
+      if (event !== "solve") return;
+      showToast(data as SolveEvent, me);
+      refresh();
+    }, controller.signal);
+    return () => controller.abort();
+  });
 
   let isAdmin = $derived(user?.role === "admin");
 
@@ -41,6 +78,15 @@
     await goto("/", { invalidateAll: true });
   }
 </script>
+
+<svelte:document
+  onvisibilitychange={() => {
+    if (!document.hidden && staleWhileHidden) {
+      staleWhileHidden = false;
+      invalidateAll();
+    }
+  }}
+/>
 
 <nav class="fixed top-0 left-0 w-full h-12 bg-background border-b border-text/7 z-50">
   <div class="h-full flex items-stretch">
@@ -92,7 +138,6 @@
               </div>
             {/if}
             <span class="hidden sm:inline text-[0.75rem] text-muted-text">{user.username}</span>
-            <span class="hidden sm:inline text-[0.625rem] text-pts tabular-nums">{user.score}</span>
           </div>
           <button
             onclick={logout}
@@ -120,3 +165,28 @@
 </nav>
 
 {@render children()}
+
+<div class="fixed bottom-4 right-4 z-[60] flex flex-col gap-2 w-[20rem] max-w-[calc(100vw-2rem)] pointer-events-none">
+  {#each toasts as toast (toast.key)}
+    <a
+      href="/challenges?open={toast.challenge_id}"
+      in:fly={{ x: 24, duration: 200 }}
+      out:fly={{ x: 24, duration: 200 }}
+      class="pointer-events-auto flex items-center gap-3 rounded-lg bg-elevated border py-2.5 px-3 no-underline
+        {toast.mine ? 'border-accent/50' : 'border-text/10'}"
+    >
+      <div class="avatar w-8 h-8 text-[0.75rem] rounded-md">{initial(toast.username)}</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-[0.75rem] text-muted-text truncate">
+          <span class="font-semibold text-text">{toast.mine ? "You" : toast.username}</span>
+          solved
+          <span class="cat-{toast.category} px-1">{toast.challenge}</span>
+        </div>
+        {#if toast.team}
+          <div class="text-[0.6875rem] text-text/40 truncate">{toast.team}</div>
+        {/if}
+      </div>
+      <span class="text-[0.75rem] font-bold text-pts tabular-nums shrink-0">+{toast.points}</span>
+    </a>
+  {/each}
+</div>

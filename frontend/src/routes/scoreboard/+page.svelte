@@ -1,12 +1,9 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import LeaderboardTab from "@components/teams/LeaderboardTab.svelte";
+  import { pad2 } from "@library/utils";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
-
-  let teams = $derived(data.teams);
-  let myTeam = $derived(data.myTeam);
 
   const CSS_COLORS = [
     "--accent-color",
@@ -26,11 +23,7 @@
     return CSS_COLORS.map((v) => style.getPropertyValue(v).trim() || "#888");
   }
 
-  let COLORS = $state(resolveColors());
-
-  $effect(() => {
-    COLORS = resolveColors();
-  });
+  const COLORS = resolveColors();
 
   let series = $derived(
     data.series.map((s, i) => ({
@@ -41,10 +34,10 @@
     })),
   );
 
-  let xMin = $derived(series.length ? Math.min(...series.flatMap((s) => s.points.map((p) => p[0]))) : 0);
-  let xMax = $derived(series.length ? Math.max(...series.flatMap((s) => s.points.map((p) => p[0]))) : 1);
-  let yMax = $derived(series.length ? Math.max(...series.flatMap((s) => s.points.map((p) => p[1]))) : 1);
-  let yMaxPadded = $derived(Math.ceil(yMax * 1.1));
+  let allPoints = $derived(series.flatMap((s) => s.points));
+  let xMin = $derived(allPoints.length ? Math.min(...allPoints.map((p) => p[0])) : 0);
+  let xMax = $derived(allPoints.length ? Math.max(...allPoints.map((p) => p[0])) : 1);
+  let yMaxPadded = $derived(allPoints.length ? Math.ceil(Math.max(...allPoints.map((p) => p[1])) * 1.1) : 1);
 
   const readRem = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
   let remPx = $state(readRem());
@@ -77,9 +70,7 @@
 
   function fmtTime(t: number): string {
     const d = new Date(t);
-    const h = String(d.getHours()).padStart(2, "0");
-    const m = String(d.getMinutes()).padStart(2, "0");
-    return `${d.getMonth() + 1}/${d.getDate()} ${h}:${m}`;
+    return `${d.getMonth() + 1}/${d.getDate()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
   }
 
   let yTicks = $derived.by(() => {
@@ -115,10 +106,6 @@
     mouseX = svgX;
   }
 
-  function onChartLeave() {
-    mouseX = null;
-  }
-
   let crosshairTime = $derived(mouseX !== null ? xMin + ((mouseX - PAD.left) / plotW) * (xMax - xMin) : null);
 
   function scoreAt(pts: [number, number][], t: number): number {
@@ -131,9 +118,10 @@
   }
 
   let tooltipData = $derived.by(() => {
-    if (crosshairTime === null) return null;
+    const t = crosshairTime;
+    if (t === null) return null;
     return series
-      .map((s) => ({ name: s.name, color: s.color, score: scoreAt(s.points, crosshairTime!) }))
+      .map((s) => ({ name: s.name, color: s.color, score: scoreAt(s.points, t) }))
       .filter((d) => d.score > 0)
       .sort((a, b) => b.score - a.score);
   });
@@ -145,7 +133,7 @@
 
 <div class="flex flex-col h-[calc(100vh-3rem)] mt-12 bg-raised overflow-y-auto">
   <div class="w-full max-w-[75rem] mx-auto">
-    {#if teams.length === 0}
+    {#if data.teams.length === 0}
       <div class="flex-1 flex items-center justify-center text-[0.8125rem] text-text/30">No teams yet</div>
     {:else}
       {#if series.length > 0}
@@ -170,13 +158,15 @@
 
           <div class="w-full relative" bind:clientWidth={chartWidth}>
             <svg
+              role="img"
+              aria-label="Team scores over time"
               bind:this={chartEl}
               width={W}
               height={H}
               viewBox="0 0 {W} {H}"
               class="w-full block"
               onmousemove={onChartMove}
-              onmouseleave={onChartLeave}
+              onmouseleave={() => (mouseX = null)}
             >
               <defs>
                 {#each series as s (s.id)}
@@ -295,17 +285,7 @@
         </div>
       {/if}
 
-      <LeaderboardTab
-        {teams}
-        {myTeam}
-        inspecting={null}
-        activity={[]}
-        activityError={null}
-        onmine={() => goto("/teams")}
-        oninspect={(team) => goto(`/teams/scout?team=${team.id}`)}
-        onback={() => {}}
-        onmember={() => {}}
-      />
+      <LeaderboardTab teams={data.teams} myTeam={data.myTeam} />
     {/if}
   </div>
 </div>

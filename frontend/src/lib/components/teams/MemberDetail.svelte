@@ -2,7 +2,7 @@
   import { CAT_ICON } from "@library/categories";
   import type { MemberDetail } from "@library/types";
   import { fmt, initial, timeAgo } from "@library/utils";
-  import { ArrowLeft, ArrowRight } from "lucide-svelte";
+  import { ArrowLeft, ArrowRight, Users } from "lucide-svelte";
 
   let { member, backLabel, onback }: { member: MemberDetail; backLabel: string; onback: () => void } = $props();
 </script>
@@ -31,6 +31,27 @@
           {member.solves.length}
           {member.solves.length === 1 ? "solve" : "solves"}
         </span>
+        {#if member.team && member.team_id}
+          <a
+            href="/teams/scout?team={member.team_id}"
+            title="Inspect {member.team}"
+            class="group inline-flex items-center gap-1.5 text-[0.6875rem] text-text/70 no-underline bg-text/5
+              border border-text/8 rounded-full py-1 px-2.5 transition-colors duration-100
+              hover:text-text hover:border-text/20"
+          >
+            <Users size="0.6875rem" />
+            {member.team}
+            <ArrowRight size="0.6875rem" class="text-text/30 transition-colors duration-100 group-hover:text-accent" />
+          </a>
+        {:else}
+          <span
+            class="inline-flex items-center gap-1.5 text-[0.6875rem] text-text/35 border border-dashed border-text/10
+              rounded-full py-1 px-2.5"
+          >
+            <Users size="0.6875rem" />
+            No team
+          </span>
+        {/if}
       </div>
     </div>
   </section>

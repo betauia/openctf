@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Search } from "lucide-svelte";
+  import { Box, Search } from "lucide-svelte";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -7,72 +7,78 @@
   let filter = $state("");
 
   let shown = $derived(
-    data.instances.filter((i) =>
-      [i.id, i.name, i.image, i.status, new Date(i.created_at).toLocaleString()]
-        .join(" ")
-        .toUpperCase()
-        .includes(filter.toUpperCase()),
+    data.instances.value.filter((i) =>
+      [i.id, i.name, i.image, i.status].join(" ").toLowerCase().includes(filter.trim().toLowerCase()),
     ),
   );
 </script>
 
 <svelte:head><title>Admin: Status</title></svelte:head>
 
-<div class="bg-raised text-text pt-12 min-h-screen flex flex-col items-center">
-  <div class="max-w-[75rem] w-full px-4 sm:px-12 flex-1 flex flex-col">
-    <div class="flex flex-col items-center gap-4 overflow-y-auto max-h-[40rem] max-w-[calc(100%-1rem)] mx-auto px-6">
-      <div class="mt-4 flex items-center justify-between gap-2.5 -mb-2.5 w-full">
-        <div class="flex items-center gap-1.5">
-          <span class="text-[1.125rem] text-accent">▣</span>
-          <h1 class="m-0 text-[1.125rem] font-bold tracking-[-0.02em] text-text">challenge containers</h1>
+<div class="min-h-[calc(100vh-3rem)] mt-12 bg-raised text-text">
+  <div class="max-w-[75rem] mx-auto p-6 flex flex-col gap-4">
+    <section class="rounded-lg bg-elevated border border-text/6 overflow-hidden">
+      <div class="flex flex-wrap items-center justify-between gap-3 px-5 pt-4 pb-3">
+        <div>
+          <div class="text-[0.8125rem] font-medium text-text/80">Challenge containers</div>
+          <div class="text-[0.6875rem] text-text/35 mt-0.5">
+            {data.instances.value.length} running
+          </div>
         </div>
-        <div class="relative w-2/5 max-w-80">
-          <Search
-            size="0.875rem"
-            class="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-text pointer-events-none"
-          />
+        <label
+          class="flex items-center gap-2 w-full sm:w-64 h-[2.125rem] px-3 rounded-md bg-background border
+            border-text/10 transition-colors duration-100 focus-within:border-accent/60 cursor-text"
+        >
+          <Search size="0.8125rem" class="shrink-0 text-text/30" />
           <input
             type="text"
-            placeholder="Filter searches..."
+            placeholder="Filter containers..."
             bind:value={filter}
-            class="w-full bg-raised text-text border-[0.5px] border-raised rounded-[0.3125rem] pl-8 box-border"
+            class="flex-1 min-w-0 bg-transparent border-none outline-none p-0 text-[0.75rem] text-muted-text"
           />
-        </div>
+        </label>
       </div>
 
-      <div class="w-full overflow-x-auto">
-        <table
-          class="table-fixed w-full min-w-[40rem] text-center text-sm text-text border-separate border-[0.5px] border-raised
-          rounded-[0.625rem] border-spacing-0 overflow-hidden"
-        >
-          <thead>
-            <tr>
-              {#each ["ID", "NAME", "IMAGE", "STATUS", "CREATED"] as header (header)}
-                <th class="p-2 min-w-28 max-w-80 bg-raised text-muted-text">{header}</th>
-              {/each}
-            </tr>
-          </thead>
-          <tbody>
-            {#if shown.length === 0}
-              <tr><td colspan="5" class="p-2 min-w-28 max-w-80">No instances found.</td></tr>
-            {:else}
+      {#if data.instances.error}
+        <div class="flex flex-col items-center gap-2 py-14 px-6 border-t border-text/5 text-center">
+          <Box size="1.5rem" class="text-text/20" />
+          <div class="text-[0.8125rem] text-text/60">Container instances aren't available yet</div>
+          <div class="text-[0.6875rem] text-text/30 max-w-[28rem]">
+            The backend has no instance API right now, so there's nothing to list.
+          </div>
+        </div>
+      {:else if shown.length === 0}
+        <div class="py-14 text-center text-[0.75rem] text-text/30 border-t border-text/5">
+          {data.instances.value.length === 0 ? "No containers are running." : `Nothing matches "${filter}".`}
+        </div>
+      {:else}
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[40rem] border-collapse text-left">
+            <thead>
+              <tr>
+                {#each ["ID", "Name", "Image", "Status", "Created"] as header (header)}
+                  <th class="th border-t border-text/5">{header}</th>
+                {/each}
+              </tr>
+            </thead>
+            <tbody>
               {#each shown as instance (instance.id)}
-                <tr>
-                  <td class="p-2 min-w-28 max-w-80">
-                    <a href="/admin/status/{instance.id}" class="no-underline hover:underline">
-                      {instance.id}
+                <tr class="border-t border-text/5 transition-colors duration-100 hover:bg-text/3">
+                  <td class="td font-mono text-[0.75rem]">
+                    <a href="/admin/status/{instance.id}" class="text-accent no-underline hover:underline">
+                      {instance.id.slice(0, 12)}
                     </a>
                   </td>
-                  <td class="p-2 min-w-28 max-w-80">{instance.name}</td>
-                  <td class="p-2 min-w-28 max-w-80">{instance.image}</td>
-                  <td class="p-2 min-w-28 max-w-80">{instance.status}</td>
-                  <td class="p-2 min-w-28 max-w-80">{new Date(instance.created_at).toLocaleString()}</td>
+                  <td class="td text-[0.8125rem] text-muted-text">{instance.name}</td>
+                  <td class="td font-mono text-[0.75rem] text-text/60">{instance.image}</td>
+                  <td class="td text-[0.75rem] text-text/60">{instance.status}</td>
+                  <td class="td text-[0.75rem] text-text/40">{new Date(instance.created_at).toLocaleString()}</td>
                 </tr>
               {/each}
-            {/if}
-          </tbody>
-        </table>
-      </div>
-    </div>
+            </tbody>
+          </table>
+        </div>
+      {/if}
+    </section>
   </div>
 </div>

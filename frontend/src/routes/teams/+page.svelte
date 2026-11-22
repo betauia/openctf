@@ -8,13 +8,8 @@
 
   let { data }: PageProps = $props();
 
-  let myTeam = $state(data.myTeam);
-  let activity = $state(data.activity.value);
-
-  $effect(() => {
-    myTeam = data.myTeam;
-    activity = data.activity.value;
-  });
+  let myTeam = $derived(data.myTeam);
+  let activity = $derived(data.activity.value);
 
   let error = $state("");
 

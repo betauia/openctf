@@ -1,27 +1,57 @@
 <script lang="ts">
+  import { ArrowLeft } from "lucide-svelte";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
+
+  let rows = $derived(
+    data.instance
+      ? [
+          { label: "Image", value: data.instance.image },
+          { label: "Status", value: data.instance.status },
+          { label: "Provider", value: data.instance.provider },
+          { label: "Created", value: new Date(data.instance.created_at).toLocaleString() },
+          {
+            label: "Host",
+            value:
+              data.instance.host_ip && data.instance.host_port
+                ? `${data.instance.host_ip}:${data.instance.host_port}`
+                : "—",
+          },
+        ]
+      : [],
+  );
 </script>
 
-<svelte:head><title>Container: {data.instance?.id ?? "unknown"}</title></svelte:head>
+<svelte:head><title>Container: {data.instance?.name ?? "unknown"}</title></svelte:head>
 
-<div class="bg-raised text-text pt-12 min-h-screen flex flex-col items-center">
-  <div class="max-w-[75rem] w-full px-4 sm:px-12 flex-1 flex flex-col">
-    <div class="flex flex-col items-center gap-4 mt-4 border border-raised rounded-[1.25rem] p-4 text-text">
+<div class="min-h-[calc(100vh-3rem)] mt-12 bg-raised text-text">
+  <div class="max-w-[48rem] mx-auto p-6 flex flex-col gap-4">
+    <a href="/admin/status" class="back-btn self-start no-underline">
+      <ArrowLeft size="0.875rem" />
+      Status
+    </a>
+
+    <section class="rounded-lg bg-elevated border border-text/6 overflow-hidden">
       {#if data.instance}
-        <div>
-          <h3>Basic Info</h3>
-          <p><strong>ID:</strong> {data.instance.id}</p>
-          <p><strong>Name:</strong> {data.instance.name}</p>
-          <p><strong>Image:</strong> {data.instance.image}</p>
-          <p><strong>Status:</strong> {data.instance.status}</p>
-          <p><strong>Created:</strong> {new Date(data.instance.created_at).toLocaleString()}</p>
-          <p><strong>Provider:</strong> {data.instance.provider}</p>
+        <div class="px-5 pt-4 pb-3">
+          <div class="text-[0.8125rem] font-medium text-text/80">{data.instance.name}</div>
+          <div class="font-mono text-[0.6875rem] text-text/35 mt-0.5">{data.instance.id}</div>
         </div>
+        {#each rows as row (row.label)}
+          <div class="flex items-center gap-4 px-5 py-2.5 border-t border-text/5">
+            <span class="w-24 shrink-0 text-[0.6875rem] tracking-[0.1em] text-text/35">{row.label}</span>
+            <span class="font-mono text-[0.8125rem] text-muted-text break-all">{row.value}</span>
+          </div>
+        {/each}
       {:else}
-        <p>No such instance.</p>
+        <div class="py-14 px-6 text-center">
+          <div class="text-[0.8125rem] text-text/60">No such container</div>
+          <div class="text-[0.6875rem] text-text/30 mt-1">
+            {data.error ? "The backend has no instance API right now." : "It may have been stopped."}
+          </div>
+        </div>
       {/if}
-    </div>
+    </section>
   </div>
 </div>

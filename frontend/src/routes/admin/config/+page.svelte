@@ -12,7 +12,7 @@
 
   let saving = $state<ThemeId | null>(null);
   let error = $state("");
-  let active = $derived(data.theme ?? "uiactf");
+  let active = $derived(data.settings?.theme ?? "uiactf");
 
   async function pick(theme: ThemeId) {
     if (theme === active || saving) return;

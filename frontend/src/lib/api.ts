@@ -7,6 +7,7 @@ import type {
   MemberDetail,
   MyTeam,
   Progress,
+  Player,
   PublicSettings,
   ScoreSeries,
   Solve,
@@ -47,7 +48,7 @@ function storeTokens(response: Response) {
   if (r) setToken("refresh", r);
 }
 
-async function send(path: string, method: string, body: unknown) {
+async function send(path: string, method: string, body: unknown, signal?: AbortSignal) {
   const headers: Record<string, string> = {};
   if (body !== undefined) headers["Content-Type"] = "application/json";
   const s = getToken("session");
@@ -59,18 +60,19 @@ async function send(path: string, method: string, body: unknown) {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
+    signal,
   });
 }
 
-async function authed(path: string, method: string, body: unknown) {
-  let response = await send(path, method, body);
+async function authed(path: string, method: string, body: unknown, signal?: AbortSignal) {
+  let response = await send(path, method, body, signal);
   storeTokens(response);
 
   if (response.status === 401 && path !== "/auth/refresh" && path !== "/auth/login") {
     const refreshed = await send("/auth/refresh", "POST", undefined);
     storeTokens(refreshed);
     if (refreshed.ok) {
-      response = await send(path, method, body);
+      response = await send(path, method, body, signal);
       storeTokens(response);
     }
   }
@@ -144,6 +146,8 @@ export const updateSettings = (body: Partial<PublicSettings>) =>
 
 export const scoreboard = () => request<ScoreSeries[]>("/scoreboard");
 
+export const listPlayers = () => request<Player[]>("/scoreboard/players?limit=1000");
+
 export const listChallenges = () => request<Challenge[]>("/challenges");
 
 export const challengeSolves = (id: string) => request<Solve[]>(`/challenges/${id}/solves`);
@@ -167,3 +171,33 @@ export const createInstance = (challenge_id: string) =>
   request<Instance>("/instances", { method: "POST", body: { challenge_id } });
 
 export const stopInstance = (id: string) => request<void>(`/instances/${id}`, { method: "DELETE" });
+
+export async function listen(onEvent: (event: string, data: unknown) => void, signal: AbortSignal) {
+  while (!signal.aborted) {
+    try {
+      const response = await authed("/live", "GET", undefined, signal);
+      const reader = response.body!.pipeThrough(new TextDecoderStream()).getReader();
+      let buffer = "";
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += value;
+        let end;
+        while ((end = buffer.indexOf("\n\n")) !== -1) {
+          const block = buffer.slice(0, end);
+          buffer = buffer.slice(end + 2);
+          let event = "message";
+          let data = "";
+          for (const line of block.split("\n")) {
+            if (line.startsWith("event: ")) event = line.slice(7);
+            else if (line.startsWith("data: ")) data += line.slice(6);
+          }
+          if (data) onEvent(event, JSON.parse(data));
+        }
+      }
+    } catch {
+      if (signal.aborted) return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+  }
+}

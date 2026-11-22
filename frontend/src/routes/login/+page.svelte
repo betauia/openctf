@@ -31,7 +31,7 @@
 <div class="bg-raised text-text pt-12 min-h-screen flex flex-col items-center">
   <div class="max-w-[75rem] w-full px-12 flex-1 flex flex-col">
     <div class="flex-1 mx-[-3rem] flex items-center justify-center">
-      <div class="bg-elevated border border-text/4 py-8 px-9 w-[clamp(18.75rem,28vw,26.25rem)]">
+      <div class="bg-elevated border border-text/6 rounded-xl py-8 px-8 w-[clamp(18.75rem,28vw,26.25rem)]">
         <h1 class="text-2xl font-bold text-text/92 m-0 mb-2">Sign in</h1>
 
         {#if reason}
@@ -58,7 +58,7 @@
             />
           </div>
 
-          <div class="text-[0.6875rem] text-accent min-h-0 mb-1.5">{error}</div>
+          <div class="text-[0.6875rem] text-wrong min-h-0 mb-1.5">{error}</div>
 
           <button type="submit" disabled={busy} class="btn-primary">
             {busy ? "..." : "Sign in"}

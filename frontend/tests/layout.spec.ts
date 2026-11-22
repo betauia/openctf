@@ -12,7 +12,18 @@ const screens = [
   { name: "4k", width: 3840, height: 2160 },
 ];
 
-const pages = ["/challenges", "/teams", "/teams/scout", "/scoreboard", "/rules", "/admin/status", "/admin/config"];
+const pages = [
+  "/challenges",
+  "/teams",
+  "/teams/scout",
+  "/scoreboard",
+  "/rules",
+  "/admin/status",
+  "/admin/config",
+  "/login",
+  "/register",
+  "/does-not-exist",
+];
 
 const MIN_TEXT_PX = 8;
 
@@ -55,6 +66,10 @@ function trackErrors(page: Page) {
   page.on("pageerror", (e) => errors.push(e.message));
   return errors;
 }
+
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/live", (route) => route.abort());
+});
 
 for (const path of pages) {
   for (const screen of screens) {

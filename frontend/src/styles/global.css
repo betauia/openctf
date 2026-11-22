@@ -166,12 +166,12 @@ body {
 }
 
 .field {
-  @apply bg-background border border-text/10 text-muted-text py-2.5 px-3 text-sm
-    outline-none w-full box-border focus:border-accent;
+  @apply bg-background border border-text/10 rounded-md text-muted-text py-2.5 px-3 text-sm
+    outline-none w-full box-border transition-colors duration-100 focus:border-accent/60;
 }
 
 .btn-primary {
-  @apply w-full bg-accent border-none text-white p-2.75 text-[0.8125rem] font-bold tracking-[0.08em]
+  @apply w-full bg-accent border-none rounded-md text-white p-2.75 text-[0.8125rem] font-semibold
     cursor-pointer transition-colors hover:enabled:bg-accent-dark
     disabled:cursor-default disabled:opacity-60;
 }

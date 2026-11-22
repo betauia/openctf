@@ -29,13 +29,6 @@
   class="shrink-0 bg-background border-b md:border-b-0 md:border-r border-text/7 flex md:flex-col md:w-40
     overflow-x-auto md:overflow-x-hidden md:overflow-y-auto px-2 md:px-0 py-2 md:py-3 [scrollbar-width:none]"
 >
-  <div
-    class="hidden md:block px-3.5 pb-3 text-base font-bold text-text text-center border-b border-border-subtle mb-1.5"
-  >
-    {challenges.filter((c) => solved.has(c.id)).length}
-    <span class="text-[0.75rem] font-normal text-muted-text opacity-40">/ {challenges.length} solved</span>
-  </div>
-
   {#each entries as { cat, label, total, pct, Icon } (cat)}
     <button
       onclick={() => (activeCat = cat)}

@@ -40,6 +40,12 @@
       );
   });
 
+  let cachedFor: unknown = null;
+  $effect(() => {
+    if (cachedFor && data.teams !== cachedFor) cache = {};
+    cachedFor = data.teams;
+  });
+
   let categories = $derived(loaded?.comparison?.categories ?? []);
   let activeCategories = $derived(categories.filter((c) => c.them > 0 || c.us > 0));
   let untouched = $derived(

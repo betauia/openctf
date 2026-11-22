@@ -71,6 +71,7 @@ export type SubmitResult = {
 export type Solve = {
   uid: string;
   username: string;
+  team_id: string | null;
   team: string | null;
   solved_at: string | null;
 };
@@ -88,6 +89,8 @@ export type MemberDetail = {
   id: string;
   username: string;
   score: number;
+  team_id: string | null;
+  team: string | null;
   solves: { challenge_id: string; challenge: string; category: string; points: number; solved_at: string | null }[];
 };
 
@@ -118,3 +121,17 @@ export type Comparison = {
   categories: { category: string; total: number; them: number; us: number }[];
   missing: { id: string; title: string; category: string; points: number }[];
 };
+
+export type SolveEvent = {
+  challenge_id: string;
+  challenge: string;
+  category: string;
+  points: number;
+  user_id: string;
+  username: string;
+  team_id: string | null;
+  team: string | null;
+  solved_at: string;
+};
+
+export type Player = { id: string; username: string; score: number; rank: number };
