@@ -60,8 +60,15 @@ func userRank(ctx context.Context, q database.Querier, score int32) (int32, erro
 	return rank, err
 }
 
+// listSolvedChallengeIDs returns the challenges solved by the user's team, or by
+// the user alone when they are not on a team.
 func listSolvedChallengeIDs(ctx context.Context, q database.Querier, userID uuid.UUID) ([]uuid.UUID, error) {
-	rows, err := q.Query(ctx, `SELECT challenge_id FROM solves WHERE user_id = $1 ORDER BY challenge_id`, userID)
+	rows, err := q.Query(ctx, `
+		SELECT DISTINCT s.challenge_id FROM solves s
+		JOIN users u ON u.id = $1
+		WHERE (u.team_id IS NOT NULL AND s.team_id = u.team_id)
+		   OR (u.team_id IS NULL AND s.user_id = u.id)
+		ORDER BY s.challenge_id`, userID)
 	if err != nil {
 		return nil, err
 	}

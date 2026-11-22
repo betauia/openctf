@@ -300,7 +300,8 @@ func (a *Auth) changePassword(w http.ResponseWriter, r *http.Request, u *User) {
 	httpx.JSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-// solves lists the ids of challenges the user solved; empty when not logged in.
+// solves lists the ids of challenges the user's team solved, or the user's own
+// when they have no team; empty when not logged in.
 func (a *Auth) solves(w http.ResponseWriter, r *http.Request, u *User) {
 	ids := []uuid.UUID{}
 	if u != nil {
