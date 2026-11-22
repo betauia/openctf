@@ -8,6 +8,7 @@ import (
 	"net/mail"
 	"strings"
 	"time"
+	"unicode"
 	"unicode/utf8"
 	"uuid"
 
@@ -68,6 +69,10 @@ func (a *Auth) register(w http.ResponseWriter, r *http.Request) {
 	}
 	if n := utf8.RuneCountInString(body.Username); n < 5 || n > 32 {
 		httpx.Error(w, http.StatusBadRequest, "Username must be 5-32 characters")
+		return
+	}
+	if !ValidName(body.Username) {
+		httpx.Error(w, http.StatusBadRequest, "Username can't start or end with spaces or contain invisible characters")
 		return
 	}
 	if utf8.RuneCountInString(body.Password) < 12 {
@@ -315,4 +320,18 @@ func (a *Auth) setSession(w http.ResponseWriter, userID, familyID uuid.UUID) {
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	})
+}
+
+// ValidName reports whether name has no leading or trailing whitespace and no control or
+// invisible formatting characters such as zero-width spaces.
+func ValidName(name string) bool {
+	if name == "" || strings.TrimSpace(name) != name {
+		return false
+	}
+	for _, r := range name {
+		if unicode.IsControl(r) || unicode.Is(unicode.Cf, r) {
+			return false
+		}
+	}
+	return true
 }

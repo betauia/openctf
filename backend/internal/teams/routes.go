@@ -632,6 +632,10 @@ func validName(w http.ResponseWriter, name string) bool {
 		httpx.Error(w, http.StatusBadRequest, "Team name must be 3-32 characters")
 		return false
 	}
+	if !auth.ValidName(name) {
+		httpx.Error(w, http.StatusBadRequest, "Team name can't start or end with spaces or contain invisible characters")
+		return false
+	}
 	return true
 }
 func (h *Handler) adminGetTeams(w http.ResponseWriter, r *http.Request, u *auth.User) {

@@ -35,13 +35,13 @@ func getSessionUser(ctx context.Context, q database.Querier, id, familyID uuid.U
 }
 
 func getUserByUsername(ctx context.Context, q database.Querier, username string) (User, error) {
-	return scanUser(q.QueryRow(ctx, `SELECT `+userColumns+` FROM users WHERE username = $1`, username))
+	return scanUser(q.QueryRow(ctx, `SELECT `+userColumns+` FROM users WHERE lower(username) = lower($1)`, username))
 }
 
 func userExists(ctx context.Context, q database.Querier, username, email string) (bool, error) {
 	var exists bool
 	err := q.QueryRow(ctx,
-		`SELECT EXISTS (SELECT 1 FROM users WHERE username = $1 OR email = $2)`, username, email,
+		`SELECT EXISTS (SELECT 1 FROM users WHERE lower(username) = lower($1) OR email = $2)`, username, email,
 	).Scan(&exists)
 	return exists, err
 }

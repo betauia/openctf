@@ -21,6 +21,7 @@ CREATE TABLE users (
     banned        BOOLEAN NOT NULL DEFAULT FALSE
 );
 CREATE INDEX users_team_id_idx ON users (team_id);
+CREATE UNIQUE INDEX users_username_lower_key ON users (lower(username));
 
 ALTER TABLE teams
     ADD CONSTRAINT teams_captain_id_fkey FOREIGN KEY (captain_id) REFERENCES users (id) ON DELETE SET NULL;
