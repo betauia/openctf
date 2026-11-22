@@ -1,11 +1,20 @@
-import { error } from "@sveltejs/kit";
+import { error, redirect } from "@sveltejs/kit";
 import { ApiError } from "./api";
+import { loginFor } from "./redirect";
+import type { User } from "./types";
 
-/**
- * Turns a failed API call into a SvelteKit error that keeps the backend's status
- * and message, so +error.svelte can show what actually went wrong instead of a
- * blank 500. Use it for data a route cannot render without.
- */
+export async function requireUser<T extends { user: User | null; signedOutBy: string | null }>({
+  parent,
+  url,
+}: {
+  parent: () => Promise<T>;
+  url: URL;
+}): Promise<T & { user: User }> {
+  const data = await parent();
+  if (!data.user) redirect(302, loginFor(url.pathname + url.search, data.signedOutBy ?? undefined));
+  return data as T & { user: User };
+}
+
 export async function required<T>(call: Promise<T>): Promise<T> {
   try {
     return await call;
@@ -15,11 +24,6 @@ export async function required<T>(call: Promise<T>): Promise<T> {
   }
 }
 
-/**
- * For endpoints where 404 is a real answer rather than a failure — GET
- * /api/teams/mine returns it when the user is in no team. Other statuses still
- * surface as errors.
- */
 export async function optional<T>(call: Promise<T>): Promise<T | null> {
   try {
     return await call;
@@ -29,11 +33,6 @@ export async function optional<T>(call: Promise<T>): Promise<T | null> {
   }
 }
 
-/**
- * For supplementary data a route can render without — the activity feed, a member
- * profile. Returns the failure as a message instead of erroring the whole page,
- * so the UI can say what is missing rather than showing a silent blank.
- */
 export async function tolerated<T>(call: Promise<T>, fallback: T): Promise<{ value: T; error: string | null }> {
   try {
     return { value: await call, error: null };

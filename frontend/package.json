@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "test:layout": "playwright test",
-    "test:layout:docker": "docker run --rm --network host -e OCTF_USER -e OCTF_PASS -e OCTF_URL -v \"$PWD\":/app -w /app mcr.microsoft.com/playwright:v1.49.1-noble npx playwright test"
+    "test:layout:docker": "docker run --rm --network host -e OCTF_USER -e OCTF_PASS -e OCTF_URL -v \"$PWD\":/app -w /app mcr.microsoft.com/playwright:v1.49.1-noble npx playwright test",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.0",

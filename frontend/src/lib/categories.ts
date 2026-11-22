@@ -13,7 +13,6 @@ import {
   Image,
 } from "lucide-svelte";
 
-/** Category colors live in src/styles/global.css as --cat-<slug> / .cat-<slug>. */
 export const CAT_ICON: Record<string, typeof Globe> = {
   web: Globe,
   pwn: Brain,

@@ -5,7 +5,7 @@
 
   let {
     members,
-    teamScore = null,
+    teamScore,
     meId,
     captainId,
     maxTeamSize = null,
@@ -14,13 +14,11 @@
     oncaptain,
   }: {
     members: Member[];
-    /** Team total, for the contribution column. Omit to hide that column. */
-    teamScore?: number | null;
+    teamScore: number;
     meId: string;
     captainId: string | null;
     maxTeamSize?: number | null;
     onselect: (member: Member) => void;
-    /** Captain-only actions. Passing either adds an actions column. */
     onkick?: (member: Member) => void;
     oncaptain?: (member: Member) => void;
   } = $props();
@@ -28,10 +26,10 @@
   let openSlots = $derived(maxTeamSize ? Math.max(0, maxTeamSize - members.length) : 0);
 </script>
 
-<section class="rounded-lg bg-elevated border border-text/6 overflow-hidden">
+<section class="card overflow-hidden">
   <div class="flex items-center justify-between px-5 pt-4 pb-3">
-    <div class="text-[0.8125rem] font-medium text-text/80">Members</div>
-    <div class="text-[0.6875rem] text-text/30 tabular-nums">
+    <div class="card-title">Members</div>
+    <div class="text-label text-text/30 tabular-nums">
       {members.length}{maxTeamSize ? ` / ${maxTeamSize}` : ""}
     </div>
   </div>
@@ -47,15 +45,19 @@
       class="group flex items-center gap-4 px-5 py-3 border-t border-text/5 cursor-pointer
         transition-colors duration-100 hover:bg-text/3"
     >
-      <div class="avatar w-9 h-9 text-[0.8125rem] rounded-md">{initial(member.username)}</div>
+      <div class="avatar w-9 h-9 text-body rounded-md">
+        {initial(member.username)}
+      </div>
 
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2">
-          <span class="text-[0.8125rem] font-medium text-muted-text truncate">{member.username}</span>
+          <span class="text-body font-medium text-muted-text truncate">
+            {member.username}
+          </span>
           {#if member.id === captainId}
             <span
               title="Captain"
-              class="inline-flex items-center gap-1 text-[0.5625rem] tracking-[0.1em] text-pts bg-pts/10
+              class="inline-flex items-center gap-1 text-3xs tracking-[0.1em] text-pts bg-pts/10
                 border border-pts/25 py-px px-1.5"
             >
               <Crown size="0.5625rem" />
@@ -63,29 +65,29 @@
             </span>
           {/if}
           {#if isMe}
-            <span
-              class="text-[0.5625rem] tracking-[0.1em] text-accent bg-accent/12 border border-accent/28 py-px px-1.5"
-            >
+            <span class="text-3xs tracking-[0.1em] text-accent bg-accent/12 border border-accent/28 py-px px-1.5">
               you
             </span>
           {/if}
         </div>
-        <div class="text-[0.6875rem] text-text/30 mt-0.5">
+        <div class="text-label text-text/30 mt-0.5">
           {member.solves}
           {member.solves === 1 ? "solve" : "solves"}
         </div>
       </div>
 
-      {#if teamScore !== null}
-        <div class="hidden sm:flex items-center gap-2.5 w-40">
-          <div class="flex-1 h-1 rounded-full bg-background overflow-hidden">
-            <div class="h-full rounded-full bg-accent" style="width: {pct}%"></div>
-          </div>
-          <span class="text-[0.625rem] text-text/30 w-8 text-right tabular-nums">{pct}%</span>
+      <div class="hidden sm:flex items-center gap-2.5 w-40">
+        <div class="flex-1 h-1 rounded-full bg-background overflow-hidden">
+          <div class="h-full rounded-full bg-accent" style="width: {pct}%"></div>
         </div>
-      {/if}
+        <span class="text-2xs text-text/30 w-8 text-right tabular-nums">
+          {pct}%
+        </span>
+      </div>
 
-      <div class="w-14 text-right text-[0.8125rem] font-bold text-pts tabular-nums">{member.score}</div>
+      <div class="w-14 text-right text-body font-bold text-pts tabular-nums">
+        {member.score}
+      </div>
 
       {#if (onkick || oncaptain) && members.length > 1}
         <div class="flex items-center gap-1 w-24 justify-end">
@@ -134,7 +136,7 @@
       >
         <UserPlus size="0.875rem" />
       </div>
-      <span class="text-[0.75rem] text-text/25">Open slot</span>
+      <span class="text-xs text-text/25">Open slot</span>
     </div>
   {/each}
 </section>

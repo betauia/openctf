@@ -46,10 +46,10 @@
           {#if Icon}<Icon size="0.8125rem" />{/if}
         </div>
         <span
-          class="text-[0.8125rem] tracking-[0.03em] text-text/55 transition-colors duration-100
+          class="text-body tracking-[0.03em] text-text/55 transition-colors duration-100
             group-hover:text-text/80 group-[.active]:text-text/90"
         >
-          {label} <em class="not-italic text-[0.625rem] text-text/20 ml-1">{total}</em>
+          {label} <em class="not-italic text-2xs text-text/20 ml-1">{total}</em>
         </span>
       </div>
       <div class="hidden md:block h-0.5 bg-elevated ml-10 overflow-hidden">

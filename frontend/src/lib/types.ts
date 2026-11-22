@@ -4,7 +4,6 @@ export type User = {
   score: number;
   role: "user" | "maintainer" | "admin";
   rank: number;
-  avatar_url?: string | null;
 };
 
 export type Member = {
@@ -32,12 +31,13 @@ export type MyTeam = Team & {
 
 export type PublicSettings = {
   ctf_name: string;
-  ctf_start: string;
-  ctf_end: string;
+  ctf_start: string | null;
+  ctf_end: string | null;
   registration: boolean;
   max_team_size: number;
   rules: string;
   theme: ThemeId;
+  updated_at: string;
 };
 
 export type ThemeId = "uiactf" | "betauia";
@@ -45,15 +45,15 @@ export type ThemeId = "uiactf" | "betauia";
 export type Challenge = {
   id: string;
   title: string;
-  description: string | null;
-  author: string | null;
+  description?: string | null;
+  author?: string | null;
   points: number;
   category: string;
   difficulty: string;
   solves: number;
-  connection_info: string | null;
-  docker_image: string | null;
-  docker_port: number | null;
+  connection_info?: string | null;
+  docker_image?: string | null;
+  docker_port: number;
   is_visible: boolean;
 };
 
@@ -73,7 +73,7 @@ export type Solve = {
   username: string;
   team_id: string | null;
   team: string | null;
-  solved_at: string | null;
+  solved_at: string;
 };
 
 export type ActivityEntry = {
@@ -82,7 +82,7 @@ export type ActivityEntry = {
   challenge: string;
   category: string;
   points: number;
-  solved_at: string | null;
+  solved_at: string;
 };
 
 export type MemberDetail = {
@@ -91,7 +91,13 @@ export type MemberDetail = {
   score: number;
   team_id: string | null;
   team: string | null;
-  solves: { challenge_id: string; challenge: string; category: string; points: number; solved_at: string | null }[];
+  solves: {
+    challenge_id: string;
+    challenge: string;
+    category: string;
+    points: number;
+    solved_at: string;
+  }[];
 };
 
 export type Instance = {
@@ -134,4 +140,9 @@ export type SolveEvent = {
   solved_at: string;
 };
 
-export type Player = { id: string; username: string; score: number; rank: number };
+export type Player = {
+  id: string;
+  username: string;
+  score: number;
+  rank: number;
+};

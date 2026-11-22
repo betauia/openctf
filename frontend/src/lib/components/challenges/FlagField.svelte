@@ -27,6 +27,12 @@
     if (result.ok) value = "";
   }
 
+  $effect(() => {
+    if (!result) return;
+    const timer = setTimeout(() => (result = null), 3000);
+    return () => clearTimeout(timer);
+  });
+
   let buttonColor = $derived(
     result?.ok
       ? "bg-correct-dark text-white"
@@ -38,7 +44,7 @@
   );
 </script>
 
-<div class={large ? "w-full" : "flex-1 min-w-0 sm:flex-none sm:w-80"}>
+<div class="relative {large ? 'w-full' : 'flex-1 min-w-0 sm:flex-none sm:w-80'}">
   <form
     onsubmit={submit}
     data-form-type="other"
@@ -55,7 +61,7 @@
       bind:value
       oninput={() => (result = null)}
       class="flex-1 min-w-0 bg-transparent border-none outline-none p-0 font-mono text-muted-text
-        {large ? 'text-[0.8125rem]' : 'text-[0.75rem]'}"
+        {large ? 'text-body' : 'text-xs'}"
     />
     <button
       type="submit"
@@ -73,7 +79,11 @@
     </button>
   </form>
   {#if result?.message}
-    <div class="mt-1.5 text-[0.6875rem]" class:text-correct={result.ok} class:text-wrong={!result.ok}>
+    <div
+      class="text-label {large ? 'mt-1.5' : 'absolute top-full left-0 mt-1'}"
+      class:text-correct={result.ok}
+      class:text-wrong={!result.ok}
+    >
       {result.message}
     </div>
   {/if}

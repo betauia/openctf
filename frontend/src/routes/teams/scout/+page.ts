@@ -1,14 +1,17 @@
-import { redirect } from "@sveltejs/kit";
 import * as api from "@library/api";
-import { loginFor } from "@library/redirect";
-import { optional, required } from "@library/load";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ parent, url }) => {
-  const { user, signedOutBy } = await parent();
-  if (!user) redirect(302, loginFor(url.pathname, signedOutBy ?? undefined));
+  const { teams, myTeam } = await parent();
+  const id = url.searchParams.get("team") ?? teams.find((t) => t.id !== myTeam?.id)?.id;
+  const selected = teams.find((t) => t.id === id) ?? null;
 
-  const [teams, myTeam] = await Promise.all([required(api.listTeams()), optional(api.myTeam())]);
+  const scouted = selected
+    ? Promise.all([api.teamActivity(selected.id), api.compareTeam(selected.id)]).then(
+        ([entries, comparison]) => ({ entries, comparison, error: null }),
+        (e) => ({ entries: [], comparison: null, error: e instanceof Error ? e.message : "Could not load this team" }),
+      )
+    : null;
 
-  return { teams, myTeam };
+  return { selected, scouted };
 };

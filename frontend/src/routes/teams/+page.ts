@@ -1,12 +1,10 @@
-import { redirect } from "@sveltejs/kit";
 import * as api from "@library/api";
-import { loginFor } from "@library/redirect";
-import { optional, tolerated } from "@library/load";
+import { optional, requireUser, tolerated } from "@library/load";
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = async ({ parent, url }) => {
-  const { user, signedOutBy, settings } = await parent();
-  if (!user) redirect(302, loginFor(url.pathname, signedOutBy ?? undefined));
+export const load: PageLoad = async (event) => {
+  const { user, settings } = await requireUser(event);
+  const { url } = event;
 
   const memberId = url.searchParams.get("member");
   const myTeam = await optional(api.myTeam());
