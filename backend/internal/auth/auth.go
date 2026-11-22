@@ -6,6 +6,7 @@ import (
 	"context"
 	"net/http"
 	"net/mail"
+	"strings"
 	"time"
 	"unicode/utf8"
 	"uuid"
@@ -28,15 +29,16 @@ const (
 
 // Auth authenticates requests with signed session cookies and serves the /api/auth endpoints.
 type Auth struct {
-	pool     *pgxpool.Pool
-	secret   []byte
-	policies *policy.Engine
+	pool       *pgxpool.Pool
+	secret     []byte
+	policies   *policy.Engine
+	loginLimit *httpx.Limiter
 }
 
 // New returns an Auth that loads users from pool, signs session tokens with secretKey and
 // authorises requests with policies.
 func New(pool *pgxpool.Pool, secretKey string, policies *policy.Engine) *Auth {
-	return &Auth{pool: pool, secret: []byte(secretKey), policies: policies}
+	return &Auth{pool: pool, secret: []byte(secretKey), policies: policies, loginLimit: httpx.NewLimiter(10, time.Minute)}
 }
 
 // Register adds the /api/auth routes to mux.
@@ -117,6 +119,10 @@ func (a *Auth) login(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 	}
 	if !httpx.Decode(w, r, &body) {
+		return
+	}
+	if !a.loginLimit.Allow(strings.ToLower(body.Username)) {
+		httpx.Error(w, http.StatusTooManyRequests, "Too many login attempts, try again in a minute")
 		return
 	}
 	u, err := getUserByUsername(r.Context(), a.pool, body.Username)

@@ -142,6 +142,10 @@ func (h *Handler) submitFlag(w http.ResponseWriter, r *http.Request, u *auth.Use
 		auth.Deny(w, u)
 		return
 	}
+	if !h.submitLimit.Allow(u.ID.String()) {
+		httpx.Error(w, http.StatusTooManyRequests, "Too many flag submissions, try again in a minute")
+		return
+	}
 	var body struct {
 		Flag        string     `json:"flag"`
 		ChallengeID *uuid.UUID `json:"challenge_id"`
