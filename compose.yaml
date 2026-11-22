@@ -3,62 +3,64 @@
 ##################################################################################
 
 services:
-  frontend:
-    build:
-      context: ./frontend/
-      dockerfile: dockerfile
-      target: development
-    restart: on-failure
-    ports:
-      - "4000:4000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules # needed for frontend rendering
-    depends_on:
-      - backend
-    networks:
-      - openctf_network
-  
-  backend:
-    build:
-      context: ./backend/
-      dockerfile: dockerfile
-      target: development
-    ports:
-      - "8000:8000"
-    networks:
-      - openctf_network
-    volumes:
-      - ./backend:/app
-    environment:
-      ADDR: :8000
-    env_file:
-      - .env.dev
-    depends_on:
-      database:
-        condition: service_healthy
+    frontend:
+        build:
+            context: ./frontend/
+            dockerfile: dockerfile
+            target: development
+        restart: on-failure
+        ports:
+            - "4000:4000"
+        environment:
+            BACKEND_URL: http://backend:8000
+        volumes:
+            - ./frontend:/app
+            - /app/node_modules # needed for frontend rendering
+        depends_on:
+            - backend
+        networks:
+            - openctf_network
 
-  database:
-    image: postgres:17-alpine
-    restart: always
-    environment:
-      POSTGRES_USER: openctf
-      POSTGRES_DB: openctf
-    env_file:
-      - .env.dev
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U openctf -d openctf"]
-      interval: 2s
-      timeout: 5s
-      retries: 10
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    networks:
-      - openctf_network
+    backend:
+        build:
+            context: ./backend/
+            dockerfile: dockerfile
+            target: development
+        ports:
+            - "8000:8000"
+        networks:
+            - openctf_network
+        volumes:
+            - ./backend:/app
+        environment:
+            ADDR: :8000
+        env_file:
+            - .env.dev
+        depends_on:
+            database:
+                condition: service_healthy
+
+    database:
+        image: postgres:17-alpine
+        restart: always
+        environment:
+            POSTGRES_USER: openctf
+            POSTGRES_DB: openctf
+        env_file:
+            - .env.dev
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U openctf -d openctf"]
+            interval: 2s
+            timeout: 5s
+            retries: 10
+        volumes:
+            - db_data:/var/lib/postgresql/data
+        networks:
+            - openctf_network
 
 volumes:
-  db_data:
+    db_data:
 
 networks:
-  openctf_network:
-    driver: bridge
+    openctf_network:
+        driver: bridge

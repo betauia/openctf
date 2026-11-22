@@ -1,4 +1,5 @@
 <!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
+
 <a id="readme-top"></a>
 <!--
 *** Thanks for checking out the Best-README-Template. If you have a suggestion
@@ -8,8 +9,6 @@
 *** Thanks again! Now go create something AMAZING! :D
 -->
 
-
-
 <!-- PROJECT SHIELDS -->
 <!--
 *** I'm using markdown "reference style" links for readability.
@@ -18,14 +17,13 @@
 *** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
+
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 [![project_license][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
-
-
 
 <!-- PROJECT LOGO -->
 <br />
@@ -49,8 +47,6 @@
     <a href="https://github.com/betauia/openctf/issues/new?template=feature_request.md">Request Feature</a>
   </p>
 </div>
-
-
 
 <!-- TABLE OF CONTENTS -->
 <details>
@@ -76,9 +72,8 @@
   </ol>
 </details>
 
-
-
 <!-- ABOUT THE PROJECT -->
+
 ## About The Project
 
 [![Product Name Screen Shot][product-screenshot]](https://example.com)
@@ -87,22 +82,19 @@ Here's a blank template to get started. To avoid retyping too much info, do a se
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
 ### Built With
 
-* [![Astro][Astro]][Astro-url]
-* [![TypeScript][TypeScript]][TypeScript-url]
-* [![Go][Go]][Go-url]
-* [![PostgreSQL][PostgreSQL]][PostgreSQL-url]
-* [![Docker][Docker]][Docker-url]
-* [![Kubernetes][Kubernetes]][Kubernetes-url]
+- [![SvelteKit][SvelteKit]][SvelteKit-url]
+- [![TypeScript][TypeScript]][TypeScript-url]
+- [![Go][Go]][Go-url]
+- [![PostgreSQL][PostgreSQL]][PostgreSQL-url]
+- [![Docker][Docker]][Docker-url]
+- [![Kubernetes][Kubernetes]][Kubernetes-url]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
 <!-- GETTING STARTED -->
+
 ## Getting Started
 
 This is an example of how you may give instructions on setting up your project locally.
@@ -110,31 +102,34 @@ To get a local copy up and running follow these simple example steps.
 
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
-* 
+This is an example of how to list things you need to use the software and how to install them. *
 
 ### Installation
 
 #### Docker
+
 1. Clone the repo
-  ```sh
-  git clone https://github.com/betauia/openctf.git
-  ```
+
+```sh
+git clone https://github.com/betauia/openctf.git
+```
+
 2. Run docker compose. Development values are read from `.env.dev`; see `.env.example` for what each one does.
-  ```sh
-  docker compose up
-  ```
-  The frontend is served at http://localhost:4000 and the backend at http://localhost:8000.
+
+```sh
+docker compose up
+```
+
+The frontend is served at http://localhost:4000 and the backend at http://localhost:8000.
 
 #### Kubernetes
-Will be supported in the future.
 
+Will be supported in the future.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
 <!-- USAGE EXAMPLES -->
+
 ## Usage
 
 Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
@@ -143,9 +138,8 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
 <!-- CONTRIBUTING -->
+
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
@@ -167,18 +161,16 @@ Don't forget to give the project a star! Thanks again!
   <img src="https://contrib.rocks/image?repo=betauia/openctf" alt="contrib.rocks image" />
 </a>
 
-
-
 <!-- LICENSE -->
+
 ## License
 
 Distributed under the MIT license. See `LICENSE` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
 <!-- CONTACT -->
+
 ## Contact
 
 BetaSEC - betasec@betauia.net
@@ -187,10 +179,9 @@ Project Link: [https://github.com/betauia/openctf](https://github.com/betauia/op
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+
 [contributors-shield]: https://img.shields.io/github/contributors/betauia/openctf.svg?style=for-the-badge
 [contributors-url]: https://github.com/betauia/openctf/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/betauia/openctf.svg?style=for-the-badge
@@ -203,23 +194,19 @@ Project Link: [https://github.com/betauia/openctf](https://github.com/betauia/op
 [license-url]: https://github.com/betauia/openctf/blob/master/LICENSE
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://no.linkedin.com/company/betauia
-[product-screenshot]: images/screenshot.png
+[product-screenshot]: images/challenges.png
+
 <!-- Shields.io badges. You can a comprehensive list with many more badges at: https://github.com/inttter/md-badges -->
 
-[Astro]: https://img.shields.io/badge/Astro-BC52EE?style=for-the-badge&logo=astro&logoColor=white
-[Astro-url]: https://astro.build/
-
+[SvelteKit]: https://img.shields.io/badge/SvelteKit-FF3E00?style=for-the-badge&logo=svelte&logoColor=white
+[SvelteKit-url]: https://svelte.dev/docs/kit
 [TypeScript]: https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white
 [TypeScript-url]: https://www.typescriptlang.org/
-
 [Go]: https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white
 [Go-url]: https://go.dev/
-
 [PostgreSQL]: https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white
 [PostgreSQL-url]: https://www.postgresql.org/
-
 [Docker]: https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white
 [Docker-url]: https://www.docker.com/
-
 [Kubernetes]: https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white
 [Kubernetes-url]: https://kubernetes.io/

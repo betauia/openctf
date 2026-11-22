@@ -13,6 +13,7 @@ type Config struct {
 	SecretKey     string // signs session cookies
 	AdminEmail    string // email for the admin user
 	AdminPassword string // default password for the admin user
+	FilesDir      string // directory challenge files are stored in
 	PolicyFile    string // PBAC policy JSON, relative to the working directory
 }
 
@@ -26,6 +27,7 @@ func Load() (Config, error) {
 		AdminEmail:    os.Getenv("ADMIN_EMAIL"),
 		AdminPassword: os.Getenv("ADMIN_PASSWORD"),
 		PolicyFile:    env("POLICY_FILE", "internal/policies/default.json"),
+		FilesDir:      env("FILES_DIR", "./data/files"),
 	}
 	if cfg.DatabaseURL == "" {
 		return cfg, errors.New("DATABASE_URL must be set")

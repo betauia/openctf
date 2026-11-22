@@ -1,8 +1,9 @@
 # build output
+build/
 dist/
 
 # generated types
-.astro/
+.svelte-kit/
 
 # dependencies
 node_modules/
@@ -26,3 +27,8 @@ pnpm-debug.log*
 
 # prettier stuff
 .prettierrc
+
+# playwright
+tests/.auth.json
+test-results/
+playwright-report/
