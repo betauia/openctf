@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { CAT_ICON } from "@library/categories";
-  import type { MemberDetail } from "@library/types";
-  import { fmt, initial, timeAgo } from "@library/utils";
+  import { CAT_ICON } from "#library/categories.js";
+  import type { MemberDetail } from "#library/types.js";
+  import { fmt, initial, timeAgo } from "#library/utils.js";
   import { ArrowLeft, ArrowRight, Users } from "lucide-svelte";
 
   let { member }: { member: MemberDetail } = $props();

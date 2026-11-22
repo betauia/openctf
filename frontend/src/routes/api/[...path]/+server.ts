@@ -1,36 +1,31 @@
-import { env } from "$env/dynamic/private";
-import { json } from "@sveltejs/kit";
+import { error, json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 
-const BACKEND_URL = env.BACKEND_URL ?? "http://backend:8000";
+const BACKEND_URL = process.env.BACKEND_URL ?? "http://backend:8000";
 
 const FORWARD_TO_BACKEND = ["content-type", "accept"];
 const FORWARD_TO_BROWSER = ["content-type", "content-disposition"];
+const AUTH_COOKIES = ["session", "refresh"];
 
-function parseCookieValue(setCookie: string): { name: string; value: string } | null {
-  const eq = setCookie.indexOf("=");
-  if (eq < 0) return null;
-  const semi = setCookie.indexOf(";", eq);
-  return { name: setCookie.slice(0, eq), value: setCookie.slice(eq + 1, semi < 0 ? undefined : semi) };
-}
+const proxy: RequestHandler = async ({ request, params, url, cookies }) => {
+  const target = new URL(`${BACKEND_URL}/api/${params.path}${url.search}`);
+  if (!target.pathname.startsWith("/api/")) error(404, "Not found");
 
-const proxy: RequestHandler = async ({ request, params, url }) => {
   const headers = new Headers();
   for (const name of FORWARD_TO_BACKEND) {
     const value = request.headers.get(name);
     if (value) headers.set(name, value);
   }
 
-  const session = request.headers.get("x-session");
-  const refresh = request.headers.get("x-refresh");
-  const parts: string[] = [];
-  if (session) parts.push(`session=${session}`);
-  if (refresh) parts.push(`refresh=${refresh}`);
+  const parts = AUTH_COOKIES.flatMap((name) => {
+    const value = cookies.get(name);
+    return value ? [`${name}=${value}`] : [];
+  });
   if (parts.length) headers.set("cookie", parts.join("; "));
 
   let response: Response;
   try {
-    response = await fetch(`${BACKEND_URL}/api/${params.path}${url.search}`, {
+    response = await fetch(target, {
       method: request.method,
       headers,
       body: request.method === "GET" || request.method === "HEAD" ? undefined : await request.arrayBuffer(),
@@ -47,10 +42,9 @@ const proxy: RequestHandler = async ({ request, params, url }) => {
   }
 
   for (const raw of response.headers.getSetCookie()) {
-    const parsed = parseCookieValue(raw);
-    if (!parsed) continue;
-    if (parsed.name === "session") out.set("x-session", parsed.value);
-    if (parsed.name === "refresh") out.set("x-refresh", parsed.value);
+    if (AUTH_COOKIES.includes(raw.slice(0, raw.indexOf("=")))) {
+      out.append("set-cookie", url.protocol === "https:" ? `${raw}; Secure` : raw);
+    }
   }
 
   return new Response(response.body, { status: response.status, headers: out });

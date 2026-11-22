@@ -1,10 +1,10 @@
 <script lang="ts">
-  import CopyButton from "@components/CopyButton.svelte";
-  import Activity from "@components/teams/Activity.svelte";
-  import MemberTable from "@components/teams/MemberTable.svelte";
-  import { CAT_ICON } from "@library/categories";
-  import type { ActivityEntry, Member, MyTeam, Progress, User } from "@library/types";
-  import { fmt, initial } from "@library/utils";
+  import CopyButton from "#components/CopyButton.svelte";
+  import Activity from "#components/teams/Activity.svelte";
+  import MemberTable from "#components/teams/MemberTable.svelte";
+  import { CAT_ICON } from "#library/categories.js";
+  import type { ActivityEntry, Member, MyTeam, Progress, User } from "#library/types.js";
+  import { fmt, initial } from "#library/utils.js";
   import { ArrowRight, Check, LogOut, Pencil, RefreshCw, Telescope, Trophy, Users } from "lucide-svelte";
   import { fly } from "svelte/transition";
 

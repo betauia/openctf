@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { CAT_ICON } from "@library/categories";
-  import type { Challenge } from "@library/types";
-  import { fmt } from "@library/utils";
+  import { CAT_ICON } from "#library/categories.js";
+  import type { Challenge } from "#library/types.js";
+  import { fmt } from "#library/utils.js";
   import { Hash } from "lucide-svelte";
 
   let {

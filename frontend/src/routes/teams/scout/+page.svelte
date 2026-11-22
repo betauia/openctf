@@ -1,9 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { navigating } from "$app/state";
-  import Activity from "@components/teams/Activity.svelte";
-  import { CAT_ICON } from "@library/categories";
-  import { fmt, initial } from "@library/utils";
+  import Activity from "#components/teams/Activity.svelte";
+  import { CAT_ICON } from "#library/categories.js";
+  import { fmt, initial } from "#library/utils.js";
   import { ArrowLeft, ArrowRight, Search, Trophy, Users } from "lucide-svelte";
   import type { PageProps } from "./$types";
 
@@ -24,7 +24,7 @@
   }
 
   function pick(id: string) {
-    goto(`/teams/scout?team=${id}`, { noScroll: true, keepFocus: true });
+    goto(`/teams/scout?team=${id}`, { reset: false });
   }
 </script>
 

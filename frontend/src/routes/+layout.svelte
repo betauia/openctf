@@ -1,15 +1,15 @@
 <script lang="ts">
   import { goto, invalidateAll } from "$app/navigation";
   import { page } from "$app/state";
-  import betaLogo from "@assets/beta.svg?raw";
-  import logo from "@assets/logo.png";
-  import * as api from "@library/api";
-  import { applyTheme } from "@library/themes";
-  import type { SolveEvent } from "@library/types";
-  import { initial } from "@library/utils";
+  import betaLogo from "#assets/beta.svg?raw";
+  import logo from "#assets/logo.png";
+  import * as api from "#library/api.js";
+  import { applyTheme } from "#library/themes.js";
+  import type { SolveEvent } from "#library/types.js";
+  import { initial } from "#library/utils.js";
   import { fly } from "svelte/transition";
   import { LogIn, LogOut } from "lucide-svelte";
-  import "@styles/global.css";
+  import "#styles/global.css";
 
   let { children, data } = $props();
   let user = $derived(data.user);
@@ -70,7 +70,7 @@
 
   async function logout() {
     await api.logout();
-    await goto("/", { invalidateAll: true });
+    await goto("/", { refreshAll: true });
   }
 </script>
 

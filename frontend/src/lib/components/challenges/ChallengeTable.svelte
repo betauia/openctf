@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { CAT_ICON } from "@library/categories";
-  import type { Challenge } from "@library/types";
-  import { fmt, pad2 } from "@library/utils";
+  import { CAT_ICON } from "#library/categories.js";
+  import type { Challenge } from "#library/types.js";
+  import { fmt, pad2 } from "#library/utils.js";
   import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-svelte";
 
   type Row = Challenge & { n: number };

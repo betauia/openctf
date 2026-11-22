@@ -1,10 +1,10 @@
 <script lang="ts">
-  import CopyButton from "@components/CopyButton.svelte";
-  import FlagField, { type FlagResult } from "@components/challenges/FlagField.svelte";
-  import * as api from "@library/api";
-  import { CAT_ICON } from "@library/categories";
-  import type { Challenge, ChallengeFile, Solve } from "@library/types";
-  import { fmt, initial, timeAgo } from "@library/utils";
+  import CopyButton from "#components/CopyButton.svelte";
+  import FlagField, { type FlagResult } from "#components/challenges/FlagField.svelte";
+  import * as api from "#library/api.js";
+  import { CAT_ICON } from "#library/categories.js";
+  import type { Challenge, ChallengeFile, Solve } from "#library/types.js";
+  import { fmt, initial, timeAgo } from "#library/utils.js";
   import { Check, ChevronDown, ChevronUp, Download, File, Play, Square, User, Users, X } from "lucide-svelte";
 
   let {

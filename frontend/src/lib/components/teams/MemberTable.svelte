@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { Member } from "@library/types";
-  import { initial } from "@library/utils";
+  import type { Member } from "#library/types.js";
+  import { initial } from "#library/utils.js";
   import { Crown, UserPlus, X } from "lucide-svelte";
 
   let {

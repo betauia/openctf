@@ -1,12 +1,12 @@
 <script lang="ts">
   import { invalidateAll, replaceState } from "$app/navigation";
   import { page } from "$app/state";
-  import ChallengeModal from "@components/challenges/ChallengeModal.svelte";
-  import ChallengeTable from "@components/challenges/ChallengeTable.svelte";
-  import FlagField, { type FlagResult } from "@components/challenges/FlagField.svelte";
-  import Sidebar from "@components/challenges/Sidebar.svelte";
-  import StatCards from "@components/challenges/StatCards.svelte";
-  import * as api from "@library/api";
+  import ChallengeModal from "#components/challenges/ChallengeModal.svelte";
+  import ChallengeTable from "#components/challenges/ChallengeTable.svelte";
+  import FlagField, { type FlagResult } from "#components/challenges/FlagField.svelte";
+  import Sidebar from "#components/challenges/Sidebar.svelte";
+  import StatCards from "#components/challenges/StatCards.svelte";
+  import * as api from "#library/api.js";
   import { Search } from "lucide-svelte";
   import type { PageProps } from "./$types";
 
@@ -42,7 +42,7 @@
   function close() {
     openId = null;
     if (page.url.searchParams.has("open")) {
-      const url = new URL(page.url);
+      const url = new URL(page.url.href);
       url.searchParams.delete("open");
       replaceState(url, {});
     }

@@ -1,9 +1,9 @@
 <script lang="ts">
   import { goto, invalidateAll } from "$app/navigation";
-  import MemberDetail from "@components/teams/MemberDetail.svelte";
-  import TeamTab from "@components/teams/TeamTab.svelte";
-  import * as api from "@library/api";
-  import type { Member } from "@library/types";
+  import MemberDetail from "#components/teams/MemberDetail.svelte";
+  import TeamTab from "#components/teams/TeamTab.svelte";
+  import * as api from "#library/api.js";
+  import type { Member } from "#library/types.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();

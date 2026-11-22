@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { ActivityEntry } from "@library/types";
-  import { initial, timeAgo } from "@library/utils";
+  import type { ActivityEntry } from "#library/types.js";
+  import { initial, timeAgo } from "#library/utils.js";
   import { ArrowRight } from "lucide-svelte";
 
   let { entries, error = null }: { entries: ActivityEntry[]; error?: string | null } = $props();
