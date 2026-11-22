@@ -133,7 +133,7 @@ type solve struct {
 }
 
 func listSolves(ctx context.Context, q database.Querier, challengeID uuid.UUID) ([]solve, error) {
-	rows, err := q.Query(ctx, `SELECT u.id, u.username, t.id, t.name, s.solved_at FROM solves s JOIN users u ON u.id = s.user_id LEFT JOIN teams t ON t.id = u.team_id AND NOT t.hidden WHERE s.challenge_id = $1 ORDER BY s.solved_at`, challengeID)
+	rows, err := q.Query(ctx, `SELECT u.id, u.username, t.id, t.name, s.solved_at FROM solves s JOIN users u ON u.id = s.user_id LEFT JOIN teams t ON t.id = s.team_id AND NOT t.hidden WHERE s.challenge_id = $1 ORDER BY s.solved_at`, challengeID)
 	if err != nil {
 		return nil, err
 	}
@@ -157,8 +157,8 @@ func findChallengeByFlag(ctx context.Context, q database.Querier, flag string, c
 	return scanChallenge(q.QueryRow(ctx, "SELECT "+challengeColumns+" FROM challenges c WHERE c.is_visible = TRUE AND c.flags @> jsonb_build_array($1::text)", flag))
 }
 
-func recordSolve(ctx context.Context, q database.Querier, userID, challengeID uuid.UUID, teamID *uuid.UUID) (bool, error) {
-	tag, err := q.Exec(ctx, `INSERT INTO solves (user_id, challenge_id) SELECT $1, $2 WHERE NOT EXISTS (SELECT 1 FROM solves s JOIN users m ON m.id = s.user_id WHERE s.challenge_id = $2 AND m.team_id = $3) ON CONFLICT DO NOTHING`, userID, challengeID, teamID)
+func recordSolve(ctx context.Context, q database.Querier, userID, challengeID uuid.UUID) (bool, error) {
+	tag, err := q.Exec(ctx, `INSERT INTO solves (user_id, team_id, challenge_id) SELECT u.id, u.team_id, $2 FROM users u WHERE u.id = $1 AND u.team_id IS NOT NULL ON CONFLICT DO NOTHING`, userID, challengeID)
 	return tag.RowsAffected() == 1, err
 }
 

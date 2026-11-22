@@ -32,7 +32,7 @@ type member struct {
 	Solves   int       `json:"solves"`
 }
 
-const teamScore = `(SELECT COALESCE(SUM(u.score), 0) FROM users u WHERE u.team_id = t.id)`
+const teamScore = `(SELECT COALESCE(SUM(c.points), 0) FROM solves s JOIN challenges c ON c.id = s.challenge_id WHERE s.team_id = t.id)`
 
 const teamColumns = `t.id, t.name, t.captain_id, t.invite_code, t.banned, t.hidden,
 	(SELECT COUNT(*) FROM users u WHERE u.team_id = t.id), ` + teamScore
@@ -99,7 +99,7 @@ func listActivity(ctx context.Context, q database.Querier, teamID uuid.UUID) ([]
 		FROM solves s
 		JOIN users u ON u.id = s.user_id
 		JOIN challenges c ON c.id = s.challenge_id AND c.is_visible
-		WHERE u.team_id = $1
+		WHERE s.team_id = $1
 		ORDER BY s.solved_at DESC`, teamID)
 	if err != nil {
 		return nil, err
@@ -201,7 +201,7 @@ type solvedChallenge struct {
 }
 
 func listTeamSolves(ctx context.Context, q database.Querier, teamID uuid.UUID) ([]solvedChallenge, error) {
-	rows, err := q.Query(ctx, `SELECT DISTINCT c.id, c.title, c.category, c.points FROM solves s JOIN users u ON u.id = s.user_id JOIN challenges c ON c.id = s.challenge_id WHERE c.is_visible AND u.team_id = $1`, teamID)
+	rows, err := q.Query(ctx, `SELECT c.id, c.title, c.category, c.points FROM solves s JOIN challenges c ON c.id = s.challenge_id WHERE c.is_visible AND s.team_id = $1`, teamID)
 	if err != nil {
 		return nil, err
 	}
@@ -329,7 +329,7 @@ func scoreSeries(ctx context.Context, q database.Querier, teams []team) ([]teamS
 		index[t.ID] = i
 	}
 
-	rows, err := q.Query(ctx, `SELECT u.team_id, s.solved_at, c.points FROM solves s JOIN users u ON u.id = s.user_id JOIN challenges c ON c.id = s.challenge_id WHERE c.is_visible AND u.team_id = ANY($1) ORDER BY s.solved_at`, ids)
+	rows, err := q.Query(ctx, `SELECT s.team_id, s.solved_at, c.points FROM solves s JOIN challenges c ON c.id = s.challenge_id WHERE c.is_visible AND s.team_id = ANY($1) ORDER BY s.solved_at`, ids)
 	if err != nil {
 		return nil, err
 	}

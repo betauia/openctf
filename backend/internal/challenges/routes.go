@@ -176,7 +176,7 @@ func (h *Handler) submitFlag(w http.ResponseWriter, r *http.Request, u *auth.Use
 
 	var points int
 	err = pgx.BeginFunc(ctx, h.pool, func(tx pgx.Tx) error {
-		solved, err := recordSolve(ctx, tx, u.ID, c.ID, u.TeamID)
+		solved, err := recordSolve(ctx, tx, u.ID, c.ID)
 		if err != nil || !solved {
 			return err
 		}

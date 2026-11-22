@@ -56,9 +56,11 @@ CREATE TABLE challenge_files (
 CREATE TABLE solves (
     id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id      UUID        NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    team_id      UUID        REFERENCES teams (id) ON DELETE SET NULL,
     challenge_id UUID        NOT NULL REFERENCES challenges (id) ON DELETE CASCADE,
     solved_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (user_id, challenge_id)
+    UNIQUE (user_id, challenge_id),
+    UNIQUE (team_id, challenge_id)
 );
 CREATE INDEX solves_challenge_id_idx ON solves (challenge_id);
 
