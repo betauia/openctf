@@ -203,6 +203,27 @@
         ]
       },
       {
+        "sid": "Login",
+        "effect": "allow",
+        "subjects": ["role:user", "role:maintainer", "role:admin"],
+        "actions": ["user:login"],
+        "resources": ["/api/auth/login"]
+      },
+      {
+        "sid": "SelfAuth",
+        "effect": "allow",
+        "subjects": ["role:user", "role:maintainer", "role:admin"],
+        "actions": ["user:read_private", "user:update"],
+        "resources": ["/api/auth/me", "/api/auth/password"]
+      },
+      {
+        "sid": "LiveFeed",
+        "effect": "allow",
+        "subjects": ["role:user", "role:maintainer", "role:admin"],
+        "actions": ["challenge:view_solves"],
+        "resources": ["/api/live"]
+      },
+      {
         "sid": "TeamCreate",
         "effect": "allow",
         "subjects": ["role:user", "role:maintainer", "role:admin"],

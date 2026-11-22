@@ -50,8 +50,8 @@ func (a *Auth) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/auth/login", a.login)
 	mux.HandleFunc("POST /api/auth/refresh", a.refresh)
 	mux.HandleFunc("POST /api/auth/logout", a.logout)
-	mux.HandleFunc("GET /api/auth/me", a.Require(a.me))
-	mux.HandleFunc("PUT /api/auth/password", a.Require(a.changePassword))
+	mux.HandleFunc("GET /api/auth/me", a.Authorise(policy.UserReadPrivate, a.me))
+	mux.HandleFunc("PUT /api/auth/password", a.Authorise(policy.UserUpdate, a.changePassword))
 	mux.HandleFunc("GET /api/auth/solves", a.Optional(a.solves))
 }
 
@@ -154,6 +154,15 @@ func (a *Auth) login(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusUnauthorized, "Invalid username or password")
 		return
 	}
+	allowed, err := a.IsAllowed(r, &u, policy.UserLogin, policy.Resource{})
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	if !allowed {
+		Deny(w, &u)
+		return
+	}
 	if err := a.startSession(w, r, u.ID); err != nil {
 		httpx.InternalError(w, r, err)
 		return
@@ -198,6 +207,21 @@ func (a *Auth) refresh(w http.ResponseWriter, r *http.Request) {
 		httpx.InternalError(w, r, err)
 		return
 	}
+	u, err := getSessionUser(ctx, a.pool, userID, familyID)
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	allowed, err := a.IsAllowed(r, &u, policy.UserLogin, policy.Resource{})
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	if !allowed {
+		a.clearSession(w)
+		Deny(w, &u)
+		return
+	}
 	a.setSession(w, userID, familyID)
 	a.setRefreshCookie(w, token)
 	httpx.JSON(w, http.StatusOK, map[string]bool{"ok": true})
@@ -219,7 +243,7 @@ func (a *Auth) logout(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-func (a *Auth) me(w http.ResponseWriter, r *http.Request, u User) {
+func (a *Auth) me(w http.ResponseWriter, r *http.Request, u *User) {
 	rank, err := userRank(r.Context(), a.pool, u.Score)
 	if err != nil {
 		httpx.InternalError(w, r, err)
@@ -237,7 +261,7 @@ func (a *Auth) me(w http.ResponseWriter, r *http.Request, u User) {
 // changePassword replaces the user's password after checking the current one. Every other
 // device is logged out: their refresh tokens are revoked, which also ends their sessions.
 // The caller gets a fresh session.
-func (a *Auth) changePassword(w http.ResponseWriter, r *http.Request, u User) {
+func (a *Auth) changePassword(w http.ResponseWriter, r *http.Request, u *User) {
 	var body struct {
 		CurrentPassword string `json:"current_password"`
 		NewPassword     string `json:"new_password"`

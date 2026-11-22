@@ -9,6 +9,7 @@ import (
 
 	"github.com/betauia/openctf/backend/internal/auth"
 	"github.com/betauia/openctf/backend/internal/httpx"
+	"github.com/betauia/openctf/backend/internal/policy"
 )
 
 type Hub struct {
@@ -22,7 +23,7 @@ func New(a *auth.Auth) *Hub {
 }
 
 func (h *Hub) Register(mux *http.ServeMux) {
-	mux.HandleFunc("GET /api/live", h.a.Require(h.stream))
+	mux.HandleFunc("GET /api/live", h.a.Authorise(policy.ChallengeViewSolves, h.stream))
 }
 
 func (h *Hub) Publish(event string, data any) {
@@ -41,7 +42,7 @@ func (h *Hub) Publish(event string, data any) {
 	}
 }
 
-func (h *Hub) stream(w http.ResponseWriter, r *http.Request, u auth.User) {
+func (h *Hub) stream(w http.ResponseWriter, r *http.Request, _ *auth.User) {
 	rc := http.NewResponseController(w)
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
