@@ -66,16 +66,17 @@ func (a *Auth) Subject(ctx context.Context, u *User) (policy.Subject, error) {
 }
 
 // Env returns the request context the policies read: the CTF phase ("not_started", "running"
-// or "ended"), its start and end as Unix seconds, the current time, the max team size and the
-// number of admins.
+// or "ended"), its start and end as Unix seconds, the current time, the max team size, whether
+// registration is open and the number of admins.
 func (a *Auth) Env(ctx context.Context) (map[string]any, error) {
 	var start, end time.Time
 	var maxTeamSize, adminCount int
+	var registration bool
 	err := a.pool.QueryRow(ctx, `
-		SELECT ctf_start, ctf_end, max_team_size,
+		SELECT ctf_start, ctf_end, max_team_size, registration,
 		       (SELECT COUNT(*) FROM users WHERE role = 'admin')
 		FROM settings`,
-	).Scan(&start, &end, &maxTeamSize, &adminCount)
+	).Scan(&start, &end, &maxTeamSize, &registration, &adminCount)
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +94,7 @@ func (a *Auth) Env(ctx context.Context) (map[string]any, error) {
 		"ctf_end":       end.Unix(),
 		"now":           now.Unix(),
 		"max_team_size": maxTeamSize,
+		"registration":  registration,
 		"admin_count":   adminCount,
 	}, nil
 }

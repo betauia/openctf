@@ -46,7 +46,7 @@ func New(pool *pgxpool.Pool, secretKey string, policies *policy.Engine) *Auth {
 
 // Register adds the /api/auth routes to mux.
 func (a *Auth) Register(mux *http.ServeMux) {
-	mux.HandleFunc("POST /api/auth/register", a.register)
+	mux.HandleFunc("POST /api/auth/register", a.Optional(a.register))
 	mux.HandleFunc("POST /api/auth/login", a.login)
 	mux.HandleFunc("POST /api/auth/refresh", a.refresh)
 	mux.HandleFunc("POST /api/auth/logout", a.logout)
@@ -60,7 +60,16 @@ type userRef struct {
 	Username string    `json:"username"`
 }
 
-func (a *Auth) register(w http.ResponseWriter, r *http.Request) {
+func (a *Auth) register(w http.ResponseWriter, r *http.Request, u *User) {
+	allowed, err := a.IsAllowed(r, u, policy.UserRegister, policy.Resource{})
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	if !allowed {
+		httpx.Error(w, http.StatusForbidden, "Registration is closed")
+		return
+	}
 	var body struct {
 		Username string `json:"username"`
 		Email    string `json:"email"`
@@ -104,7 +113,7 @@ func (a *Auth) register(w http.ResponseWriter, r *http.Request) {
 		httpx.InternalError(w, r, err)
 		return
 	}
-	u, err := createUser(ctx, a.pool, uuid.NewV7(), body.Username, body.Email, hash)
+	created, err := createUser(ctx, a.pool, uuid.NewV7(), body.Username, body.Email, hash)
 	if database.IsUniqueViolation(err) { // lost a race with another registration
 		httpx.Error(w, http.StatusBadRequest, "Username or email already taken")
 		return
@@ -113,11 +122,11 @@ func (a *Auth) register(w http.ResponseWriter, r *http.Request) {
 		httpx.InternalError(w, r, err)
 		return
 	}
-	if err := a.startSession(w, r, u.ID); err != nil {
+	if err := a.startSession(w, r, created.ID); err != nil {
 		httpx.InternalError(w, r, err)
 		return
 	}
-	httpx.JSON(w, http.StatusOK, userRef{ID: u.ID, Username: u.Username})
+	httpx.JSON(w, http.StatusOK, userRef{ID: created.ID, Username: created.Username})
 }
 
 func (a *Auth) login(w http.ResponseWriter, r *http.Request) {

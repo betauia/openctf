@@ -98,6 +98,14 @@
         "subjects": ["*"],
         "actions": ["user:read_public", "team:read_public"],
         "resources": ["/api/users/*", "/api/teams", "/api/teams/*"]
+      },
+      {
+        "sid": "Registration",
+        "effect": "allow",
+        "subjects": ["*"],
+        "actions": ["user:register"],
+        "resources": ["/api/auth/register"],
+        "conditions": [{ "operator": "Equals", "key": "context.registration", "value": true }]
       }
     ]
   },
