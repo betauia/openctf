@@ -7,6 +7,7 @@ import (
 
 	"github.com/betauia/openctf/backend/internal/auth/sessions"
 	"github.com/betauia/openctf/backend/internal/database"
+	"github.com/betauia/openctf/backend/internal/database/dbgen"
 	"github.com/betauia/openctf/backend/internal/httpx"
 	"github.com/betauia/openctf/backend/internal/policy"
 )
@@ -49,18 +50,14 @@ func (a *Auth) Subject(ctx context.Context, u *User) (policy.Subject, error) {
 	attrs["role"] = u.Role
 	attrs["banned"] = u.Banned
 	if u.TeamID != nil {
-		var isCaptain, teamBanned bool
-		// COALESCE: captain_id is NULL when the team has no captain.
-		err := a.pool.QueryRow(ctx,
-			`SELECT COALESCE(captain_id = $2, false), banned FROM teams WHERE id = $1`, *u.TeamID, u.ID,
-		).Scan(&isCaptain, &teamBanned)
+		team, err := dbgen.New(a.pool).GetSubjectTeam(ctx, dbgen.GetSubjectTeamParams{UserID: u.ID, TeamID: *u.TeamID})
 		if err != nil {
 			return policy.Subject{}, err
 		}
 		attrs["has_team"] = true
 		attrs["team_id"] = u.TeamID.String()
-		attrs["is_captain"] = isCaptain
-		attrs["team_banned"] = teamBanned
+		attrs["is_captain"] = team.IsCaptain
+		attrs["team_banned"] = team.Banned
 	}
 	return policy.Subject{ID: u.ID.String(), Roles: []string{u.Role}, Attributes: attrs}, nil
 }
@@ -69,17 +66,11 @@ func (a *Auth) Subject(ctx context.Context, u *User) (policy.Subject, error) {
 // or "ended"), its start and end as Unix seconds, the current time, the max team size, whether
 // registration is open and the number of admins.
 func (a *Auth) Env(ctx context.Context) (map[string]any, error) {
-	var start, end time.Time
-	var maxTeamSize, adminCount int
-	var registration bool
-	err := a.pool.QueryRow(ctx, `
-		SELECT ctf_start, ctf_end, max_team_size, registration,
-		       (SELECT COUNT(*) FROM users WHERE role = 'admin')
-		FROM settings`,
-	).Scan(&start, &end, &maxTeamSize, &registration, &adminCount)
+	env, err := dbgen.New(a.pool).GetPolicyEnv(ctx)
 	if err != nil {
 		return nil, err
 	}
+	start, end := env.CtfStart, env.CtfEnd
 	now := time.Now()
 	phase := "running"
 	switch {
@@ -93,9 +84,9 @@ func (a *Auth) Env(ctx context.Context) (map[string]any, error) {
 		"ctf_start":     start.Unix(),
 		"ctf_end":       end.Unix(),
 		"now":           now.Unix(),
-		"max_team_size": maxTeamSize,
-		"registration":  registration,
-		"admin_count":   adminCount,
+		"max_team_size": int(env.MaxTeamSize),
+		"registration":  env.Registration,
+		"admin_count":   int(env.AdminCount),
 	}, nil
 }
 

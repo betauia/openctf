@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/betauia/openctf/backend/internal/auth"
+	"github.com/betauia/openctf/backend/internal/database/dbgen"
 	"github.com/betauia/openctf/backend/internal/httpx"
 	"github.com/betauia/openctf/backend/internal/policy"
 )
@@ -47,7 +48,7 @@ func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request, u *auth
 		CTFStart     *time.Time `json:"ctf_start"`
 		CTFEnd       *time.Time `json:"ctf_end"`
 		Registration *bool      `json:"registration"`
-		MaxTeamSize  *int       `json:"max_team_size"`
+		MaxTeamSize  *int32     `json:"max_team_size"`
 		Rules        *string    `json:"rules"`
 		Theme        *string    `json:"theme"`
 	}
@@ -76,10 +77,12 @@ func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request, u *auth
 	var badWindow bool
 	err := pgx.BeginFunc(ctx, h.pool, func(tx pgx.Tx) error {
 		// Lock the row so the start/end check sees the values it is checked against.
-		var start, end time.Time
-		if err := tx.QueryRow(ctx, `SELECT ctf_start, ctf_end FROM settings FOR UPDATE`).Scan(&start, &end); err != nil {
+		q := dbgen.New(tx)
+		window, err := q.LockSettingsWindow(ctx)
+		if err != nil {
 			return err
 		}
+		start, end := window.CtfStart, window.CtfEnd
 		if body.CTFStart != nil {
 			start = *body.CTFStart
 		}
@@ -90,14 +93,13 @@ func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request, u *auth
 			badWindow = true
 			return nil
 		}
-		_, err := tx.Exec(ctx, `
-			UPDATE settings SET
-				ctf_name      = COALESCE($1, ctf_name),
-				ctf_start     = $2,
-				ctf_end       = $3,
-				registration  = COALESCE($4, registration),
-				max_team_size = COALESCE($5, max_team_size)`,
-			body.CTFName, start, end, body.Registration, body.MaxTeamSize)
+		err = q.UpdateSettings(ctx, dbgen.UpdateSettingsParams{
+			CtfName:      body.CTFName,
+			CtfStart:     start,
+			CtfEnd:       end,
+			Registration: body.Registration,
+			MaxTeamSize:  body.MaxTeamSize,
+		})
 		if err != nil {
 			return err
 		}

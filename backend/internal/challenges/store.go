@@ -6,8 +6,8 @@ import (
 	"uuid"
 
 	"github.com/betauia/openctf/backend/internal/database"
+	"github.com/betauia/openctf/backend/internal/database/dbgen"
 	"github.com/betauia/openctf/backend/internal/policy"
-	"github.com/jackc/pgx/v5"
 )
 
 type flag struct {
@@ -42,9 +42,6 @@ type challengeFile struct {
 	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
-const challengeColumns = `c.id,c.title,c.description,c.author,c.points,c.category,c.difficulty,c.solves,c.connection_info,c.docker_image,c.docker_port,c.is_visible,c.created_by_id,c.uploaded_at`
-const challengeFileColumns = `cf.id,cf.challenge_id,cf.filename,cf.filepath,cf.uploaded_at`
-
 func (c challenge) resource() policy.Resource {
 	owner := ""
 	if c.CreatedByID != nil {
@@ -53,75 +50,80 @@ func (c challenge) resource() policy.Resource {
 	return policy.Resource{ID: c.ID.String(), Attributes: map[string]any{"visible": c.IsVisible, "owner_id": owner}}
 }
 
-func scanChallenge(row pgx.Row) (challenge, error) {
-	var c challenge
-	err := row.Scan(&c.ID, &c.Title, &c.Description, &c.Author, &c.Points, &c.Category, &c.Difficulty, &c.Solves, &c.ConnectionInfo, &c.DockerImage, &c.DockerPort, &c.IsVisible, &c.CreatedByID, &c.UpdatedAt)
-	return c, err
-}
-func scanChallengeFile(row pgx.Row) (challengeFile, error) {
-	var f challengeFile
-	err := row.Scan(&f.ID, &f.ChallengeID, &f.Filename, &f.Filepath, &f.UpdatedAt)
-	return f, err
+func fromChallenge(c dbgen.Challenge) challenge {
+	var port int
+	if c.DockerPort != nil {
+		port = int(*c.DockerPort)
+	}
+	return challenge{
+		ID:             c.ID,
+		Title:          c.Title,
+		Description:    c.Description,
+		Author:         c.Author,
+		Points:         int(c.Points),
+		Category:       c.Category,
+		Difficulty:     c.Difficulty,
+		Solves:         int(c.Solves),
+		ConnectionInfo: c.ConnectionInfo,
+		DockerImage:    c.DockerImage,
+		DockerPort:     port,
+		IsVisible:      c.IsVisible,
+		CreatedByID:    c.CreatedByID,
+		UpdatedAt:      c.UploadedAt,
+	}
 }
 
-func listChallenges(ctx context.Context, q database.Querier, isAdmin bool) ([]challenge, error) {
-	var (
-		rows pgx.Rows
-		err  error
-	)
-	if !isAdmin {
-		rows, err = q.Query(ctx, "SELECT "+challengeColumns+" FROM challenges c WHERE c.is_visible = TRUE ORDER BY c.category")
-	} else {
-		rows, err = q.Query(ctx, "SELECT "+challengeColumns+" FROM challenges c ORDER BY c.category")
+func fromChallengeFile(f dbgen.ChallengeFile) challengeFile {
+	return challengeFile{
+		ID:          f.ID,
+		ChallengeID: &f.ChallengeID,
+		Filename:    f.Filename,
+		Filepath:    f.Filepath,
+		UpdatedAt:   f.UploadedAt,
 	}
+}
+
+// listChallenges returns every challenge, sorted by category. Players only see visible ones.
+func listChallenges(ctx context.Context, q database.Querier, isAdmin bool) ([]challenge, error) {
+	rows, err := dbgen.New(q).ListChallenges(ctx, isAdmin)
 	if err != nil {
 		return nil, err
 	}
-
-	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (challenge, error) {
-		return scanChallenge(row)
-	})
+	out := make([]challenge, len(rows))
+	for i, c := range rows {
+		out[i] = fromChallenge(c)
+	}
+	return out, nil
 }
 
 func listChallengeByID(ctx context.Context, q database.Querier, challengeID uuid.UUID, isAdmin bool) (challenge, error) {
-	var row pgx.Row
-
-	if !isAdmin {
-		row = q.QueryRow(ctx, "SELECT "+challengeColumns+" FROM challenges c WHERE c.is_visible = TRUE AND c.id = $1", challengeID)
-	} else {
-		row = q.QueryRow(ctx, "SELECT "+challengeColumns+" FROM challenges c WHERE c.id = $1", challengeID)
+	c, err := dbgen.New(q).GetChallenge(ctx, dbgen.GetChallengeParams{ID: challengeID, IncludeHidden: isAdmin})
+	if err != nil {
+		return challenge{}, err
 	}
-	return scanChallenge(row)
+	return fromChallenge(c), nil
 }
 
 func getChallengeFiles(ctx context.Context, q database.Querier, challengeID uuid.UUID, isAdmin bool) ([]challengeFile, error) {
-	var (
-		rows pgx.Rows
-		err  error
-	)
-	if !isAdmin {
-		rows, err = q.Query(ctx, "SELECT "+challengeFileColumns+" FROM challenge_files cf JOIN challenges c ON c.id = cf.challenge_id WHERE cf.challenge_id = $1 AND c.is_visible = TRUE ORDER BY cf.filename", challengeID)
-	} else {
-		rows, err = q.Query(ctx, "SELECT "+challengeFileColumns+" FROM challenge_files cf JOIN challenges c ON c.id = cf.challenge_id WHERE cf.challenge_id = $1 ORDER BY cf.filename", challengeID)
-	}
+	rows, err := dbgen.New(q).ListChallengeFiles(ctx, dbgen.ListChallengeFilesParams{ChallengeID: challengeID, IncludeHidden: isAdmin})
 	if err != nil {
 		return nil, err
 	}
-	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (challengeFile, error) {
-		return scanChallengeFile(row)
-	})
+	out := make([]challengeFile, len(rows))
+	for i, f := range rows {
+		out[i] = fromChallengeFile(f)
+	}
+	return out, nil
 }
 
 // getChallengeFile returns the file fileID belonging to challengeID. Players only see
 // files of visible challenges.
 func getChallengeFile(ctx context.Context, q database.Querier, challengeID, fileID uuid.UUID, isAdmin bool) (challengeFile, error) {
-	var row pgx.Row
-	if !isAdmin {
-		row = q.QueryRow(ctx, "SELECT "+challengeFileColumns+" FROM challenge_files cf JOIN challenges c ON c.id = cf.challenge_id WHERE cf.id = $1 AND cf.challenge_id = $2 AND c.is_visible = TRUE", fileID, challengeID)
-	} else {
-		row = q.QueryRow(ctx, "SELECT "+challengeFileColumns+" FROM challenge_files cf JOIN challenges c ON c.id = cf.challenge_id WHERE cf.id = $1 AND cf.challenge_id = $2", fileID, challengeID)
+	f, err := dbgen.New(q).GetChallengeFile(ctx, dbgen.GetChallengeFileParams{ID: fileID, ChallengeID: challengeID, IncludeHidden: isAdmin})
+	if err != nil {
+		return challengeFile{}, err
 	}
-	return scanChallengeFile(row)
+	return fromChallengeFile(f), nil
 }
 
 type solve struct {
@@ -133,15 +135,15 @@ type solve struct {
 }
 
 func listSolves(ctx context.Context, q database.Querier, challengeID uuid.UUID) ([]solve, error) {
-	rows, err := q.Query(ctx, `SELECT u.id, u.username, t.id, t.name, s.solved_at FROM solves s JOIN users u ON u.id = s.user_id LEFT JOIN teams t ON t.id = s.team_id AND NOT t.hidden WHERE s.challenge_id = $1 ORDER BY s.solved_at`, challengeID)
+	rows, err := dbgen.New(q).ListChallengeSolves(ctx, challengeID)
 	if err != nil {
 		return nil, err
 	}
-	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (solve, error) {
-		var s solve
-		err := row.Scan(&s.UserID, &s.Username, &s.TeamID, &s.Team, &s.SolvedAt)
-		return s, err
-	})
+	out := make([]solve, len(rows))
+	for i, r := range rows {
+		out[i] = solve{UserID: r.UserID, Username: r.Username, TeamID: r.TeamID, Team: r.Team, SolvedAt: r.SolvedAt}
+	}
+	return out, nil
 }
 
 type submitResult struct {
@@ -151,15 +153,16 @@ type submitResult struct {
 }
 
 func findChallengeByFlag(ctx context.Context, q database.Querier, flag string, challengeID *uuid.UUID) (challenge, error) {
-	if challengeID != nil {
-		return scanChallenge(q.QueryRow(ctx, "SELECT "+challengeColumns+" FROM challenges c WHERE c.is_visible = TRUE AND c.id = $1 AND c.flags @> jsonb_build_array($2::text)", *challengeID, flag))
+	c, err := dbgen.New(q).FindChallengeByFlag(ctx, dbgen.FindChallengeByFlagParams{ChallengeID: challengeID, Flag: flag})
+	if err != nil {
+		return challenge{}, err
 	}
-	return scanChallenge(q.QueryRow(ctx, "SELECT "+challengeColumns+" FROM challenges c WHERE c.is_visible = TRUE AND c.flags @> jsonb_build_array($1::text)", flag))
+	return fromChallenge(c), nil
 }
 
 func recordSolve(ctx context.Context, q database.Querier, userID, challengeID uuid.UUID) (bool, error) {
-	tag, err := q.Exec(ctx, `INSERT INTO solves (user_id, team_id, challenge_id) SELECT u.id, u.team_id, $2 FROM users u WHERE u.id = $1 AND u.team_id IS NOT NULL ON CONFLICT DO NOTHING`, userID, challengeID)
-	return tag.RowsAffected() == 1, err
+	n, err := dbgen.New(q).RecordSolve(ctx, dbgen.RecordSolveParams{UserID: userID, ChallengeID: challengeID})
+	return n == 1, err
 }
 
 type solveEvent struct {
