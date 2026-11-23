@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/betauia/openctf/backend/internal/database"
+	"github.com/betauia/openctf/backend/internal/database/dbgen"
 )
 
 type Settings struct {
@@ -18,13 +19,19 @@ type Settings struct {
 	UpdatedAt    time.Time  `json:"updated_at"`
 }
 
-const settingsColumns = `ctf_name, ctf_start, ctf_end, registration, max_team_size, updated_at`
-
 func load(ctx context.Context, q database.Querier) (Settings, error) {
-	var s Settings
-	err := q.QueryRow(ctx, `SELECT `+settingsColumns+` FROM settings`).Scan(
-		&s.CTFName, &s.CTFStart, &s.CTFEnd, &s.Registration, &s.MaxTeamSize, &s.UpdatedAt)
-	return s, err
+	row, err := dbgen.New(q).GetSettings(ctx)
+	if err != nil {
+		return Settings{}, err
+	}
+	return Settings{
+		CTFName:      row.CtfName,
+		CTFStart:     &row.CtfStart,
+		CTFEnd:       &row.CtfEnd,
+		Registration: row.Registration,
+		MaxTeamSize:  int(row.MaxTeamSize),
+		UpdatedAt:    row.UpdatedAt,
+	}, nil
 }
 
 var Themes = []string{"uiactf", "betauia"}

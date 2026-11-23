@@ -6,115 +6,71 @@ import (
 	"uuid"
 
 	"github.com/betauia/openctf/backend/internal/database"
-	"github.com/jackc/pgx/v5"
+	"github.com/betauia/openctf/backend/internal/database/dbgen"
 )
 
 // User is a row of the users table.
-type User struct {
-	ID           uuid.UUID
-	Username     string
-	Email        string
-	PasswordHash string
-	Score        int32
-	Role         string
-	TeamID       *uuid.UUID
-	Banned       bool
-}
-
-const userColumns = `id, username, email, password_hash, score, role, team_id, banned`
-
-func scanUser(row pgx.Row) (User, error) {
-	var u User
-	err := row.Scan(&u.ID, &u.Username, &u.Email, &u.PasswordHash, &u.Score, &u.Role, &u.TeamID, &u.Banned)
-	return u, err
-}
+type User dbgen.User
 
 func getSessionUser(ctx context.Context, q database.Querier, id, familyID uuid.UUID) (User, error) {
-	return scanUser(q.QueryRow(ctx, `SELECT `+userColumns+` FROM users WHERE id = $1
-		AND EXISTS (SELECT 1 FROM refresh_tokens WHERE family_id = $2 AND user_id = $1 AND revoked_at IS NULL)`, id, familyID))
+	u, err := dbgen.New(q).GetSessionUser(ctx, dbgen.GetSessionUserParams{ID: id, FamilyID: familyID})
+	return User(u), err
 }
 
 func getUserByUsername(ctx context.Context, q database.Querier, username string) (User, error) {
-	return scanUser(q.QueryRow(ctx, `SELECT `+userColumns+` FROM users WHERE lower(username) = lower($1)`, username))
+	u, err := dbgen.New(q).GetUserByUsername(ctx, username)
+	return User(u), err
 }
 
 func userExists(ctx context.Context, q database.Querier, username, email string) (bool, error) {
-	var exists bool
-	err := q.QueryRow(ctx,
-		`SELECT EXISTS (SELECT 1 FROM users WHERE lower(username) = lower($1) OR email = $2)`, username, email,
-	).Scan(&exists)
-	return exists, err
+	return dbgen.New(q).UserExists(ctx, dbgen.UserExistsParams{Username: username, Email: email})
 }
 
 func createUser(ctx context.Context, q database.Querier, id uuid.UUID, username, email, passwordHash string) (User, error) {
-	return scanUser(q.QueryRow(ctx,
-		`INSERT INTO users (id, username, email, password_hash) VALUES ($1, $2, $3, $4) RETURNING `+userColumns,
-		id, username, email, passwordHash,
-	))
+	u, err := dbgen.New(q).CreateUser(ctx, dbgen.CreateUserParams{
+		ID: id, Username: username, Email: email, PasswordHash: passwordHash,
+	})
+	return User(u), err
 }
 
 // userRank returns 1 + the number of users with a higher score.
 func userRank(ctx context.Context, q database.Querier, score int32) (int32, error) {
-	var rank int32
-	err := q.QueryRow(ctx, `SELECT COUNT(*) + 1 FROM users WHERE score > $1`, score).Scan(&rank)
-	return rank, err
+	return dbgen.New(q).UserRank(ctx, score)
 }
 
 // listSolvedChallengeIDs returns the challenges solved by the user's team, or by
 // the user alone when they are not on a team.
 func listSolvedChallengeIDs(ctx context.Context, q database.Querier, userID uuid.UUID) ([]uuid.UUID, error) {
-	rows, err := q.Query(ctx, `
-		SELECT DISTINCT s.challenge_id FROM solves s
-		JOIN users u ON u.id = $1
-		WHERE (u.team_id IS NOT NULL AND s.team_id = u.team_id)
-		   OR (u.team_id IS NULL AND s.user_id = u.id)
-		ORDER BY s.challenge_id`, userID)
-	if err != nil {
-		return nil, err
-	}
-	return pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+	return dbgen.New(q).ListSolvedChallengeIDs(ctx, userID)
 }
 
 func createRefreshToken(ctx context.Context, q database.Querier, userID, familyID uuid.UUID, hash []byte, expiresAt time.Time) error {
-	_, err := q.Exec(ctx,
-		`INSERT INTO refresh_tokens (id, user_id, family_id, token_hash, expires_at) VALUES ($1, $2, $3, $4, $5)`,
-		uuid.NewV7(), userID, familyID, hash, expiresAt,
-	)
-	return err
+	return dbgen.New(q).CreateRefreshToken(ctx, dbgen.CreateRefreshTokenParams{
+		ID: uuid.NewV7(), UserID: userID, FamilyID: familyID, TokenHash: hash, ExpiresAt: expiresAt,
+	})
 }
 
 // consumeRefreshToken marks a live token as used and returns its owner and family.
 // A token first used after reuseAfter can be consumed again. pgx.ErrNoRows means
 // the token is unknown, expired, revoked or replayed.
 func consumeRefreshToken(ctx context.Context, q database.Querier, hash []byte, reuseAfter time.Time) (userID, familyID uuid.UUID, err error) {
-	err = q.QueryRow(ctx, `
-		UPDATE refresh_tokens SET used_at = COALESCE(used_at, now())
-		WHERE token_hash = $1 AND revoked_at IS NULL AND expires_at > now()
-		  AND (used_at IS NULL OR used_at > $2)
-		RETURNING user_id, family_id`,
-		hash, reuseAfter,
-	).Scan(&userID, &familyID)
-	return userID, familyID, err
+	row, err := dbgen.New(q).ConsumeRefreshToken(ctx, dbgen.ConsumeRefreshTokenParams{TokenHash: hash, ReuseAfter: reuseAfter})
+	return row.UserID, row.FamilyID, err
 }
 
 func getRefreshTokenFamily(ctx context.Context, q database.Querier, hash []byte) (uuid.UUID, error) {
-	var family uuid.UUID
-	err := q.QueryRow(ctx, `SELECT family_id FROM refresh_tokens WHERE token_hash = $1`, hash).Scan(&family)
-	return family, err
+	return dbgen.New(q).GetRefreshTokenFamily(ctx, hash)
 }
 
 func revokeRefreshFamily(ctx context.Context, q database.Querier, familyID uuid.UUID) error {
-	_, err := q.Exec(ctx, `UPDATE refresh_tokens SET revoked_at = now() WHERE family_id = $1 AND revoked_at IS NULL`, familyID)
-	return err
+	return dbgen.New(q).RevokeRefreshFamily(ctx, familyID)
 }
 
 func updatePasswordHash(ctx context.Context, q database.Querier, userID uuid.UUID, passwordHash string) error {
-	_, err := q.Exec(ctx, `UPDATE users SET password_hash = $2 WHERE id = $1`, userID, passwordHash)
-	return err
+	return dbgen.New(q).UpdatePasswordHash(ctx, dbgen.UpdatePasswordHashParams{ID: userID, PasswordHash: passwordHash})
 }
 
 // revokeUserRefreshTokens revokes every live refresh token of userID, logging out all devices.
 func revokeUserRefreshTokens(ctx context.Context, q database.Querier, userID uuid.UUID) error {
-	_, err := q.Exec(ctx, `UPDATE refresh_tokens SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL`, userID)
-	return err
+	return dbgen.New(q).RevokeUserRefreshTokens(ctx, userID)
 }
