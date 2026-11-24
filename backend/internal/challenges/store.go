@@ -6,6 +6,7 @@ import (
 	"uuid"
 
 	"github.com/betauia/openctf/backend/internal/database"
+	"github.com/betauia/openctf/backend/internal/policy"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -44,6 +45,14 @@ type challengeFile struct {
 const challengeColumns = `c.id,c.title,c.description,c.author,c.points,c.category,c.difficulty,c.solves,c.connection_info,c.docker_image,c.docker_port,c.is_visible,c.created_by_id,c.uploaded_at`
 const challengeFileColumns = `cf.id,cf.challenge_id,cf.filename,cf.filepath,cf.uploaded_at`
 
+func (c challenge) resource() policy.Resource {
+	owner := ""
+	if c.CreatedByID != nil {
+		owner = c.CreatedByID.String()
+	}
+	return policy.Resource{ID: c.ID.String(), Attributes: map[string]any{"visible": c.IsVisible, "owner_id": owner}}
+}
+
 func scanChallenge(row pgx.Row) (challenge, error) {
 	var c challenge
 	err := row.Scan(&c.ID, &c.Title, &c.Description, &c.Author, &c.Points, &c.Category, &c.Difficulty, &c.Solves, &c.ConnectionInfo, &c.DockerImage, &c.DockerPort, &c.IsVisible, &c.CreatedByID, &c.UpdatedAt)
@@ -78,9 +87,9 @@ func listChallengeByID(ctx context.Context, q database.Querier, challengeID uuid
 	var row pgx.Row
 
 	if !isAdmin {
-		row = q.QueryRow(ctx, "SELECT "+challengeColumns+" FROM challenges c WHERE c.is_visible = TRUE AND c.id = $i", challengeID)
+		row = q.QueryRow(ctx, "SELECT "+challengeColumns+" FROM challenges c WHERE c.is_visible = TRUE AND c.id = $1", challengeID)
 	} else {
-		row = q.QueryRow(ctx, "SELECT "+challengeColumns+" FROM challenges c WHERE c.id = $i", challengeID)
+		row = q.QueryRow(ctx, "SELECT "+challengeColumns+" FROM challenges c WHERE c.id = $1", challengeID)
 	}
 	return scanChallenge(row)
 }
@@ -113,4 +122,54 @@ func getChallengeFile(ctx context.Context, q database.Querier, challengeID, file
 		row = q.QueryRow(ctx, "SELECT "+challengeFileColumns+" FROM challenge_files cf JOIN challenges c ON c.id = cf.challenge_id WHERE cf.id = $1 AND cf.challenge_id = $2", fileID, challengeID)
 	}
 	return scanChallengeFile(row)
+}
+
+type solve struct {
+	UserID   uuid.UUID  `json:"uid"`
+	Username string     `json:"username"`
+	TeamID   *uuid.UUID `json:"team_id"`
+	Team     *string    `json:"team"`
+	SolvedAt time.Time  `json:"solved_at"`
+}
+
+func listSolves(ctx context.Context, q database.Querier, challengeID uuid.UUID) ([]solve, error) {
+	rows, err := q.Query(ctx, `SELECT u.id, u.username, t.id, t.name, s.solved_at FROM solves s JOIN users u ON u.id = s.user_id LEFT JOIN teams t ON t.id = s.team_id AND NOT t.hidden WHERE s.challenge_id = $1 ORDER BY s.solved_at`, challengeID)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (solve, error) {
+		var s solve
+		err := row.Scan(&s.UserID, &s.Username, &s.TeamID, &s.Team, &s.SolvedAt)
+		return s, err
+	})
+}
+
+type submitResult struct {
+	Correct     bool       `json:"correct"`
+	ChallengeID *uuid.UUID `json:"challenge_id"`
+	Points      int        `json:"points"`
+}
+
+func findChallengeByFlag(ctx context.Context, q database.Querier, flag string, challengeID *uuid.UUID) (challenge, error) {
+	if challengeID != nil {
+		return scanChallenge(q.QueryRow(ctx, "SELECT "+challengeColumns+" FROM challenges c WHERE c.is_visible = TRUE AND c.id = $1 AND c.flags @> jsonb_build_array($2::text)", *challengeID, flag))
+	}
+	return scanChallenge(q.QueryRow(ctx, "SELECT "+challengeColumns+" FROM challenges c WHERE c.is_visible = TRUE AND c.flags @> jsonb_build_array($1::text)", flag))
+}
+
+func recordSolve(ctx context.Context, q database.Querier, userID, challengeID uuid.UUID) (bool, error) {
+	tag, err := q.Exec(ctx, `INSERT INTO solves (user_id, team_id, challenge_id) SELECT u.id, u.team_id, $2 FROM users u WHERE u.id = $1 AND u.team_id IS NOT NULL ON CONFLICT DO NOTHING`, userID, challengeID)
+	return tag.RowsAffected() == 1, err
+}
+
+type solveEvent struct {
+	ChallengeID uuid.UUID  `json:"challenge_id"`
+	Challenge   string     `json:"challenge"`
+	Category    string     `json:"category"`
+	Points      int        `json:"points"`
+	UserID      uuid.UUID  `json:"user_id"`
+	Username    string     `json:"username"`
+	TeamID      *uuid.UUID `json:"team_id"`
+	Team        *string    `json:"team"`
+	SolvedAt    time.Time  `json:"solved_at"`
 }

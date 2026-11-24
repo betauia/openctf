@@ -45,6 +45,8 @@ const (
 	UserRevokeKeys  = "user:revoke_keys"
 	UserListKeys    = "user:list_keys"
 	UserList        = "user:list"
+	UserRegister    = "user:register"
+	UserLogin       = "user:login"
 
 	// Submissions
 	SubmissionRead   = "submission:read"
@@ -70,7 +72,7 @@ var Actions = []string{
 	TeamCreate, TeamJoin, TeamReadPrivate, TeamReadPublic, TeamUpdate, TeamLeave, TeamKick,
 	TeamTransferCaptain, TeamDelete, TeamBan,
 	UserReadPrivate, UserReadPublic, UserUpdate, UserManageKeys, UserCreate, UserBan, UserDelete,
-	UserSetRole, UserRevokeKeys, UserListKeys, UserList,
+	UserSetRole, UserRevokeKeys, UserListKeys, UserList, UserRegister, UserLogin,
 	SubmissionRead, SubmissionDelete,
 	AnnouncementCreate, AnnouncementDelete,
 	SettingsRead, SettingsUpdate,

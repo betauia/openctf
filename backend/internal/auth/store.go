@@ -29,18 +29,19 @@ func scanUser(row pgx.Row) (User, error) {
 	return u, err
 }
 
-func getUserByID(ctx context.Context, q database.Querier, id uuid.UUID) (User, error) {
-	return scanUser(q.QueryRow(ctx, `SELECT `+userColumns+` FROM users WHERE id = $1`, id))
+func getSessionUser(ctx context.Context, q database.Querier, id, familyID uuid.UUID) (User, error) {
+	return scanUser(q.QueryRow(ctx, `SELECT `+userColumns+` FROM users WHERE id = $1
+		AND EXISTS (SELECT 1 FROM refresh_tokens WHERE family_id = $2 AND user_id = $1 AND revoked_at IS NULL)`, id, familyID))
 }
 
 func getUserByUsername(ctx context.Context, q database.Querier, username string) (User, error) {
-	return scanUser(q.QueryRow(ctx, `SELECT `+userColumns+` FROM users WHERE username = $1`, username))
+	return scanUser(q.QueryRow(ctx, `SELECT `+userColumns+` FROM users WHERE lower(username) = lower($1)`, username))
 }
 
 func userExists(ctx context.Context, q database.Querier, username, email string) (bool, error) {
 	var exists bool
 	err := q.QueryRow(ctx,
-		`SELECT EXISTS (SELECT 1 FROM users WHERE username = $1 OR email = $2)`, username, email,
+		`SELECT EXISTS (SELECT 1 FROM users WHERE lower(username) = lower($1) OR email = $2)`, username, email,
 	).Scan(&exists)
 	return exists, err
 }
@@ -59,8 +60,15 @@ func userRank(ctx context.Context, q database.Querier, score int32) (int32, erro
 	return rank, err
 }
 
+// listSolvedChallengeIDs returns the challenges solved by the user's team, or by
+// the user alone when they are not on a team.
 func listSolvedChallengeIDs(ctx context.Context, q database.Querier, userID uuid.UUID) ([]uuid.UUID, error) {
-	rows, err := q.Query(ctx, `SELECT challenge_id FROM solves WHERE user_id = $1 ORDER BY challenge_id`, userID)
+	rows, err := q.Query(ctx, `
+		SELECT DISTINCT s.challenge_id FROM solves s
+		JOIN users u ON u.id = $1
+		WHERE (u.team_id IS NOT NULL AND s.team_id = u.team_id)
+		   OR (u.team_id IS NULL AND s.user_id = u.id)
+		ORDER BY s.challenge_id`, userID)
 	if err != nil {
 		return nil, err
 	}

@@ -21,6 +21,7 @@ CREATE TABLE users (
     banned        BOOLEAN NOT NULL DEFAULT FALSE
 );
 CREATE INDEX users_team_id_idx ON users (team_id);
+CREATE UNIQUE INDEX users_username_lower_key ON users (lower(username));
 
 ALTER TABLE teams
     ADD CONSTRAINT teams_captain_id_fkey FOREIGN KEY (captain_id) REFERENCES users (id) ON DELETE SET NULL;
@@ -38,6 +39,7 @@ CREATE TABLE challenges (
     difficulty      TEXT    NOT NULL DEFAULT 'Easy',
     solves          INT NOT NULL DEFAULT 0,
     connection_info TEXT,
+    flags           JSONB   NOT NULL DEFAULT '[]',
     docker_image    TEXT,
     docker_port     INTEGER DEFAULT 80,
     is_visible      BOOLEAN NOT NULL DEFAULT FALSE,
@@ -55,9 +57,11 @@ CREATE TABLE challenge_files (
 CREATE TABLE solves (
     id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id      UUID        NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    team_id      UUID        REFERENCES teams (id) ON DELETE SET NULL,
     challenge_id UUID        NOT NULL REFERENCES challenges (id) ON DELETE CASCADE,
     solved_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (user_id, challenge_id)
+    UNIQUE (user_id, challenge_id),
+    UNIQUE (team_id, challenge_id)
 );
 CREATE INDEX solves_challenge_id_idx ON solves (challenge_id);
 

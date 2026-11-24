@@ -4,9 +4,12 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/mail"
+	"strings"
 	"time"
+	"unicode"
 	"unicode/utf8"
 	"uuid"
 
@@ -24,29 +27,43 @@ const (
 	cookieName        = "session"
 	refreshCookieName = "refresh"
 	refreshPath       = "/api/auth"
+	deviceCookieName  = "device"
 )
+
+var dummyHash, _ = passwords.Hash("dummy password")
 
 // Auth authenticates requests with signed session cookies and serves the /api/auth endpoints.
 type Auth struct {
-	pool     *pgxpool.Pool
-	secret   []byte
-	policies *policy.Engine
+	pool       *pgxpool.Pool
+	secret     []byte
+	policies   *policy.Engine
+	// Failed logins back off exponentially. A browser that has logged in as a user before
+	// holds a signed device cookie, and its attempts are counted in a bucket that strangers
+	// cannot reach. Everyone else shares one bucket per username, so guessing stays slow
+	// without the account's owner being locked out of a browser they have used. Client IPs
+	// are not used: at a venue everyone shares one.
+	knownBackoff *httpx.Backoff
+	userBackoff  *httpx.Backoff
 }
 
 // New returns an Auth that loads users from pool, signs session tokens with secretKey and
 // authorises requests with policies.
 func New(pool *pgxpool.Pool, secretKey string, policies *policy.Engine) *Auth {
-	return &Auth{pool: pool, secret: []byte(secretKey), policies: policies}
+	return &Auth{
+		pool: pool, secret: []byte(secretKey), policies: policies,
+		knownBackoff: httpx.NewBackoff(5, time.Second, 30*time.Second, 15*time.Minute),
+		userBackoff:  httpx.NewBackoff(5, time.Second, 30*time.Second, 15*time.Minute),
+	}
 }
 
 // Register adds the /api/auth routes to mux.
 func (a *Auth) Register(mux *http.ServeMux) {
-	mux.HandleFunc("POST /api/auth/register", a.register)
+	mux.HandleFunc("POST /api/auth/register", a.Optional(a.register))
 	mux.HandleFunc("POST /api/auth/login", a.login)
 	mux.HandleFunc("POST /api/auth/refresh", a.refresh)
 	mux.HandleFunc("POST /api/auth/logout", a.logout)
-	mux.HandleFunc("GET /api/auth/me", a.Require(a.me))
-	mux.HandleFunc("PUT /api/auth/password", a.Require(a.changePassword))
+	mux.HandleFunc("GET /api/auth/me", a.Authorise(policy.UserReadPrivate, a.me))
+	mux.HandleFunc("PUT /api/auth/password", a.Authorise(policy.UserUpdate, a.changePassword))
 	mux.HandleFunc("GET /api/auth/solves", a.Optional(a.solves))
 }
 
@@ -55,7 +72,16 @@ type userRef struct {
 	Username string    `json:"username"`
 }
 
-func (a *Auth) register(w http.ResponseWriter, r *http.Request) {
+func (a *Auth) register(w http.ResponseWriter, r *http.Request, u *User) {
+	allowed, err := a.IsAllowed(r, u, policy.UserRegister, policy.Resource{})
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	if !allowed {
+		httpx.Error(w, http.StatusForbidden, "Registration is closed")
+		return
+	}
 	var body struct {
 		Username string `json:"username"`
 		Email    string `json:"email"`
@@ -66,6 +92,10 @@ func (a *Auth) register(w http.ResponseWriter, r *http.Request) {
 	}
 	if n := utf8.RuneCountInString(body.Username); n < 5 || n > 32 {
 		httpx.Error(w, http.StatusBadRequest, "Username must be 5-32 characters")
+		return
+	}
+	if !ValidName(body.Username) {
+		httpx.Error(w, http.StatusBadRequest, "Username can't start or end with spaces or contain invisible characters")
 		return
 	}
 	if utf8.RuneCountInString(body.Password) < 12 {
@@ -95,7 +125,7 @@ func (a *Auth) register(w http.ResponseWriter, r *http.Request) {
 		httpx.InternalError(w, r, err)
 		return
 	}
-	u, err := createUser(ctx, a.pool, uuid.NewV7(), body.Username, body.Email, hash)
+	created, err := createUser(ctx, a.pool, uuid.NewV7(), body.Username, body.Email, hash)
 	if database.IsUniqueViolation(err) { // lost a race with another registration
 		httpx.Error(w, http.StatusBadRequest, "Username or email already taken")
 		return
@@ -104,11 +134,11 @@ func (a *Auth) register(w http.ResponseWriter, r *http.Request) {
 		httpx.InternalError(w, r, err)
 		return
 	}
-	if err := a.startSession(w, r, u.ID); err != nil {
+	if err := a.startSession(w, r, created.ID); err != nil {
 		httpx.InternalError(w, r, err)
 		return
 	}
-	httpx.JSON(w, http.StatusOK, userRef{ID: u.ID, Username: u.Username})
+	httpx.JSON(w, http.StatusOK, userRef{ID: created.ID, Username: created.Username})
 }
 
 func (a *Auth) login(w http.ResponseWriter, r *http.Request) {
@@ -124,15 +154,54 @@ func (a *Auth) login(w http.ResponseWriter, r *http.Request) {
 		httpx.InternalError(w, r, err)
 		return
 	}
-	if err != nil || !passwords.Verify(body.Password, u.PasswordHash) {
+	// Charge the attempt before checking the password; a successful login clears it below.
+	bucket, key := a.userBackoff, strings.ToLower(body.Username)
+	if err == nil && a.knownDevice(r, u.ID) {
+		bucket, key = a.knownBackoff, u.ID.String()
+	}
+	if wait, ok := bucket.Begin(key); !ok {
+		tooManyLogins(w, wait)
+		return
+	}
+	hash := dummyHash
+	if err == nil {
+		hash = u.PasswordHash
+	}
+	if !passwords.Verify(body.Password, hash) || err != nil {
 		httpx.Error(w, http.StatusUnauthorized, "Invalid username or password")
+		return
+	}
+	allowed, err := a.IsAllowed(r, &u, policy.UserLogin, policy.Resource{})
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	if !allowed {
+		Deny(w, &u)
 		return
 	}
 	if err := a.startSession(w, r, u.ID); err != nil {
 		httpx.InternalError(w, r, err)
 		return
 	}
+	bucket.Reset(key)
 	httpx.JSON(w, http.StatusOK, userRef{ID: u.ID, Username: u.Username})
+}
+
+func tooManyLogins(w http.ResponseWriter, wait time.Duration) {
+	secs := max(int(wait.Round(time.Second)/time.Second), 1)
+	w.Header().Set("Retry-After", fmt.Sprint(secs))
+	httpx.Error(w, http.StatusTooManyRequests, fmt.Sprintf("Too many login attempts, try again in %d seconds", secs))
+}
+
+// knownDevice reports whether r carries a device cookie issued for userID.
+func (a *Auth) knownDevice(r *http.Request, userID uuid.UUID) bool {
+	c, err := r.Cookie(deviceCookieName)
+	if err != nil {
+		return false
+	}
+	id, ok := sessions.VerifyDeviceToken(a.secret, c.Value)
+	return ok && id == userID
 }
 
 // refresh exchanges the refresh cookie for a new session and a rotated refresh token.
@@ -144,14 +213,14 @@ func (a *Auth) refresh(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 	hash := sessions.HashRefreshToken(c.Value)
-	var userID uuid.UUID
+	var userID, familyID uuid.UUID
 	var token string
 	err = pgx.BeginFunc(ctx, a.pool, func(tx pgx.Tx) error {
 		uid, family, err := consumeRefreshToken(ctx, tx, hash, time.Now().Add(-sessions.RefreshReuseWindow))
 		if err != nil {
 			return err
 		}
-		userID = uid
+		userID, familyID = uid, family
 		token, err = newRefreshToken(ctx, tx, uid, family)
 		return err
 	})
@@ -172,7 +241,22 @@ func (a *Auth) refresh(w http.ResponseWriter, r *http.Request) {
 		httpx.InternalError(w, r, err)
 		return
 	}
-	a.setSession(w, userID)
+	u, err := getSessionUser(ctx, a.pool, userID, familyID)
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	allowed, err := a.IsAllowed(r, &u, policy.UserLogin, policy.Resource{})
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	if !allowed {
+		a.clearSession(w)
+		Deny(w, &u)
+		return
+	}
+	a.setSession(w, userID, familyID)
 	a.setRefreshCookie(w, token)
 	httpx.JSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
@@ -193,7 +277,7 @@ func (a *Auth) logout(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-func (a *Auth) me(w http.ResponseWriter, r *http.Request, u User) {
+func (a *Auth) me(w http.ResponseWriter, r *http.Request, u *User) {
 	rank, err := userRank(r.Context(), a.pool, u.Score)
 	if err != nil {
 		httpx.InternalError(w, r, err)
@@ -209,9 +293,9 @@ func (a *Auth) me(w http.ResponseWriter, r *http.Request, u User) {
 }
 
 // changePassword replaces the user's password after checking the current one. Every other
-// device is logged out: their refresh tokens are revoked, and their session cookies expire
-// within sessions.MaxAge. The caller gets a fresh session.
-func (a *Auth) changePassword(w http.ResponseWriter, r *http.Request, u User) {
+// device is logged out: their refresh tokens are revoked, which also ends their sessions.
+// The caller gets a fresh session.
+func (a *Auth) changePassword(w http.ResponseWriter, r *http.Request, u *User) {
 	var body struct {
 		CurrentPassword string `json:"current_password"`
 		NewPassword     string `json:"new_password"`
@@ -250,7 +334,8 @@ func (a *Auth) changePassword(w http.ResponseWriter, r *http.Request, u User) {
 	httpx.JSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-// solves lists the ids of challenges the user solved; empty when not logged in.
+// solves lists the ids of challenges the user's team solved, or the user's own
+// when they have no team; empty when not logged in.
 func (a *Auth) solves(w http.ResponseWriter, r *http.Request, u *User) {
 	ids := []uuid.UUID{}
 	if u != nil {
@@ -265,12 +350,22 @@ func (a *Auth) solves(w http.ResponseWriter, r *http.Request, u *User) {
 
 // startSession sets the session cookie and a refresh token for a new login.
 func (a *Auth) startSession(w http.ResponseWriter, r *http.Request, userID uuid.UUID) error {
-	token, err := newRefreshToken(r.Context(), a.pool, userID, uuid.NewV7())
+	family := uuid.NewV7()
+	token, err := newRefreshToken(r.Context(), a.pool, userID, family)
 	if err != nil {
 		return err
 	}
-	a.setSession(w, userID)
+	a.setSession(w, userID, family)
 	a.setRefreshCookie(w, token)
+	// Logout leaves this in place: it only marks the browser as one this user has logged in from.
+	http.SetCookie(w, &http.Cookie{
+		Name:     deviceCookieName,
+		Value:    sessions.NewDeviceToken(a.secret, userID),
+		Path:     refreshPath,
+		MaxAge:   int(sessions.DeviceMaxAge.Seconds()),
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	})
 	return nil
 }
 
@@ -299,13 +394,27 @@ func (a *Auth) clearSession(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{Name: refreshCookieName, Path: refreshPath, MaxAge: -1, HttpOnly: true, SameSite: http.SameSiteStrictMode})
 }
 
-func (a *Auth) setSession(w http.ResponseWriter, userID uuid.UUID) {
+func (a *Auth) setSession(w http.ResponseWriter, userID, familyID uuid.UUID) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     cookieName,
-		Value:    sessions.NewToken(a.secret, userID, time.Now()),
+		Value:    sessions.NewToken(a.secret, userID, familyID, time.Now()),
 		Path:     "/",
 		MaxAge:   int(sessions.MaxAge.Seconds()),
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	})
+}
+
+// ValidName reports whether name has no leading or trailing whitespace and no control or
+// invisible formatting characters such as zero-width spaces.
+func ValidName(name string) bool {
+	if name == "" || strings.TrimSpace(name) != name {
+		return false
+	}
+	for _, r := range name {
+		if unicode.IsControl(r) || unicode.Is(unicode.Cf, r) {
+			return false
+		}
+	}
+	return true
 }

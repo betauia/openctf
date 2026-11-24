@@ -22,8 +22,14 @@ import (
 func (h *Handler) Register(mux *http.ServeMux) {
 	// Player
 	mux.HandleFunc("GET /api/teams/{id}", h.a.Optional(h.get))
+	mux.HandleFunc("GET /api/teams/{id}/activity", h.a.Optional(h.activity))
+	mux.HandleFunc("GET /api/teams/{id}/progress", h.a.Optional(h.progress))
+	mux.HandleFunc("GET /api/teams/{id}/compare", h.a.Require(h.compare))
+	mux.HandleFunc("GET /api/users/{id}", h.a.Require(h.profile))
 	mux.HandleFunc("POST /api/teams", h.a.Authorise(policy.TeamCreate, h.create))
 	mux.HandleFunc("GET /api/teams", h.a.Authorise(policy.TeamReadPublic, h.getTeams))
+	mux.HandleFunc("GET /api/scoreboard", h.a.Require(h.scoreboard))
+	mux.HandleFunc("GET /api/scoreboard/players", h.a.Require(h.playerBoard))
 	mux.HandleFunc("GET /api/teams/mine", h.a.Require(h.mine))
 	mux.HandleFunc("POST /api/teams/join", h.a.Require(h.join))
 	mux.HandleFunc("POST /api/teams/mine/leave", h.a.Require(h.leave))
@@ -57,6 +63,17 @@ func (h *Handler) getTeams(w http.ResponseWriter, r *http.Request, u *auth.User)
 
 	for i := range teams {
 		teams[i].InviteCode = nil
+		switch {
+		case i == 0:
+			if teams[i].Rank, err = teamRank(r.Context(), h.pool, teams[i].Score); err != nil {
+				httpx.InternalError(w, r, err)
+				return
+			}
+		case teams[i].Score == teams[i-1].Score:
+			teams[i].Rank = teams[i-1].Rank
+		default:
+			teams[i].Rank = offset + i + 1
+		}
 	}
 	httpx.JSON(w, http.StatusOK, teams)
 }
@@ -155,7 +172,119 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		return
 	}
 	t.InviteCode = nil
+	if t.Rank, err = teamRank(r.Context(), h.pool, t.Score); err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
 	httpx.JSON(w, http.StatusOK, t)
+}
+
+func (h *Handler) profile(w http.ResponseWriter, r *http.Request, u auth.User) {
+	id, ok := httpx.PathID(w, r, "id")
+	if !ok {
+		return
+	}
+	p, err := getProfile(r.Context(), h.pool, id)
+	if err != nil {
+		auth.Fail(w, r, &u, err, "User not found")
+		return
+	}
+	httpx.JSON(w, http.StatusOK, p)
+}
+
+func (h *Handler) visibleTeam(w http.ResponseWriter, r *http.Request, u *auth.User) (team, bool) {
+	id, ok := httpx.PathID(w, r, "id")
+	if !ok {
+		return team{}, false
+	}
+	t, err := getTeam(r.Context(), h.pool, id, false)
+	if err != nil {
+		auth.Fail(w, r, u, err, "Team not found")
+		return team{}, false
+	}
+	allowed, err := h.a.IsAllowed(r, u, policy.TeamReadPublic, t.resource())
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return team{}, false
+	}
+	if !allowed {
+		auth.Deny(w, u)
+		return team{}, false
+	}
+	return t, true
+}
+
+func (h *Handler) activity(w http.ResponseWriter, r *http.Request, u *auth.User) {
+	t, ok := h.visibleTeam(w, r, u)
+	if !ok {
+		return
+	}
+	entries, err := listActivity(r.Context(), h.pool, t.ID)
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, entries)
+}
+
+func (h *Handler) progress(w http.ResponseWriter, r *http.Request, u *auth.User) {
+	t, ok := h.visibleTeam(w, r, u)
+	if !ok {
+		return
+	}
+	p, err := teamProgress(r.Context(), h.pool, t.ID)
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, p)
+}
+
+func (h *Handler) compare(w http.ResponseWriter, r *http.Request, u auth.User) {
+	t, ok := h.visibleTeam(w, r, &u)
+	if !ok {
+		return
+	}
+	c, err := compareTeams(r.Context(), h.pool, t.ID, u.TeamID)
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, c)
+}
+
+func (h *Handler) scoreboard(w http.ResponseWriter, r *http.Request, u auth.User) {
+	teams, err := listTeams(r.Context(), h.pool, 10, 0, false)
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	series, err := scoreSeries(r.Context(), h.pool, teams)
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, series)
+}
+
+func (h *Handler) playerBoard(w http.ResponseWriter, r *http.Request, u auth.User) {
+	limit, ok := queryInt(w, r, "limit", 100, 1, 1000)
+	if !ok {
+		return
+	}
+	players, err := listPlayers(r.Context(), h.pool, limit)
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	for i := range players {
+		if i > 0 && players[i].Score == players[i-1].Score {
+			players[i].Rank = players[i-1].Rank
+		} else {
+			players[i].Rank = i + 1
+		}
+	}
+	httpx.JSON(w, http.StatusOK, players)
 }
 
 func (h *Handler) create(w http.ResponseWriter, r *http.Request, u *auth.User) {
@@ -217,6 +346,10 @@ func (h *Handler) mine(w http.ResponseWriter, r *http.Request, u auth.User) {
 	}
 	members, err := listMembers(ctx, h.pool, t.ID)
 	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	if t.Rank, err = teamRank(ctx, h.pool, t.Score); err != nil {
 		httpx.InternalError(w, r, err)
 		return
 	}
@@ -497,6 +630,10 @@ func (h *Handler) adminDelete(w http.ResponseWriter, r *http.Request, u *auth.Us
 func validName(w http.ResponseWriter, name string) bool {
 	if n := utf8.RuneCountInString(name); n < 3 || n > 32 {
 		httpx.Error(w, http.StatusBadRequest, "Team name must be 3-32 characters")
+		return false
+	}
+	if !auth.ValidName(name) {
+		httpx.Error(w, http.StatusBadRequest, "Team name can't start or end with spaces or contain invisible characters")
 		return false
 	}
 	return true

@@ -2,6 +2,7 @@ package settings
 
 import (
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -13,8 +14,20 @@ import (
 )
 
 func (h *Handler) Register(mux *http.ServeMux) {
+	mux.HandleFunc("GET /api/settings", h.publicSettings)
 	mux.HandleFunc("GET /api/admin/settings", h.a.Authorise(policy.SettingsRead, h.getSettings))
 	mux.HandleFunc("PUT /api/admin/settings", h.a.Authorise(policy.SettingsUpdate, h.updateSettings))
+}
+
+func (h *Handler) publicSettings(w http.ResponseWriter, r *http.Request) {
+	s, err := load(r.Context(), h.pool)
+	if err != nil {
+		httpx.InternalError(w, r, err)
+		return
+	}
+	s.Theme = h.theme.Load().(string)
+	s.Rules = h.rules.Load().(string)
+	httpx.JSON(w, http.StatusOK, s)
 }
 
 func (h *Handler) getSettings(w http.ResponseWriter, r *http.Request, u *auth.User) {
@@ -23,6 +36,8 @@ func (h *Handler) getSettings(w http.ResponseWriter, r *http.Request, u *auth.Us
 		httpx.InternalError(w, r, err)
 		return
 	}
+	s.Theme = h.theme.Load().(string)
+	s.Rules = h.rules.Load().(string)
 	httpx.JSON(w, http.StatusOK, s)
 }
 
@@ -33,6 +48,8 @@ func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request, u *auth
 		CTFEnd       *time.Time `json:"ctf_end"`
 		Registration *bool      `json:"registration"`
 		MaxTeamSize  *int       `json:"max_team_size"`
+		Rules        *string    `json:"rules"`
+		Theme        *string    `json:"theme"`
 	}
 	if !httpx.Decode(w, r, &body) {
 		return
@@ -44,6 +61,10 @@ func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request, u *auth
 			return
 		}
 		body.CTFName = &name
+	}
+	if body.Theme != nil && !slices.Contains(Themes, *body.Theme) {
+		httpx.Error(w, http.StatusBadRequest, "Unknown theme")
+		return
 	}
 	if body.MaxTeamSize != nil && *body.MaxTeamSize < 1 {
 		httpx.Error(w, http.StatusBadRequest, "Max team size must be at least 1")
@@ -91,5 +112,13 @@ func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request, u *auth
 		httpx.Error(w, http.StatusBadRequest, "CTF start must be before CTF end")
 		return
 	}
+	if body.Theme != nil {
+		h.theme.Store(*body.Theme)
+	}
+	if body.Rules != nil {
+		h.rules.Store(*body.Rules)
+	}
+	s.Theme = h.theme.Load().(string)
+	s.Rules = h.rules.Load().(string)
 	httpx.JSON(w, http.StatusOK, s)
 }
