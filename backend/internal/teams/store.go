@@ -313,7 +313,14 @@ func scoreSeries(ctx context.Context, q database.Querier, teams []team) ([]teamS
 	}
 
 	for _, r := range rows {
-		s := &series[index[*r.TeamID]]
+		if r.TeamID == nil {
+			continue
+		}
+		i, ok := index[*r.TeamID]
+		if !ok {
+			continue
+		}
+		s := &series[i]
 		points := int(r.Points)
 		if n := len(s.Points); n > 0 {
 			points += s.Points[n-1].Score
