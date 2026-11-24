@@ -19,7 +19,7 @@ import (
 // Each feature package exposes New(deps...) and Register(mux). To add one, construct
 // it here with what it needs and call Register. Features with routes that need the
 // logged-in user take a and wrap those handlers in a.Require, a.Optional, a.Authorise or a.IsAllowed.
-// See "Adding an API" in backend/README.md.
+// See "Adding an API" in backend/docs/adding-an-api.md.
 func NewMux(pool *pgxpool.Pool, cfg config.Config, policies *policy.Engine) *http.ServeMux {
 	mux := http.NewServeMux()
 	a := auth.New(pool, cfg.SecretKey, policies)
