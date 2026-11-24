@@ -59,7 +59,7 @@ Every route lives under `/api/`, except the `/health` probe. Admin-only routes l
 | Status | Method | Path                 | Who       | Request → Response                                                                                   |
 | ------ | ------ | -------------------- | --------- | ---------------------------------------------------------------------------------------------------- |
 | ✅     | `POST` | `/api/auth/register` | Public    | `{"username","email","password"}` → `{"id","username"}`, sets session and refresh cookies. Username 5-32 characters, password at least 12 |
-| ✅     | `POST` | `/api/auth/login`    | Public    | `{"username","password"}` → `{"id","username"}`, sets session and refresh cookies                    |
+| ✅     | `POST` | `/api/auth/login`    | Public    | `{"username","password"}` → `{"id","username"}`, sets session and refresh cookies. `409` if already logged in |
 | ✅     | `POST` | `/api/auth/refresh`  | Public    | Rotates the refresh cookie and issues a new session cookie                                           |
 | ✅     | `POST` | `/api/auth/logout`   | Public    | Revokes the refresh tokens and clears both cookies                                                   |
 | ✅     | `GET`  | `/api/auth/me`       | Logged in | `{"id","username","score","role","rank"}`                                                            |
