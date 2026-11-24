@@ -53,6 +53,31 @@ func VerifyToken(secret []byte, token string, now time.Time) (userID, familyID u
 	return userID, familyID, err1 == nil && err2 == nil
 }
 
+// DeviceMaxAge is how long a device token stays valid in the browser after it is issued.
+const DeviceMaxAge = 365 * 24 * time.Hour
+
+// NewDeviceToken returns base64url("<user id>:<hex HMAC-SHA256 of the user id>"). A browser that
+// holds one has logged in as that user before, which the login rate limit uses to keep strangers
+// from slowing that user's logins down.
+func NewDeviceToken(secret []byte, userID uuid.UUID) string {
+	id := userID.String()
+	return base64.RawURLEncoding.EncodeToString([]byte(id + ":" + sign(secret, "device:"+id)))
+}
+
+// VerifyDeviceToken returns the user id in token if its signature is valid.
+func VerifyDeviceToken(secret []byte, token string) (userID uuid.UUID, ok bool) {
+	raw, err := base64.RawURLEncoding.DecodeString(token)
+	if err != nil {
+		return userID, false
+	}
+	id, mac, found := strings.Cut(string(raw), ":")
+	if !found || !hmac.Equal([]byte(mac), []byte(sign(secret, "device:"+id))) {
+		return userID, false
+	}
+	userID, err = uuid.Parse(id)
+	return userID, err == nil
+}
+
 // NewRefreshToken returns a random token for the cookie and the hash to store in the database.
 func NewRefreshToken() (token string, hash []byte, err error) {
 	b := make([]byte, 32)

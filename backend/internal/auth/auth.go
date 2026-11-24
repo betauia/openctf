@@ -4,6 +4,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/mail"
 	"strings"
@@ -26,6 +27,7 @@ const (
 	cookieName        = "session"
 	refreshCookieName = "refresh"
 	refreshPath       = "/api/auth"
+	deviceCookieName  = "device"
 )
 
 var dummyHash, _ = passwords.Hash("dummy password")
@@ -35,13 +37,23 @@ type Auth struct {
 	pool       *pgxpool.Pool
 	secret     []byte
 	policies   *policy.Engine
-	loginLimit *httpx.Limiter
+	// Failed logins back off exponentially. A browser that has logged in as a user before
+	// holds a signed device cookie, and its attempts are counted in a bucket that strangers
+	// cannot reach. Everyone else shares one bucket per username, so guessing stays slow
+	// without the account's owner being locked out of a browser they have used. Client IPs
+	// are not used: at a venue everyone shares one.
+	knownBackoff *httpx.Backoff
+	userBackoff  *httpx.Backoff
 }
 
 // New returns an Auth that loads users from pool, signs session tokens with secretKey and
 // authorises requests with policies.
 func New(pool *pgxpool.Pool, secretKey string, policies *policy.Engine) *Auth {
-	return &Auth{pool: pool, secret: []byte(secretKey), policies: policies, loginLimit: httpx.NewLimiter(10, time.Minute)}
+	return &Auth{
+		pool: pool, secret: []byte(secretKey), policies: policies,
+		knownBackoff: httpx.NewBackoff(5, time.Second, 30*time.Second, 15*time.Minute),
+		userBackoff:  httpx.NewBackoff(5, time.Second, 30*time.Second, 15*time.Minute),
+	}
 }
 
 // Register adds the /api/auth routes to mux.
@@ -137,13 +149,18 @@ func (a *Auth) login(w http.ResponseWriter, r *http.Request) {
 	if !httpx.Decode(w, r, &body) {
 		return
 	}
-	if !a.loginLimit.Allow(strings.ToLower(body.Username)) {
-		httpx.Error(w, http.StatusTooManyRequests, "Too many login attempts, try again in a minute")
-		return
-	}
 	u, err := getUserByUsername(r.Context(), a.pool, body.Username)
 	if err != nil && !database.IsNotFound(err) {
 		httpx.InternalError(w, r, err)
+		return
+	}
+	// Charge the attempt before checking the password; a successful login clears it below.
+	bucket, key := a.userBackoff, strings.ToLower(body.Username)
+	if err == nil && a.knownDevice(r, u.ID) {
+		bucket, key = a.knownBackoff, u.ID.String()
+	}
+	if wait, ok := bucket.Begin(key); !ok {
+		tooManyLogins(w, wait)
 		return
 	}
 	hash := dummyHash
@@ -167,7 +184,24 @@ func (a *Auth) login(w http.ResponseWriter, r *http.Request) {
 		httpx.InternalError(w, r, err)
 		return
 	}
+	bucket.Reset(key)
 	httpx.JSON(w, http.StatusOK, userRef{ID: u.ID, Username: u.Username})
+}
+
+func tooManyLogins(w http.ResponseWriter, wait time.Duration) {
+	secs := max(int(wait.Round(time.Second)/time.Second), 1)
+	w.Header().Set("Retry-After", fmt.Sprint(secs))
+	httpx.Error(w, http.StatusTooManyRequests, fmt.Sprintf("Too many login attempts, try again in %d seconds", secs))
+}
+
+// knownDevice reports whether r carries a device cookie issued for userID.
+func (a *Auth) knownDevice(r *http.Request, userID uuid.UUID) bool {
+	c, err := r.Cookie(deviceCookieName)
+	if err != nil {
+		return false
+	}
+	id, ok := sessions.VerifyDeviceToken(a.secret, c.Value)
+	return ok && id == userID
 }
 
 // refresh exchanges the refresh cookie for a new session and a rotated refresh token.
@@ -323,6 +357,15 @@ func (a *Auth) startSession(w http.ResponseWriter, r *http.Request, userID uuid.
 	}
 	a.setSession(w, userID, family)
 	a.setRefreshCookie(w, token)
+	// Logout leaves this in place: it only marks the browser as one this user has logged in from.
+	http.SetCookie(w, &http.Cookie{
+		Name:     deviceCookieName,
+		Value:    sessions.NewDeviceToken(a.secret, userID),
+		Path:     refreshPath,
+		MaxAge:   int(sessions.DeviceMaxAge.Seconds()),
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	})
 	return nil
 }
 
