@@ -1,5 +1,5 @@
 -- Seed challenges. Titles that already exist are skipped.
--- Usage: cat backend/seed.sql | docker compose exec -T database psql -U openctf -d openctf
+-- Usage: cat backend/seed/challenges.sql | docker compose exec -T database psql -U openctf -d openctf
 
 INSERT INTO challenges (title, category, points, difficulty, description, connection_info, flags, author, is_visible)
 SELECT v.*, 'arch', TRUE FROM (VALUES

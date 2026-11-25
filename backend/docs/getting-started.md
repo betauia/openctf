@@ -31,6 +31,14 @@ With Docker Compose (from the repository root), the `database` service starts fi
 docker compose up backend 
 ```
 
+## Seeding
+
+To fill a development database with sample challenges, run this from the repository root. Titles that already exist are skipped, so it can be run again:
+
+```sh
+cat backend/seed/challenges.sql | docker compose exec -T database psql -U openctf -d openctf
+```
+
 ## Testing
 
 ```sh

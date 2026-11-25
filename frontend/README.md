@@ -27,7 +27,7 @@ http://localhost:4000 and the backend on http://localhost:8000.
 Seed challenges with:
 
 ```sh
-cat backend/seed.sql | docker compose exec -T database psql -U openctf -d openctf
+cat backend/seed/challenges.sql | docker compose exec -T database psql -U openctf -d openctf
 ```
 
 ## Layout tests
