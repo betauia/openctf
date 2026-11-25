@@ -33,11 +33,23 @@ docker compose up backend
 
 ## Seeding
 
-To fill a development database with sample challenges, run this from the repository root. Titles that already exist are skipped, so it can be run again:
+The files in `seed/` fill a development database with sample data. They are for development only: the seeded users all share the published password `dev-password-123`. Run them from the repository root, in this order:
 
 ```sh
 cat backend/seed/challenges.sql | docker compose exec -T database psql -U openctf -d openctf
+cat backend/seed/users.sql      | docker compose exec -T database psql -U openctf -d openctf
+cat backend/seed/teams.sql      | docker compose exec -T database psql -U openctf -d openctf
+cat backend/seed/solves.sql     | docker compose exec -T database psql -U openctf -d openctf
 ```
+
+| File             | Adds                                                                                  |
+| ---------------- | ------------------------------------------------------------------------------------- |
+| `challenges.sql` | 20 visible challenges                                                                 |
+| `users.sql`      | `dev_admin`, `dev_maintainer` and 11 players, one of them banned                      |
+| `teams.sql`      | 5 teams: one full, one banned, one hidden, and the players' memberships               |
+| `solves.sql`     | 15 solves, with the users' scores and the challenges' solve counts recalculated      |
+
+Each file runs in one transaction and skips what already exists, so it is safe to run again.
 
 ## Testing
 

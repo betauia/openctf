@@ -18,6 +18,6 @@ internal/policy/       PBAC engine: policy model, JSON loader, matching, conditi
 internal/policies/     default.json (the PBAC rules, loaded by main) and its tests
 internal/teams/        /api/teams and /api/admin/teams endpoints
 internal/settings/     /api/admin/settings endpoints
-seed/                  sample data for development databases, not part of the server
+seed/                  sample data for development databases (see Seeding), not part of the server
 ```
 

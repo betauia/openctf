@@ -1,6 +1,9 @@
 -- Seed challenges. Titles that already exist are skipped.
 -- Usage: cat backend/seed/challenges.sql | docker compose exec -T database psql -U openctf -d openctf
 
+\set ON_ERROR_STOP on
+BEGIN;
+
 INSERT INTO challenges (title, category, points, difficulty, description, connection_info, flags, author, is_visible)
 SELECT v.*, 'arch', TRUE FROM (VALUES
     ('SQL Safari',       'web',       100, 'Easy',   'Basic SQL injection challenge.',                                                                  NULL,                        to_jsonb(ARRAY['CTF{sql_safari_flag}']::text[])),
@@ -25,3 +28,5 @@ SELECT v.*, 'arch', TRUE FROM (VALUES
     ('Pixel Secrets',    'stego',     100, 'Easy',   'Something is hidden in this image. Can you find it?',                                             NULL,                        to_jsonb(ARRAY['CTF{pixel_secrets_flag}']::text[]))
 ) AS v (title, category, points, difficulty, description, connection_info, flags)
 WHERE NOT EXISTS (SELECT 1 FROM challenges c WHERE c.title = v.title);
+
+COMMIT;
