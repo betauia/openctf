@@ -207,7 +207,7 @@
         "effect": "allow",
         "subjects": ["role:user", "role:maintainer", "role:admin"],
         "actions": ["user:login"],
-        "resources": ["/api/auth/login"]
+        "resources": ["/api/auth/login", "/api/auth/refresh"]
       },
       {
         "sid": "SelfAuth",
