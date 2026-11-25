@@ -32,3 +32,6 @@ UPDATE users SET password_hash = $2 WHERE id = $1;
 SELECT COALESCE(captain_id = @user_id::uuid, false)::bool AS is_captain, banned
 FROM teams WHERE id = @team_id;
 
+
+-- name: AddUserScore :exec
+UPDATE users SET score = score + @points WHERE id = @id;

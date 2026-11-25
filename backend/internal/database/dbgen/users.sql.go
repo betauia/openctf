@@ -11,6 +11,20 @@ import (
 	"uuid"
 )
 
+const addUserScore = `-- name: AddUserScore :exec
+UPDATE users SET score = score + $1 WHERE id = $2
+`
+
+type AddUserScoreParams struct {
+	Points int32
+	ID     uuid.UUID
+}
+
+func (q *Queries) AddUserScore(ctx context.Context, arg AddUserScoreParams) error {
+	_, err := q.db.Exec(ctx, addUserScore, arg.Points, arg.ID)
+	return err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (id, username, email, password_hash)
 VALUES ($1, $2, $3, $4)

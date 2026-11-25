@@ -104,6 +104,15 @@ func (q *Queries) GetChallengeFile(ctx context.Context, arg GetChallengeFilePara
 	return i, err
 }
 
+const incrementChallengeSolves = `-- name: IncrementChallengeSolves :exec
+UPDATE challenges SET solves = solves + 1 WHERE id = $1
+`
+
+func (q *Queries) IncrementChallengeSolves(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, incrementChallengeSolves, id)
+	return err
+}
+
 const listChallengeFiles = `-- name: ListChallengeFiles :many
 SELECT cf.id, cf.challenge_id, cf.filename, cf.filepath, cf.uploaded_at FROM challenge_files cf
 JOIN challenges c ON c.id = cf.challenge_id

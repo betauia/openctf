@@ -24,3 +24,6 @@ ORDER BY cf.filename;
 SELECT cf.* FROM challenge_files cf
 JOIN challenges c ON c.id = cf.challenge_id
 WHERE cf.id = @id AND cf.challenge_id = @challenge_id AND (@include_hidden::bool OR c.is_visible);
+
+-- name: IncrementChallengeSolves :exec
+UPDATE challenges SET solves = solves + 1 WHERE id = $1;

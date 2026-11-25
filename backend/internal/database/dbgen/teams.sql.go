@@ -156,6 +156,23 @@ func (q *Queries) GetTeamIDByInviteCode(ctx context.Context, inviteCode *string)
 	return id, err
 }
 
+const getVisibleTeamName = `-- name: GetVisibleTeamName :one
+SELECT id, name FROM teams WHERE id = $1 AND NOT hidden
+`
+
+type GetVisibleTeamNameRow struct {
+	ID   uuid.UUID
+	Name string
+}
+
+// A team's ID and name, unless the team is hidden.
+func (q *Queries) GetVisibleTeamName(ctx context.Context, id uuid.UUID) (GetVisibleTeamNameRow, error) {
+	row := q.db.QueryRow(ctx, getVisibleTeamName, id)
+	var i GetVisibleTeamNameRow
+	err := row.Scan(&i.ID, &i.Name)
+	return i, err
+}
+
 const joinTeam = `-- name: JoinTeam :execrows
 UPDATE users SET team_id = $1 WHERE id = $2 AND team_id IS NULL
 `

@@ -116,3 +116,7 @@ FROM users u LEFT JOIN teams t ON t.id = u.team_id
 WHERE NOT u.banned AND NOT COALESCE(t.hidden, false)
 ORDER BY u.score DESC, u.username
 LIMIT $1;
+
+-- name: GetVisibleTeamName :one
+-- A team's ID and name, unless the team is hidden.
+SELECT id, name FROM teams WHERE id = $1 AND NOT hidden;
