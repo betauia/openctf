@@ -106,10 +106,13 @@ func (a *Auth) register(w http.ResponseWriter, r *http.Request, u *User) {
 		httpx.Error(w, http.StatusBadRequest, "Email must be 5-255 characters")
 		return
 	}
-	if _, err := mail.ParseAddress(body.Email); err != nil {
+	// Only a bare address is accepted: ParseAddress also takes "Name <a@b.c>" and "a@b.c (note)",
+	// which would be stored as is. Emails are stored lowercase so case variants are one account.
+	if addr, err := mail.ParseAddress(body.Email); err != nil || addr.Address != body.Email {
 		httpx.Error(w, http.StatusBadRequest, "Please provide a valid email address")
 		return
 	}
+	body.Email = strings.ToLower(body.Email)
 	ctx := r.Context()
 	taken, err := userExists(ctx, a.pool, body.Username, body.Email)
 	if err != nil {
