@@ -7,7 +7,7 @@
 --   Gamma          just the captain
 --   Banned Bandits a banned team
 --   Shadow Ops     a hidden team
--- dev_admin, dev_maintainer and mallory_ctf (banned) are left without a team.
+-- dev_admin, dev_maintainer, kate_ctf, leo_ctf and mallory_ctf (banned) are left without a team.
 
 \set ON_ERROR_STOP on
 BEGIN;

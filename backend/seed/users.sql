@@ -3,6 +3,12 @@
 -- Usage: cat backend/seed/users.sql | docker compose exec -T database psql -U openctf -d openctf
 -- Users that already exist (same username or email) are skipped. The default 'admin' user is
 -- created by the server on start, so it isn't seeded here.
+--
+-- password_hash is the backend's own format (internal/auth/passwords): base64(salt || PBKDF2-HMAC-SHA256
+-- of the password, 260000 iterations, 16 byte salt, 32 byte key). It is the hash of dev-password-123 and
+-- passwords.Verify accepts it. To use another password, make a new hash with passwords.Hash and
+-- replace the literal below; one fixed hash is shared so the accounts are easy to seed and log in to.
+-- kate_ctf, leo_ctf, dev_admin, dev_maintainer and mallory_ctf are not put in a team by teams.sql.
 
 \set ON_ERROR_STOP on
 BEGIN;
@@ -21,6 +27,8 @@ SELECT v.username, v.username || '@example.com', 'XdNkcZ+ulT4CtVZVE71i/FEDfxM05e
     ('heidi_ctf',       'user',       FALSE),
     ('ivan_ctf',        'user',       FALSE),
     ('judy_ctf',        'user',       FALSE),
+    ('kate_ctf',        'user',       FALSE),
+    ('leo_ctf',         'user',       FALSE),
     ('mallory_ctf',     'user',       TRUE)
 ) AS v (username, role, banned)
 WHERE NOT EXISTS (

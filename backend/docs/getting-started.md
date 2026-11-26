@@ -45,8 +45,8 @@ cat backend/seed/solves.sql     | docker compose exec -T database psql -U openct
 | File             | Adds                                                                                  |
 | ---------------- | ------------------------------------------------------------------------------------- |
 | `challenges.sql` | 20 visible challenges                                                                 |
-| `users.sql`      | `dev_admin`, `dev_maintainer` and 11 players, one of them banned                      |
-| `teams.sql`      | 5 teams: one full, one banned, one hidden, and the players' memberships               |
+| `users.sql`      | `dev_admin`, `dev_maintainer` and 13 players, one of them banned                      |
+| `teams.sql`      | 5 teams: one full, one banned, one hidden, and the players' memberships, two players stay teamless |
 | `solves.sql`     | 15 solves, with the users' scores and the challenges' solve counts recalculated      |
 
 Each file runs in one transaction and skips what already exists, so it is safe to run again.
