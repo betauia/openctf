@@ -105,7 +105,7 @@ func (h *Handler) ban(w http.ResponseWriter, r *http.Request, u *auth.User) {
 users.New(pool, a).Register(mux)
 ```
 
-That's all. The route is logged by the request middleware automatically.
+The route is logged by the request middleware automatically.
 
 **Conventions**
 

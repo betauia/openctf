@@ -34,10 +34,37 @@ docker compose up backend
 ## Testing
 
 ```sh
-go test ./...
+go test -p 4 ./...
 ```
 
+`-p 4` runs four packages at a time. Every package starts its own Postgres container. On Windows, Docker Desktop can refuse some start-ups when all packages start at once and fail a package with `testcontainers cannot run: ... rootless Docker is not supported on Windows` or a reaper error. The coverage tool below already uses `-p 4`.
+
 Run it from `backend/`. The leading `./` is required: without it Go looks for the package in the standard library.
+
+The database tests start a Postgres container with testcontainers, so Docker must be running. If it can't be reached the run fails with `testcontainers cannot run`; the tests are never skipped.
+
+### Coverage
+
+```sh
+go run ./tools/coverage            # coverage per package and in total
+go run ./tools/coverage -min 80    # also exit 1 if the total is below 80%
+go run ./tools/coverage -html      # also write coverage.html to browse uncovered lines
+```
+
+This runs the whole test suite and measures statement coverage of the hand-written code. The generated sqlc code (`internal/database/dbgen`), `cmd/`, `tools/` and the test helpers in `internal/testutil` are left out. A test in one package counts towards the code it exercises in another. `coverage.out` and `coverage.html` are git-ignored. The tool stops without a report if any test fails.
+
+### Writing tests
+
+Tests that need the database share two helper packages:
+
+- `internal/testutil/testdb` starts the Postgres container (`func TestMain(m *testing.M) { os.Exit(testdb.Run(m)) }`) and creates users, teams, challenges and settings changes. Each package gets its own container, and its tests share one database, so give things unique names (`testdb.Unique()`) and clean up what changes global state.
+- `internal/testutil/testenv` builds the routes on top of that with the default policy, logs users in through `POST /api/auth/login` and sends requests as them.
+
+### Vet
+
+```sh
+go vet ./...
+```
 
 ## Docker
 
