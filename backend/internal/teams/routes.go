@@ -14,6 +14,7 @@ import (
 
 	"github.com/betauia/openctf/backend/internal/auth"
 	"github.com/betauia/openctf/backend/internal/database"
+	"github.com/betauia/openctf/backend/internal/database/dbgen"
 	"github.com/betauia/openctf/backend/internal/httpx"
 	"github.com/betauia/openctf/backend/internal/policy"
 )
@@ -130,10 +131,9 @@ func (h *Handler) updateTeam(w http.ResponseWriter, r *http.Request, u auth.User
 		if !check(policy.TeamUpdate, t.resource()) { // TeamCaptain
 			return auth.ErrDenied
 		}
-		_, err = tx.Exec(ctx,
-			`UPDATE teams SET name = COALESCE($2, name), invite_code = COALESCE($3, invite_code) WHERE id = $1`,
-			t.ID, body.Name, newCode)
-		return err
+		return dbgen.New(tx).UpdateTeamByCaptain(ctx, dbgen.UpdateTeamByCaptainParams{
+			ID: t.ID, Name: body.Name, InviteCode: newCode,
+		})
 	})
 	if database.IsUniqueViolation(err) {
 		httpx.Error(w, http.StatusBadRequest, "Team name already taken")
@@ -300,15 +300,15 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	ctx := r.Context()
 	id := uuid.NewV7()
 	err := pgx.BeginFunc(ctx, h.pool, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx,
-			`INSERT INTO teams (id, name, captain_id, invite_code) VALUES ($1, $2, $3, $4)`,
-			id, body.Name, u.ID, rand.Text())
+		q := dbgen.New(tx)
+		code := rand.Text()
+		err := q.CreateTeam(ctx, dbgen.CreateTeamParams{ID: id, Name: body.Name, CaptainID: &u.ID, InviteCode: &code})
 		if err != nil {
 			return err
 		}
 		// team_id IS NULL: the user may have joined a team since Authorise loaded them.
-		tag, err := tx.Exec(ctx, `UPDATE users SET team_id = $1 WHERE id = $2 AND team_id IS NULL`, id, u.ID)
-		if err == nil && tag.RowsAffected() == 0 {
+		n, err := q.JoinTeam(ctx, dbgen.JoinTeamParams{TeamID: &id, UserID: u.ID})
+		if err == nil && n == 0 {
 			return auth.ErrDenied
 		}
 		return err
@@ -376,8 +376,7 @@ func (h *Handler) join(w http.ResponseWriter, r *http.Request, u auth.User) {
 		httpx.InternalError(w, r, err)
 		return
 	}
-	var teamID uuid.UUID
-	err = h.pool.QueryRow(ctx, `SELECT id FROM teams WHERE invite_code = $1`, body.InviteCode).Scan(&teamID)
+	teamID, err := dbgen.New(h.pool).GetTeamIDByInviteCode(ctx, &body.InviteCode)
 	if err != nil {
 		auth.Fail(w, r, &u, err, "Invalid invite code")
 		return
@@ -391,8 +390,8 @@ func (h *Handler) join(w http.ResponseWriter, r *http.Request, u auth.User) {
 			return auth.ErrDenied
 		}
 
-		tag, err := tx.Exec(ctx, `UPDATE users SET team_id = $1 WHERE id = $2 AND team_id IS NULL`, t.ID, u.ID)
-		if err == nil && tag.RowsAffected() == 0 {
+		n, err := dbgen.New(tx).JoinTeam(ctx, dbgen.JoinTeamParams{TeamID: &t.ID, UserID: u.ID})
+		if err == nil && n == 0 {
 			return auth.ErrDenied
 		}
 		return err
@@ -423,11 +422,12 @@ func (h *Handler) leave(w http.ResponseWriter, r *http.Request, u auth.User) {
 		if !check(policy.TeamLeave, t.resource()) { // TeamMember, CaptainMustTransfer, RosterFrozen
 			return auth.ErrDenied
 		}
-		if _, err := tx.Exec(ctx, `UPDATE users SET team_id = NULL WHERE id = $1`, u.ID); err != nil {
+		q := dbgen.New(tx)
+		if err := q.LeaveTeam(ctx, u.ID); err != nil {
 			return err
 		}
 		if t.MemberCount == 1 { // the last member left: remove the empty team
-			_, err = tx.Exec(ctx, `DELETE FROM teams WHERE id = $1`, t.ID)
+			err = q.DeleteTeam(ctx, t.ID)
 		}
 		return err
 	})
@@ -465,8 +465,8 @@ func (h *Handler) kick(w http.ResponseWriter, r *http.Request, u auth.User) {
 		if !check(policy.TeamKick, t.resource()) { // TeamCaptain, DenyBannedTeam, RosterFrozen
 			return auth.ErrDenied
 		}
-		tag, err := tx.Exec(ctx, `UPDATE users SET team_id = NULL WHERE id = $1 AND team_id = $2`, target, t.ID)
-		if err == nil && tag.RowsAffected() == 0 {
+		n, err := dbgen.New(tx).RemoveTeamMember(ctx, dbgen.RemoveTeamMemberParams{UserID: target, TeamID: &t.ID})
+		if err == nil && n == 0 {
 			return pgx.ErrNoRows // not a member of this team
 		}
 		return err
@@ -504,11 +504,8 @@ func (h *Handler) transferCaptain(w http.ResponseWriter, r *http.Request, u auth
 		if !check(policy.TeamTransferCaptain, t.resource()) { // TeamCaptain
 			return auth.ErrDenied
 		}
-		tag, err := tx.Exec(ctx, `
-			UPDATE teams SET captain_id = $2
-			WHERE id = $1 AND EXISTS (SELECT 1 FROM users WHERE id = $2 AND team_id = $1)`,
-			t.ID, body.UserID)
-		if err == nil && tag.RowsAffected() == 0 {
+		n, err := dbgen.New(tx).TransferCaptain(ctx, dbgen.TransferCaptainParams{ID: t.ID, CaptainID: &body.UserID})
+		if err == nil && n == 0 {
 			return pgx.ErrNoRows // not a member of this team
 		}
 		return err
@@ -566,17 +563,11 @@ func (h *Handler) adminUpdate(w http.ResponseWriter, r *http.Request, u *auth.Us
 		if body.CaptainID != nil && !check(policy.TeamTransferCaptain, t.resource()) {
 			return auth.ErrDenied
 		}
-		// The EXISTS keeps the update from running at all when captain_id isn't a member.
-		tag, err := tx.Exec(ctx, `
-			UPDATE teams SET
-				name       = COALESCE($2, name),
-				banned     = COALESCE($3, banned),
-				hidden     = COALESCE($4, hidden),
-				captain_id = COALESCE($5, captain_id)
-			WHERE id = $1
-			  AND ($5::uuid IS NULL OR EXISTS (SELECT 1 FROM users WHERE id = $5 AND team_id = $1))`,
-			t.ID, body.Name, body.Banned, body.Hidden, body.CaptainID)
-		if err == nil && tag.RowsAffected() == 0 {
+		// Updates nothing when captain_id isn't a member.
+		n, err := dbgen.New(tx).AdminUpdateTeam(ctx, dbgen.AdminUpdateTeamParams{
+			ID: t.ID, Name: body.Name, Banned: body.Banned, Hidden: body.Hidden, CaptainID: body.CaptainID,
+		})
+		if err == nil && n == 0 {
 			return errNotMember
 		}
 		return err
@@ -616,8 +607,7 @@ func (h *Handler) adminDelete(w http.ResponseWriter, r *http.Request, u *auth.Us
 		if !check(policy.TeamDelete, t.resource()) {
 			return auth.ErrDenied
 		}
-		_, err = tx.Exec(ctx, `DELETE FROM teams WHERE id = $1`, t.ID)
-		return err
+		return dbgen.New(tx).DeleteTeam(ctx, t.ID)
 	})
 	if err != nil {
 		auth.Fail(w, r, u, err, "Team not found")
@@ -678,22 +668,20 @@ func (h *Handler) adminKick(w http.ResponseWriter, r *http.Request, u *auth.User
 		if !check(policy.TeamKick, t.resource()) {
 			return auth.ErrDenied
 		}
-		tag, err := tx.Exec(ctx, `UPDATE users SET team_id = NULL WHERE id = $1 AND team_id = $2`, target, t.ID)
+		q := dbgen.New(tx)
+		n, err := q.RemoveTeamMember(ctx, dbgen.RemoveTeamMemberParams{UserID: target, TeamID: &t.ID})
 		if err != nil {
 			return err
 		}
-		if tag.RowsAffected() == 0 {
+		if n == 0 {
 			return pgx.ErrNoRows // not a member of this team
 		}
 		if t.MemberCount == 1 { // the last member was kicked: remove the empty team
-			_, err = tx.Exec(ctx, `DELETE FROM teams WHERE id = $1`, t.ID)
-			return err
+			return q.DeleteTeam(ctx, t.ID)
 		}
 		if t.CaptainID != nil && *t.CaptainID == target {
 			// UUIDv7 ids sort by creation time, so this picks the oldest remaining account.
-			_, err = tx.Exec(ctx, `
-				UPDATE teams SET captain_id = (SELECT id FROM users WHERE team_id = $1 ORDER BY id LIMIT 1)
-				WHERE id = $1`, t.ID)
+			err = q.ReassignCaptain(ctx, &t.ID)
 		}
 		return err
 	})

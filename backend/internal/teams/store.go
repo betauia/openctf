@@ -10,14 +10,15 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/betauia/openctf/backend/internal/database"
+	"github.com/betauia/openctf/backend/internal/database/dbgen"
 	"github.com/betauia/openctf/backend/internal/policy"
 )
 
 type team struct {
 	ID          uuid.UUID  `json:"id"`
 	Name        string     `json:"name"`
-	CaptainID   *uuid.UUID `json:"captain_id"`
-	InviteCode  *string    `json:"invite_code,omitempty"`
+	CaptainID   *uuid.UUID `json:"captain_id"`            // nil when the captain's account was deleted
+	InviteCode  *string    `json:"invite_code,omitempty"` // only for members and admins
 	Banned      bool       `json:"banned"`
 	Hidden      bool       `json:"hidden"`
 	MemberCount int        `json:"member_count"`
@@ -30,17 +31,6 @@ type member struct {
 	Username string    `json:"username"`
 	Score    int32     `json:"score"`
 	Solves   int       `json:"solves"`
-}
-
-const teamScore = `(SELECT COALESCE(SUM(c.points), 0) FROM solves s JOIN challenges c ON c.id = s.challenge_id WHERE s.team_id = t.id)`
-
-const teamColumns = `t.id, t.name, t.captain_id, t.invite_code, t.banned, t.hidden,
-	(SELECT COUNT(*) FROM users u WHERE u.team_id = t.id), ` + teamScore
-
-func scanTeam(row pgx.Row) (team, error) {
-	var t team
-	err := row.Scan(&t.ID, &t.Name, &t.CaptainID, &t.InviteCode, &t.Banned, &t.Hidden, &t.MemberCount, &t.Score)
-	return t, err
 }
 
 // resource is the only place a team becomes a policy.Resource. The path is left to the
@@ -56,32 +46,33 @@ func (t team) resource() policy.Resource {
 
 // getTeam loads one team. Unless includeHidden is set, a hidden team is reported as not found.
 func getTeam(ctx context.Context, q database.Querier, id uuid.UUID, includeHidden bool) (team, error) {
-	if includeHidden {
-		return scanTeam(q.QueryRow(ctx, `SELECT `+teamColumns+` FROM teams t WHERE t.id = $1`, id))
+	t, err := dbgen.New(q).GetTeam(ctx, dbgen.GetTeamParams{ID: id, IncludeHidden: includeHidden})
+	if err != nil {
+		return team{}, err
 	}
-	return scanTeam(q.QueryRow(ctx, `SELECT `+teamColumns+` FROM teams t WHERE t.id = $1 AND NOT t.hidden`, id))
+	return team{ID: t.ID, Name: t.Name, CaptainID: t.CaptainID, InviteCode: t.InviteCode, Banned: t.Banned,
+		Hidden: t.Hidden, MemberCount: int(t.MemberCount), Score: int(t.Score)}, nil
 }
 
 // lockTeam locks a team row for the rest of tx. Hidden teams are included: hiding a team
 // must not stop its members or admins from changing it.
 func lockTeam(ctx context.Context, tx pgx.Tx, id uuid.UUID) (team, error) {
-	if _, err := tx.Exec(ctx, `SELECT 1 FROM teams WHERE id = $1 FOR UPDATE`, id); err != nil {
+	if err := dbgen.New(tx).LockTeam(ctx, id); err != nil {
 		return team{}, err
 	}
 	return getTeam(ctx, tx, id, true)
 }
 
 func listMembers(ctx context.Context, q database.Querier, teamID uuid.UUID) ([]member, error) {
-	rows, err := q.Query(ctx, `SELECT u.id, u.username, u.score, (SELECT COUNT(*) FROM solves s WHERE s.user_id = u.id)
-		FROM users u WHERE u.team_id = $1 ORDER BY u.score DESC, u.username`, teamID)
+	rows, err := dbgen.New(q).ListTeamMembers(ctx, &teamID)
 	if err != nil {
 		return nil, err
 	}
-	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (member, error) {
-		var m member
-		err := row.Scan(&m.ID, &m.Username, &m.Score, &m.Solves)
-		return m, err
-	})
+	out := make([]member, len(rows))
+	for i, m := range rows {
+		out[i] = member{ID: m.ID, Username: m.Username, Score: m.Score, Solves: int(m.Solves)}
+	}
+	return out, nil
 }
 
 type activityEntry struct {
@@ -94,21 +85,16 @@ type activityEntry struct {
 }
 
 func listActivity(ctx context.Context, q database.Querier, teamID uuid.UUID) ([]activityEntry, error) {
-	rows, err := q.Query(ctx, `
-		SELECT c.id, u.username, c.title, c.category, c.points, s.solved_at
-		FROM solves s
-		JOIN users u ON u.id = s.user_id
-		JOIN challenges c ON c.id = s.challenge_id AND c.is_visible
-		WHERE s.team_id = $1
-		ORDER BY s.solved_at DESC`, teamID)
+	rows, err := dbgen.New(q).ListTeamActivity(ctx, &teamID)
 	if err != nil {
 		return nil, err
 	}
-	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (activityEntry, error) {
-		var e activityEntry
-		err := row.Scan(&e.ChallengeID, &e.Username, &e.Challenge, &e.Category, &e.Points, &e.SolvedAt)
-		return e, err
-	})
+	out := make([]activityEntry, len(rows))
+	for i, r := range rows {
+		out[i] = activityEntry{ChallengeID: r.ChallengeID, Username: r.Username, Challenge: r.Challenge,
+			Category: r.Category, Points: int(r.Points), SolvedAt: r.SolvedAt}
+	}
+	return out, nil
 }
 
 type profileSolve struct {
@@ -129,51 +115,43 @@ type profile struct {
 }
 
 func getProfile(ctx context.Context, q database.Querier, userID uuid.UUID) (profile, error) {
-	var p profile
-	if err := q.QueryRow(ctx, `SELECT u.id, u.username, u.score, t.id, t.name FROM users u LEFT JOIN teams t ON t.id = u.team_id AND NOT t.hidden WHERE u.id = $1 AND NOT u.banned`, userID).
-		Scan(&p.ID, &p.Username, &p.Score, &p.TeamID, &p.Team); err != nil {
-		return p, err
+	queries := dbgen.New(q)
+	u, err := queries.GetProfile(ctx, userID)
+	if err != nil {
+		return profile{}, err
 	}
-	rows, err := q.Query(ctx, `
-		SELECT c.id, c.title, c.category, c.points, s.solved_at
-		FROM solves s
-		JOIN challenges c ON c.id = s.challenge_id AND c.is_visible
-		WHERE s.user_id = $1
-		ORDER BY s.solved_at DESC`, userID)
+	p := profile{ID: u.ID, Username: u.Username, Score: u.Score, TeamID: u.TeamID, Team: u.Team}
+	rows, err := queries.ListProfileSolves(ctx, userID)
 	if err != nil {
 		return p, err
 	}
-	p.Solves, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (profileSolve, error) {
-		var s profileSolve
-		err := row.Scan(&s.ChallengeID, &s.Challenge, &s.Category, &s.Points, &s.SolvedAt)
-		return s, err
-	})
-	return p, err
+	p.Solves = make([]profileSolve, len(rows))
+	for i, r := range rows {
+		p.Solves[i] = profileSolve{ChallengeID: r.ChallengeID, Challenge: r.Challenge, Category: r.Category,
+			Points: int(r.Points), SolvedAt: r.SolvedAt}
+	}
+	return p, nil
 }
 
-// listTeams returns a page of teams sorted by name. Hidden teams are left out unless includeHidden is set.
+// listTeams returns a page of teams sorted by score, then name. Hidden teams are left out unless includeHidden is set.
 func listTeams(ctx context.Context, q database.Querier, limit, offset int, includeHidden bool) ([]team, error) {
-	var (
-		rows pgx.Rows
-		err  error
-	)
-	if includeHidden {
-		rows, err = q.Query(ctx, "SELECT "+teamColumns+" FROM teams t ORDER BY "+teamScore+" DESC, t.name ASC LIMIT $1 OFFSET $2", limit, offset)
-	} else {
-		rows, err = q.Query(ctx, "SELECT "+teamColumns+" FROM teams t WHERE NOT t.hidden ORDER BY "+teamScore+" DESC, t.name ASC LIMIT $1 OFFSET $2", limit, offset)
-	}
+	rows, err := dbgen.New(q).ListTeams(ctx, dbgen.ListTeamsParams{
+		IncludeHidden: includeHidden, Lim: int32(limit), Off: int32(offset),
+	})
 	if err != nil {
 		return nil, err
 	}
-	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (team, error) {
-		return scanTeam(row)
-	})
+	out := make([]team, len(rows))
+	for i, t := range rows {
+		out[i] = team{ID: t.ID, Name: t.Name, CaptainID: t.CaptainID, InviteCode: t.InviteCode, Banned: t.Banned,
+			Hidden: t.Hidden, MemberCount: int(t.MemberCount), Score: int(t.Score)}
+	}
+	return out, nil
 }
 
 func teamRank(ctx context.Context, q database.Querier, score int) (int, error) {
-	var rank int
-	err := q.QueryRow(ctx, `SELECT COUNT(*) + 1 FROM teams t WHERE NOT t.hidden AND `+teamScore+` > $1`, score).Scan(&rank)
-	return rank, err
+	rank, err := dbgen.New(q).TeamRank(ctx, int64(score))
+	return int(rank), err
 }
 
 type categoryTotal struct {
@@ -182,15 +160,15 @@ type categoryTotal struct {
 }
 
 func listCategoryTotals(ctx context.Context, q database.Querier) ([]categoryTotal, error) {
-	rows, err := q.Query(ctx, `SELECT category, COUNT(*) FROM challenges WHERE is_visible GROUP BY category ORDER BY category`)
+	rows, err := dbgen.New(q).ListCategoryTotals(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (categoryTotal, error) {
-		var c categoryTotal
-		err := row.Scan(&c.Category, &c.Total)
-		return c, err
-	})
+	out := make([]categoryTotal, len(rows))
+	for i, r := range rows {
+		out[i] = categoryTotal{Category: r.Category, Total: int(r.Total)}
+	}
+	return out, nil
 }
 
 type solvedChallenge struct {
@@ -201,15 +179,15 @@ type solvedChallenge struct {
 }
 
 func listTeamSolves(ctx context.Context, q database.Querier, teamID uuid.UUID) ([]solvedChallenge, error) {
-	rows, err := q.Query(ctx, `SELECT c.id, c.title, c.category, c.points FROM solves s JOIN challenges c ON c.id = s.challenge_id WHERE c.is_visible AND s.team_id = $1`, teamID)
+	rows, err := dbgen.New(q).ListTeamSolves(ctx, &teamID)
 	if err != nil {
 		return nil, err
 	}
-	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (solvedChallenge, error) {
-		var c solvedChallenge
-		err := row.Scan(&c.ID, &c.Title, &c.Category, &c.Points)
-		return c, err
-	})
+	out := make([]solvedChallenge, len(rows))
+	for i, r := range rows {
+		out[i] = solvedChallenge{ID: r.ID, Title: r.Title, Category: r.Category, Points: int(r.Points)}
+	}
+	return out, nil
 }
 
 type categoryProgress struct {
@@ -329,27 +307,25 @@ func scoreSeries(ctx context.Context, q database.Querier, teams []team) ([]teamS
 		index[t.ID] = i
 	}
 
-	rows, err := q.Query(ctx, `SELECT s.team_id, s.solved_at, c.points FROM solves s JOIN challenges c ON c.id = s.challenge_id WHERE c.is_visible AND s.team_id = ANY($1) ORDER BY s.solved_at`, ids)
+	rows, err := dbgen.New(q).ListTeamScoreEvents(ctx, ids)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		var teamID uuid.UUID
-		var at time.Time
-		var points int
-		if err := rows.Scan(&teamID, &at, &points); err != nil {
-			return nil, err
+	for _, r := range rows {
+		if r.TeamID == nil {
+			continue
 		}
-		s := &series[index[teamID]]
+		i, ok := index[*r.TeamID]
+		if !ok {
+			continue
+		}
+		s := &series[i]
+		points := int(r.Points)
 		if n := len(s.Points); n > 0 {
 			points += s.Points[n-1].Score
 		}
-		s.Points = append(s.Points, scorePoint{At: at, Score: points})
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
+		s.Points = append(s.Points, scorePoint{At: r.SolvedAt, Score: points})
 	}
 
 	solved := []teamSeries{}
@@ -369,13 +345,13 @@ type player struct {
 }
 
 func listPlayers(ctx context.Context, q database.Querier, limit int) ([]player, error) {
-	rows, err := q.Query(ctx, `SELECT u.id, u.username, u.score FROM users u LEFT JOIN teams t ON t.id = u.team_id WHERE NOT u.banned AND NOT COALESCE(t.hidden, false) ORDER BY u.score DESC, u.username LIMIT $1`, limit)
+	rows, err := dbgen.New(q).ListPlayers(ctx, int32(limit))
 	if err != nil {
 		return nil, err
 	}
-	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (player, error) {
-		var p player
-		err := row.Scan(&p.ID, &p.Username, &p.Score)
-		return p, err
-	})
+	out := make([]player, len(rows))
+	for i, r := range rows {
+		out[i] = player{ID: r.ID, Username: r.Username, Score: int(r.Score)}
+	}
+	return out, nil
 }

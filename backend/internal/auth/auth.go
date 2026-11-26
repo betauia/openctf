@@ -59,7 +59,7 @@ func New(pool *pgxpool.Pool, secretKey string, policies *policy.Engine) *Auth {
 // Register adds the /api/auth routes to mux.
 func (a *Auth) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/auth/register", a.Optional(a.register))
-	mux.HandleFunc("POST /api/auth/login", a.login)
+	mux.HandleFunc("POST /api/auth/login", a.Optional(a.login))
 	mux.HandleFunc("POST /api/auth/refresh", a.refresh)
 	mux.HandleFunc("POST /api/auth/logout", a.logout)
 	mux.HandleFunc("GET /api/auth/me", a.Authorise(policy.UserReadPrivate, a.me))
@@ -106,10 +106,13 @@ func (a *Auth) register(w http.ResponseWriter, r *http.Request, u *User) {
 		httpx.Error(w, http.StatusBadRequest, "Email must be 5-255 characters")
 		return
 	}
-	if _, err := mail.ParseAddress(body.Email); err != nil {
+	// Only a bare address is accepted: ParseAddress also takes "Name <a@b.c>" and "a@b.c (note)",
+	// which would be stored as is. Emails are stored lowercase so case variants are one account.
+	if addr, err := mail.ParseAddress(body.Email); err != nil || addr.Address != body.Email {
 		httpx.Error(w, http.StatusBadRequest, "Please provide a valid email address")
 		return
 	}
+	body.Email = strings.ToLower(body.Email)
 	ctx := r.Context()
 	taken, err := userExists(ctx, a.pool, body.Username, body.Email)
 	if err != nil {
@@ -141,7 +144,11 @@ func (a *Auth) register(w http.ResponseWriter, r *http.Request, u *User) {
 	httpx.JSON(w, http.StatusOK, userRef{ID: created.ID, Username: created.Username})
 }
 
-func (a *Auth) login(w http.ResponseWriter, r *http.Request) {
+func (a *Auth) login(w http.ResponseWriter, r *http.Request, current *User) {
+	if current != nil {
+		httpx.Error(w, http.StatusConflict, "Already logged in")
+		return
+	}
 	var body struct {
 		Username string `json:"username"`
 		Password string `json:"password"`

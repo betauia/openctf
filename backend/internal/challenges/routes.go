@@ -15,6 +15,7 @@ import (
 
 	"github.com/betauia/openctf/backend/internal/auth"
 	"github.com/betauia/openctf/backend/internal/database"
+	"github.com/betauia/openctf/backend/internal/database/dbgen"
 	"github.com/betauia/openctf/backend/internal/httpx"
 	"github.com/betauia/openctf/backend/internal/policy"
 )
@@ -185,11 +186,11 @@ func (h *Handler) submitFlag(w http.ResponseWriter, r *http.Request, u *auth.Use
 			return err
 		}
 		points = c.Points
-		if _, err := tx.Exec(ctx, `UPDATE challenges SET solves = solves + 1 WHERE id = $1`, c.ID); err != nil {
+		q := dbgen.New(tx)
+		if err := q.IncrementChallengeSolves(ctx, c.ID); err != nil {
 			return err
 		}
-		_, err = tx.Exec(ctx, `UPDATE users SET score = score + $1 WHERE id = $2`, c.Points, u.ID)
-		return err
+		return q.AddUserScore(ctx, dbgen.AddUserScoreParams{Points: int32(c.Points), ID: u.ID})
 	})
 	if err != nil {
 		httpx.InternalError(w, r, err)
@@ -205,7 +206,9 @@ func (h *Handler) publishSolve(ctx context.Context, c challenge, u *auth.User) {
 	var teamID *uuid.UUID
 	var team *string
 	if u.TeamID != nil {
-		_ = h.pool.QueryRow(ctx, `SELECT id, name FROM teams WHERE id = $1 AND NOT hidden`, *u.TeamID).Scan(&teamID, &team)
+		if t, err := dbgen.New(h.pool).GetVisibleTeamName(ctx, *u.TeamID); err == nil {
+			teamID, team = &t.ID, &t.Name
+		}
 	}
 	h.publish("solve", solveEvent{
 		ChallengeID: c.ID,

@@ -1,0 +1,26 @@
+version: "2"
+sql:
+  - engine: postgresql
+    schema: internal/database/migrations
+    queries: internal/database/queries
+    gen:
+      go:
+        package: dbgen
+        out: internal/database/dbgen
+        sql_package: pgx/v5
+        # Nullable columns become pointers so they encode to JSON null directly.
+        emit_pointers_for_null_types: true
+        rename:
+          solf: Solve
+        overrides:
+          - db_type: timestamptz
+            go_type: time.Time
+          - db_type: timestamptz
+            nullable: true
+            go_type: { import: time, type: Time, pointer: true }
+          # Standard library uuid package (Go 1.27+).
+          - db_type: uuid
+            go_type: { import: uuid, type: UUID }
+          - db_type: uuid
+            nullable: true
+            go_type: { import: uuid, type: UUID, pointer: true }

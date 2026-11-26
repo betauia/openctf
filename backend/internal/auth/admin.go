@@ -3,9 +3,11 @@ package auth
 import (
 	"context"
 	"errors"
+	"strings"
 	"uuid"
 
 	"github.com/betauia/openctf/backend/internal/auth/passwords"
+	"github.com/betauia/openctf/backend/internal/database/dbgen"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -21,10 +23,7 @@ func EnsureDefaultAdmin(ctx context.Context, pool *pgxpool.Pool, password string
 		return errors.New("admin email must be set")
 	}
 
-	_, err = pool.Exec(ctx, `
-		INSERT INTO users (id, username, email, password_hash, role)
-		VALUES ($1, 'admin', $2, $3, 'admin')
-		ON CONFLICT (username) DO NOTHING`,
-		uuid.NewV7(), email, hash)
-	return err
+	return dbgen.New(pool).EnsureAdmin(ctx, dbgen.EnsureAdminParams{
+		ID: uuid.NewV7(), Email: strings.ToLower(email), PasswordHash: hash,
+	})
 }
