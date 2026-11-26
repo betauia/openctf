@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"strings"
 	"uuid"
 
 	"github.com/betauia/openctf/backend/internal/auth/passwords"
@@ -23,6 +24,6 @@ func EnsureDefaultAdmin(ctx context.Context, pool *pgxpool.Pool, password string
 	}
 
 	return dbgen.New(pool).EnsureAdmin(ctx, dbgen.EnsureAdminParams{
-		ID: uuid.NewV7(), Email: email, PasswordHash: hash,
+		ID: uuid.NewV7(), Email: strings.ToLower(email), PasswordHash: hash,
 	})
 }
