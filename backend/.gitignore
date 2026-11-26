@@ -2,3 +2,5 @@
 /backend.exe
 /server
 /server.exe
+/coverage.out
+/coverage.html
